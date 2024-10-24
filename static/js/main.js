@@ -142,8 +142,8 @@ document.addEventListener('DOMContentLoaded', function() {
             
             const columnIndex = Array.from(row.cells).indexOf(cell);
             
-            // Only allow editing Post Title, Description, Key Details, and Hashtags
-            if (![3, 4, 5, 6].includes(columnIndex)) return;
+            // Only allow editing Category, Post Title, Description, Key Details, and Hashtags
+            if (![0, 3, 4, 5, 6].includes(columnIndex)) return;
             
             const currentText = cell.textContent.trim();
             const inputGroup = document.createElement('div');
@@ -153,7 +153,7 @@ document.addEventListener('DOMContentLoaded', function() {
             textarea.value = currentText;
             textarea.className = 'form-control';
             textarea.style.width = '100%';
-            textarea.style.minHeight = columnIndex === 3 ? 'auto' : '60px';
+            textarea.style.minHeight = columnIndex === 5 ? '100px' : '60px'; // Larger height for Key Details
             
             const saveButton = document.createElement('button');
             saveButton.className = 'btn btn-success';
@@ -182,7 +182,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
 
                 const imageId = row.dataset.imageId;
-                const field = columnIndex === 3 ? 'post_title' :
+                const field = columnIndex === 0 ? 'category' :
+                            columnIndex === 3 ? 'post_title' :
                             columnIndex === 4 ? 'description' :
                             columnIndex === 5 ? 'key_points' : 'hashtags';
                 
@@ -214,12 +215,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
 
-            saveButton.addEventListener('click', saveChanges);
+            saveButton.addEventListener('click', () => {
+                saveChanges().catch(error => {
+                    console.error('Error saving changes:', error);
+                    showErrorMessage('Error saving changes: ' + error.message);
+                });
+            });
             
             textarea.addEventListener('keydown', function(e) {
                 if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
-                    saveChanges();
+                    saveChanges().catch(error => {
+                        console.error('Error saving changes:', error);
+                        showErrorMessage('Error saving changes: ' + error.message);
+                    });
                 }
                 if (e.key === 'Escape') {
                     cell.innerHTML = originalContent;
@@ -469,7 +478,6 @@ document.addEventListener('DOMContentLoaded', function() {
             <td>${image.description || ''}</td>
             <td>${image.key_points || ''}</td>
             <td>${image.hashtags || ''}</td>
-            <td>${new Date(image.created_at).toLocaleString()}</td>
             <td>
                 <div class="btn-group" role="group">
                     <button type="button" 
