@@ -137,7 +137,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Handle Generate Content button click with feedback
+    // Handle Generate Content and Feedback buttons
     tableBody.addEventListener('click', async function(e) {
         if (e.target.classList.contains('generate-content-btn')) {
             const row = e.target.closest('tr');
@@ -165,28 +165,36 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
 
                 const result = await response.json();
-                
-                // Show feedback modal for the generated content
                 const image = result.images.find(img => img.id === parseInt(imageId));
                 if (image) {
-                    showFeedbackModal(image);
+                    updateTableContent(image);
+                    // Show the feedback button after generating content
+                    row.querySelector('.feedback-btn').style.display = 'inline-block';
                 }
 
             } catch (error) {
                 alert(error.message);
             }
+        } else if (e.target.classList.contains('feedback-btn')) {
+            const row = e.target.closest('tr');
+            const imageId = row.dataset.imageId;
+            const description = row.querySelector('td:nth-child(4)').textContent;
+            const hashtags = row.querySelector('td:nth-child(5)').textContent;
+            
+            // Show feedback modal
+            document.getElementById('generatedDescription').textContent = description;
+            document.getElementById('generatedHashtags').textContent = hashtags;
+            document.getElementById('feedbackText').value = '';
+            
+            setupFeedbackButtons(imageId);
+            feedbackModal.show();
         }
     });
     
-    function showFeedbackModal(image) {
-        document.getElementById('generatedDescription').textContent = image.description;
-        document.getElementById('generatedHashtags').textContent = image.hashtags;
-        
-        // Set up feedback buttons
+    function setupFeedbackButtons(imageId) {
         const acceptBtn = document.getElementById('acceptContent');
         const refineBtn = document.getElementById('refineContent');
         const restartBtn = document.getElementById('restartContent');
-        const feedbackText = document.getElementById('feedbackText');
         
         // Remove existing event listeners
         acceptBtn.replaceWith(acceptBtn.cloneNode(true));
@@ -196,18 +204,17 @@ document.addEventListener('DOMContentLoaded', function() {
         // Add new event listeners
         document.getElementById('acceptContent').addEventListener('click', () => {
             feedbackModal.hide();
-            updateTableContent(image);
         });
         
         document.getElementById('refineContent').addEventListener('click', async () => {
-            const feedback = feedbackText.value.trim();
+            const feedback = document.getElementById('feedbackText').value.trim();
             if (!feedback) {
                 alert('Please provide feedback for refinement');
                 return;
             }
             
             try {
-                const response = await fetch(`/refine_content/${image.id}`, {
+                const response = await fetch(`/refine_content/${imageId}`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -230,7 +237,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         document.getElementById('restartContent').addEventListener('click', async () => {
             try {
-                const response = await fetch(`/reset_content/${image.id}`, {
+                const response = await fetch(`/reset_content/${imageId}`, {
                     method: 'POST'
                 });
                 
@@ -246,8 +253,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 alert('Error resetting content: ' + error.message);
             }
         });
-        
-        feedbackModal.show();
     }
     
     function updateTableContent(image) {
@@ -285,11 +290,19 @@ document.addEventListener('DOMContentLoaded', function() {
             <td>${image.hashtags || ''}</td>
             <td>${new Date(image.created_at).toLocaleString()}</td>
             <td>
-                <button type="button" 
-                        class="btn btn-sm btn-outline-info generate-content-btn" 
-                        title="Generate content for all images in '${image.category || 'this'}' category">
-                    Generate Content
-                </button>
+                <div class="btn-group">
+                    <button type="button" 
+                            class="btn btn-sm btn-outline-primary generate-content-btn" 
+                            title="Generate initial content">
+                        Generate Content
+                    </button>
+                    <button type="button" 
+                            class="btn btn-sm btn-outline-info feedback-btn" 
+                            style="display: ${image.description ? 'inline-block' : 'none'}"
+                            title="Provide feedback and refine content">
+                        Feedback
+                    </button>
+                </div>
             </td>
         `;
         
