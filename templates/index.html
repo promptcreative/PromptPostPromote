@@ -5,8 +5,11 @@
     <h2 class="mb-4">Upload Artwork</h2>
     <form id="uploadForm" class="mb-3">
         <div class="mb-3">
-            <label for="file" class="form-label">Choose Image File</label>
-            <input type="file" class="form-control" id="file" name="file" accept="image/*" required>
+            <label for="file" class="form-label">Choose Image Files</label>
+            <input type="file" class="form-control" id="file" name="file" accept="image/*" multiple required>
+        </div>
+        <div class="progress mb-3 d-none" id="uploadProgress">
+            <div class="progress-bar" role="progressbar" style="width: 0%"></div>
         </div>
         <button type="submit" class="btn btn-primary">Upload</button>
         <button type="button" id="exportBtn" class="btn btn-secondary">Export to CSV</button>

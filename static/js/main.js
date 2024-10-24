@@ -3,6 +3,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const imageTable = document.getElementById('imageTable');
     const tableBody = document.querySelector('#imageTable tbody');
     const exportBtn = document.getElementById('exportBtn');
+    const progressBar = document.querySelector('#uploadProgress');
+    const progressBarInner = progressBar.querySelector('.progress-bar');
     
     // Load existing images
     loadImages();
@@ -10,23 +12,46 @@ document.addEventListener('DOMContentLoaded', function() {
     // Handle file upload
     uploadForm.addEventListener('submit', async function(e) {
         e.preventDefault();
-        const formData = new FormData(this);
+        const files = document.getElementById('file').files;
+        if (files.length === 0) return;
+
+        progressBar.classList.remove('d-none');
+        progressBarInner.style.width = '0%';
         
         try {
-            const response = await fetch('/upload', {
-                method: 'POST',
-                body: formData
-            });
+            let completed = 0;
+            const totalFiles = files.length;
             
-            if (!response.ok) {
-                throw new Error('Upload failed');
+            for (let file of files) {
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Upload failed for ${file.name}`);
+                }
+                
+                const data = await response.json();
+                addImageToTable(data);
+                
+                completed++;
+                const progress = (completed / totalFiles) * 100;
+                progressBarInner.style.width = `${progress}%`;
+                progressBarInner.setAttribute('aria-valuenow', progress);
             }
             
-            const data = await response.json();
-            addImageToTable(data);
             this.reset();
+            setTimeout(() => {
+                progressBar.classList.add('d-none');
+                progressBarInner.style.width = '0%';
+            }, 1000);
         } catch (error) {
-            alert('Error uploading file: ' + error.message);
+            alert('Error uploading files: ' + error.message);
+            progressBar.classList.add('d-none');
         }
     });
     
