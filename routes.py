@@ -7,27 +7,7 @@ from werkzeug.utils import secure_filename
 from app import app, db
 from models import Image
 from utils import allowed_file, generate_unique_filename, generate_placeholder_content
-
-# Arrays for random content generation
-ADJECTIVES = [
-    "vibrant", "mysterious", "ethereal", "dynamic", "serene",
-    "bold", "delicate", "dramatic", "harmonious", "intricate"
-]
-
-ELEMENTS = [
-    "composition", "palette", "brushwork", "texture", "perspective",
-    "pattern", "contrast", "movement", "balance", "detail"
-]
-
-ART_TERMS = [
-    "composition", "abstract", "figurative", "landscape", "portrait",
-    "stilllife", "mixed_media", "digital_art", "photography", "illustration"
-]
-
-ART_STYLES = [
-    "contemporary", "minimalist", "expressionist", "surrealist", "abstract",
-    "impressionist", "modernist", "traditional", "avantgarde", "postmodern"
-]
+from gpt_service import gpt_service
 
 @app.route('/')
 def index():
@@ -113,27 +93,14 @@ def generate_category_content():
         if not images:
             return jsonify({'error': 'No images found in this category'}), 404
         
-        # Update each image with generated content
+        # Update each image with GPT-generated content
         for image in images:
-            # Generate random content with more variety
-            adj1 = random.choice(ADJECTIVES)
-            adj2 = random.choice(ADJECTIVES)
-            element = random.choice(ELEMENTS)
-            art_term = random.choice(ART_TERMS)
-            art_style = random.choice(ART_STYLES)
-            
-            # Create more interesting description
-            image.description = (
-                f"This {category} artwork shows {adj1} {element} with {adj2} details. "
-                f"The piece demonstrates masterful use of artistic techniques "
-                f"that capture the essence of the subject matter."
+            description, hashtags = gpt_service.generate_artwork_content(
+                category=category,
+                filename=image.original_filename
             )
-            
-            # Create varied hashtags
-            image.hashtags = (
-                f"#art #{category.lower().replace(' ', '')} "
-                f"#{art_term} #{art_style} #{adj1}art"
-            ).replace('_', '')
+            image.description = description
+            image.hashtags = hashtags
         
         db.session.commit()
         
@@ -159,34 +126,16 @@ def refine_content(image_id):
 
     try:
         feedback = data['feedback']
-        # Use feedback to adjust the content generation
-        adj1 = random.choice(ADJECTIVES)
-        adj2 = random.choice(ADJECTIVES)
-        element = random.choice(ELEMENTS)
-        art_term = random.choice(ART_TERMS)
-        art_style = random.choice(ART_STYLES)
-
-        # Generate new content incorporating feedback
-        if "shorter" in feedback.lower():
-            image.description = f"A {adj1} {element} piece in {art_style} style."
-        elif "detailed" in feedback.lower():
-            image.description = (
-                f"This {image.category} artwork exemplifies {adj1} {element} with {adj2} details. "
-                f"The {art_term} demonstrates sophisticated artistic techniques, "
-                f"creating a compelling visual narrative."
-            )
-        else:
-            image.description = (
-                f"A {adj1} {art_style} piece featuring {element} with {adj2} {art_term}. "
-                f"The artwork showcases unique artistic expression."
-            )
-
-        image.hashtags = (
-            f"#art #{image.category.lower().replace(' ', '')} "
-            f"#{art_term} #{art_style} #{adj1}art"
-        ).replace('_', '')
-
+        description, hashtags = gpt_service.generate_artwork_content(
+            category=image.category,
+            filename=image.original_filename,
+            feedback=feedback
+        )
+        
+        image.description = description
+        image.hashtags = hashtags
         db.session.commit()
+        
         return jsonify(image.to_dict()), 200
 
     except Exception as e:
@@ -200,8 +149,11 @@ def reset_content(image_id):
         return jsonify({'error': 'Image not found'}), 404
 
     try:
-        # Reset content to initial state
-        description, hashtags = generate_placeholder_content(image.original_filename)
+        # Reset content using GPT without any feedback
+        description, hashtags = gpt_service.generate_artwork_content(
+            category=image.category,
+            filename=image.original_filename
+        )
         image.description = description
         image.hashtags = hashtags
         db.session.commit()
