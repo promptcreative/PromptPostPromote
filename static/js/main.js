@@ -139,8 +139,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Handle Generate Content and Feedback buttons
     tableBody.addEventListener('click', async function(e) {
-        if (e.target.classList.contains('generate-content-btn')) {
-            const row = e.target.closest('tr');
+        const target = e.target;
+        const row = target.closest('tr');
+        if (!row) return;
+
+        if (target.classList.contains('generate-content-btn')) {
             const categoryCell = row.cells[0];
             const category = categoryCell.textContent.trim();
             const imageId = row.dataset.imageId;
@@ -151,6 +154,9 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             try {
+                target.disabled = true;
+                target.textContent = 'Generating...';
+
                 const response = await fetch('/generate_category_content', {
                     method: 'POST',
                     headers: {
@@ -165,18 +171,26 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
 
                 const result = await response.json();
-                const image = result.images.find(img => img.id === parseInt(imageId));
-                if (image) {
-                    updateTableContent(image);
-                    // Show the feedback button after generating content
-                    row.querySelector('.feedback-btn').style.display = 'inline-block';
+                if (result.success) {
+                    result.images.forEach(img => {
+                        updateTableContent(img);
+                        // Show the feedback button after generating content
+                        const imgRow = document.querySelector(`tr[data-image-id="${img.id}"]`);
+                        if (imgRow) {
+                            const feedbackBtn = imgRow.querySelector('.feedback-btn');
+                            if (feedbackBtn) {
+                                feedbackBtn.style.display = 'inline-block';
+                            }
+                        }
+                    });
                 }
-
             } catch (error) {
-                alert(error.message);
+                alert('Error generating content: ' + error.message);
+            } finally {
+                target.disabled = false;
+                target.textContent = 'Generate Content';
             }
-        } else if (e.target.classList.contains('feedback-btn')) {
-            const row = e.target.closest('tr');
+        } else if (target.classList.contains('feedback-btn')) {
             const imageId = row.dataset.imageId;
             const description = row.querySelector('td:nth-child(4)').textContent;
             const hashtags = row.querySelector('td:nth-child(5)').textContent;
@@ -197,16 +211,29 @@ document.addEventListener('DOMContentLoaded', function() {
         const restartBtn = document.getElementById('restartContent');
         
         // Remove existing event listeners
-        acceptBtn.replaceWith(acceptBtn.cloneNode(true));
-        refineBtn.replaceWith(refineBtn.cloneNode(true));
-        restartBtn.replaceWith(restartBtn.cloneNode(true));
+        const newAcceptBtn = acceptBtn.cloneNode(true);
+        const newRefineBtn = refineBtn.cloneNode(true);
+        const newRestartBtn = restartBtn.cloneNode(true);
+        
+        acceptBtn.parentNode.replaceChild(newAcceptBtn, acceptBtn);
+        refineBtn.parentNode.replaceChild(newRefineBtn, refineBtn);
+        restartBtn.parentNode.replaceChild(newRestartBtn, restartBtn);
         
         // Add new event listeners
-        document.getElementById('acceptContent').addEventListener('click', () => {
+        newAcceptBtn.addEventListener('click', () => {
             feedbackModal.hide();
+            // Update UI to show content is accepted
+            const row = document.querySelector(`tr[data-image-id="${imageId}"]`);
+            if (row) {
+                const feedbackBtn = row.querySelector('.feedback-btn');
+                if (feedbackBtn) {
+                    feedbackBtn.classList.remove('btn-outline-info');
+                    feedbackBtn.classList.add('btn-outline-success');
+                }
+            }
         });
         
-        document.getElementById('refineContent').addEventListener('click', async () => {
+        newRefineBtn.addEventListener('click', async () => {
             const feedback = document.getElementById('feedbackText').value.trim();
             if (!feedback) {
                 alert('Please provide feedback for refinement');
@@ -214,6 +241,9 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             try {
+                newRefineBtn.disabled = true;
+                newRefineBtn.textContent = 'Refining...';
+                
                 const response = await fetch(`/refine_content/${imageId}`, {
                     method: 'POST',
                     headers: {
@@ -232,11 +262,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 
             } catch (error) {
                 alert('Error refining content: ' + error.message);
+            } finally {
+                newRefineBtn.disabled = false;
+                newRefineBtn.textContent = 'Refine';
             }
         });
         
-        document.getElementById('restartContent').addEventListener('click', async () => {
+        newRestartBtn.addEventListener('click', async () => {
             try {
+                newRestartBtn.disabled = true;
+                newRestartBtn.textContent = 'Restarting...';
+                
                 const response = await fetch(`/reset_content/${imageId}`, {
                     method: 'POST'
                 });
@@ -249,8 +285,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 updateTableContent(resetImage);
                 feedbackModal.hide();
                 
+                // Reset feedback button style
+                const row = document.querySelector(`tr[data-image-id="${imageId}"]`);
+                if (row) {
+                    const feedbackBtn = row.querySelector('.feedback-btn');
+                    if (feedbackBtn) {
+                        feedbackBtn.classList.remove('btn-outline-success');
+                        feedbackBtn.classList.add('btn-outline-info');
+                    }
+                }
             } catch (error) {
                 alert('Error resetting content: ' + error.message);
+            } finally {
+                newRestartBtn.disabled = false;
+                newRestartBtn.textContent = 'Delete & Restart';
             }
         });
     }
@@ -258,19 +306,34 @@ document.addEventListener('DOMContentLoaded', function() {
     function updateTableContent(image) {
         const row = document.querySelector(`tr[data-image-id="${image.id}"]`);
         if (row) {
-            row.querySelector('td:nth-child(4)').textContent = image.description;
-            row.querySelector('td:nth-child(5)').textContent = image.hashtags;
+            // Update description and hashtags
+            const descriptionCell = row.querySelector('td:nth-child(4)');
+            const hashtagsCell = row.querySelector('td:nth-child(5)');
+            
+            if (descriptionCell && hashtagsCell) {
+                descriptionCell.textContent = image.description || '';
+                hashtagsCell.textContent = image.hashtags || '';
+            }
+            
+            // Show feedback button if content exists
+            const feedbackBtn = row.querySelector('.feedback-btn');
+            if (feedbackBtn && (image.description || image.hashtags)) {
+                feedbackBtn.style.display = 'inline-block';
+            }
         }
     }
     
     async function loadImages() {
         try {
             const response = await fetch('/images');
+            if (!response.ok) {
+                throw new Error('Failed to load images');
+            }
             const images = await response.json();
-            
             images.forEach(image => addImageToTable(image));
         } catch (error) {
             console.error('Error loading images:', error);
+            alert('Failed to load images. Please refresh the page.');
         }
     }
     
