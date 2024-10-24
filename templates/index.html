@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="upload-section">
+    <h2 class="mb-4">Upload Artwork</h2>
+    <form id="uploadForm" class="mb-3">
+        <div class="mb-3">
+            <label for="file" class="form-label">Choose Image File</label>
+            <input type="file" class="form-control" id="file" name="file" accept="image/*" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Upload</button>
+        <button type="button" id="exportBtn" class="btn btn-secondary">Export to CSV</button>
+    </form>
+</div>
+
+<div class="table-responsive">
+    <table id="imageTable" class="table table-dark table-striped">
+        <thead>
+            <tr>
+                <th>Preview</th>
+                <th>Original Filename</th>
+                <th>Description</th>
+                <th>Hashtags</th>
+                <th>Created At</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+</div>
+{% endblock %}

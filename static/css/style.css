@@ -1,0 +1,16 @@
+/* Additional custom styles */
+.upload-section {
+    background-color: var(--bs-dark);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.table-responsive {
+    margin-top: 20px;
+}
+
+.img-thumbnail {
+    background-color: var(--bs-dark);
+    border-color: var(--bs-secondary);
+}
