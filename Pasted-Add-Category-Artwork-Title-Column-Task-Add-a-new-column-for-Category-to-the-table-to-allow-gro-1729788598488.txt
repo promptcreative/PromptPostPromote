@@ -1,0 +1,65 @@
+Add Category (Artwork Title) Column:
+Task: Add a new column for "Category" to the table to allow grouping of images under the same artwork title.
+Instructions:
+Update the PostgreSQL database to include a new category field in the Image model:
+python
+Copy code
+class Image(db.Model):
+    # Existing fields...
+    category = db.Column(db.String(255), nullable=True)  # New field for artwork title
+Modify the /upload and /update_metadata routes to handle this new category field, allowing users to assign a category to each image.
+In the HTML table, add an input field in the new "Category" column so that users can enter or edit the artwork title for each image.
+Ensure that any changes to the category are saved to the database.
+Frontend Changes:
+
+In the main.js script, add the necessary logic to handle category updates (similar to how you handle descriptions and hashtags).
+Sample HTML Table Structure:
+
+html
+Copy code
+<table>
+    <thead>
+        <tr>
+            <th>Category (Artwork Title)</th>  <!-- New column -->
+            <th>Preview</th>
+            <th>Original Filename</th>
+            <th>Description</th>
+            <th>Hashtags</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody id="imageTable">
+        <!-- Dynamic rows here -->
+        <tr>
+            <td><input type="text" value="Artwork Title" data-id="image_id" class="category-input"></td>
+            <td><img src="static/uploads/sample.jpg" width="100"></td>
+            <td>Original Filename</td>
+            <td>Description</td>
+            <td>Hashtags</td>
+            <td>
+                <button class="generate-gpt-btn" data-id="image_id">Generate Content</button>
+            </td>
+        </tr>
+    </tbody>
+</table>
+Ensure that any updates made to the category field are handled with the following JavaScript:
+main.js (handling category input):
+
+javascript
+Copy code
+document.querySelectorAll('.category-input').forEach(input => {
+    input.addEventListener('change', function() {
+        const id = this.dataset.id;
+        const value = this.value;
+
+        fetch(`/update_metadata/${id}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ category: value })
+        });
+    });
+});
+Backend Changes:
+
+Ensure the /update_metadata route accepts the category field and updates it in the database.
+Stop here after completing this step. Verify that the category column works, and you can update the artwork title for each image.

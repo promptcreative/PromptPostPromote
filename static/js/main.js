@@ -68,8 +68,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const row = cell.parentElement;
         const columnIndex = Array.from(row.cells).indexOf(cell);
         
-        // Only make description (index 3) and hashtags (index 4) editable
-        if (columnIndex !== 2 && columnIndex !== 3) return;
+        // Make category (index 2), description (index 3) and hashtags (index 4) editable
+        if (columnIndex !== 2 && columnIndex !== 3 && columnIndex !== 4) return;
         
         const currentText = cell.textContent.trim();
         const input = document.createElement('textarea');
@@ -77,6 +77,11 @@ document.addEventListener('DOMContentLoaded', function() {
         input.className = 'form-control';
         input.style.width = '100%';
         input.style.minHeight = '60px';
+        
+        // For category field, use a regular input instead of textarea
+        if (columnIndex === 2) {
+            input.style.minHeight = 'auto';
+        }
         
         // Replace cell content with input
         const originalContent = cell.innerHTML;
@@ -92,7 +97,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             const imageId = row.dataset.imageId;
-            const field = columnIndex === 2 ? 'description' : 'hashtags';
+            const field = columnIndex === 2 ? 'category' : 
+                         columnIndex === 3 ? 'description' : 'hashtags';
 
             try {
                 const response = await fetch(`/update/${imageId}`, {
@@ -152,6 +158,7 @@ document.addEventListener('DOMContentLoaded', function() {
                      style="max-width: 100px;">
             </td>
             <td>${image.original_filename}</td>
+            <td>${image.category || ''}</td>
             <td>${image.description}</td>
             <td>${image.hashtags}</td>
             <td>${new Date(image.created_at).toLocaleString()}</td>

@@ -1,6 +1,6 @@
 import os
 import csv
-from io import StringIO
+from io import StringIO, BytesIO
 from flask import render_template, request, jsonify, send_file
 from werkzeug.utils import secure_filename
 from app import app, db
@@ -36,7 +36,8 @@ def upload_file():
             original_filename=original_filename,
             stored_filename=stored_filename,
             description=description,
-            hashtags=hashtags
+            hashtags=hashtags,
+            category=""  # Initialize empty category
         )
         db.session.add(image)
         db.session.commit()
@@ -59,7 +60,7 @@ def update_image(image_id):
     field = data['field']
     value = data['value']
     
-    if field not in ['description', 'hashtags']:
+    if field not in ['description', 'hashtags', 'category']:  # Added category to allowed fields
         return jsonify({'error': 'Invalid field'}), 400
     
     image = Image.query.get(image_id)
@@ -78,24 +79,23 @@ def update_image(image_id):
 def export_csv():
     images = Image.query.all()
     
-    si = StringIO()
-    cw = csv.writer(si)
-    cw.writerow(['Original Filename', 'Stored Filename', 'Description', 'Hashtags', 'Created At'])
+    output = BytesIO()  # Changed to BytesIO for binary mode
+    writer = csv.writer(output)
+    writer.writerow(['Original Filename', 'Category', 'Stored Filename', 'Description', 'Hashtags', 'Created At'])
     
     for image in images:
-        cw.writerow([
+        writer.writerow([
             image.original_filename,
+            image.category,
             image.stored_filename,
             image.description,
             image.hashtags,
             image.created_at
         ])
     
-    output = si.getvalue()
-    si.close()
-    
+    output.seek(0)
     return send_file(
-        StringIO(output),
+        output,
         mimetype='text/csv',
         as_attachment=True,
         download_name='artwork_data.csv'
