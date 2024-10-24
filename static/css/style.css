@@ -14,3 +14,26 @@
     background-color: var(--bs-dark);
     border-color: var(--bs-secondary);
 }
+
+/* Editable cell styles */
+#imageTable td[contenteditable="true"] {
+    padding: 0;
+}
+
+#imageTable td textarea {
+    background-color: var(--bs-dark);
+    color: var(--bs-light);
+    border: 1px solid var(--bs-primary);
+    resize: vertical;
+}
+
+#imageTable td:nth-child(3),
+#imageTable td:nth-child(4) {
+    cursor: pointer;
+}
+
+#imageTable td:nth-child(3):hover,
+#imageTable td:nth-child(4):hover {
+    background-color: var(--bs-dark);
+    opacity: 0.8;
+}

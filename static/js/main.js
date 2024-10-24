@@ -59,6 +59,76 @@ document.addEventListener('DOMContentLoaded', function() {
     exportBtn.addEventListener('click', function() {
         window.location.href = '/export';
     });
+
+    // Handle cell editing
+    tableBody.addEventListener('dblclick', function(e) {
+        const cell = e.target.closest('td');
+        if (!cell) return;
+        
+        const row = cell.parentElement;
+        const columnIndex = Array.from(row.cells).indexOf(cell);
+        
+        // Only make description (index 3) and hashtags (index 4) editable
+        if (columnIndex !== 2 && columnIndex !== 3) return;
+        
+        const currentText = cell.textContent.trim();
+        const input = document.createElement('textarea');
+        input.value = currentText;
+        input.className = 'form-control';
+        input.style.width = '100%';
+        input.style.minHeight = '60px';
+        
+        // Replace cell content with input
+        const originalContent = cell.innerHTML;
+        cell.innerHTML = '';
+        cell.appendChild(input);
+        input.focus();
+
+        async function saveChanges() {
+            const newValue = input.value.trim();
+            if (newValue === currentText) {
+                cell.innerHTML = originalContent;
+                return;
+            }
+
+            const imageId = row.dataset.imageId;
+            const field = columnIndex === 2 ? 'description' : 'hashtags';
+
+            try {
+                const response = await fetch(`/update/${imageId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        field: field,
+                        value: newValue
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to update');
+                }
+
+                cell.textContent = newValue;
+            } catch (error) {
+                alert('Error updating: ' + error.message);
+                cell.innerHTML = originalContent;
+            }
+        }
+
+        // Save on blur or Enter key
+        input.addEventListener('blur', saveChanges);
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                input.blur();
+            }
+            if (e.key === 'Escape') {
+                cell.innerHTML = originalContent;
+            }
+        });
+    });
     
     async function loadImages() {
         try {
@@ -73,6 +143,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function addImageToTable(image) {
         const row = document.createElement('tr');
+        row.dataset.imageId = image.id;
         row.innerHTML = `
             <td>
                 <img src="/static/uploads/${image.stored_filename}" 

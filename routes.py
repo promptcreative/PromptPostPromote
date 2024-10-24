@@ -50,6 +50,30 @@ def get_images():
     images = Image.query.order_by(Image.created_at.desc()).all()
     return jsonify([img.to_dict() for img in images])
 
+@app.route('/update/<int:image_id>', methods=['POST'])
+def update_image(image_id):
+    data = request.get_json()
+    if not data or 'field' not in data or 'value' not in data:
+        return jsonify({'error': 'Invalid request data'}), 400
+    
+    field = data['field']
+    value = data['value']
+    
+    if field not in ['description', 'hashtags']:
+        return jsonify({'error': 'Invalid field'}), 400
+    
+    image = Image.query.get(image_id)
+    if not image:
+        return jsonify({'error': 'Image not found'}), 404
+    
+    try:
+        setattr(image, field, value)
+        db.session.commit()
+        return jsonify({'success': True}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/export', methods=['GET'])
 def export_csv():
     images = Image.query.all()
