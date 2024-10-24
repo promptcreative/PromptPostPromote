@@ -147,6 +147,70 @@ def generate_category_content():
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
+@app.route('/refine_content/<int:image_id>', methods=['POST'])
+def refine_content(image_id):
+    data = request.get_json()
+    if not data or 'feedback' not in data:
+        return jsonify({'error': 'Feedback is required'}), 400
+
+    image = Image.query.get(image_id)
+    if not image:
+        return jsonify({'error': 'Image not found'}), 404
+
+    try:
+        feedback = data['feedback']
+        # Use feedback to adjust the content generation
+        adj1 = random.choice(ADJECTIVES)
+        adj2 = random.choice(ADJECTIVES)
+        element = random.choice(ELEMENTS)
+        art_term = random.choice(ART_TERMS)
+        art_style = random.choice(ART_STYLES)
+
+        # Generate new content incorporating feedback
+        if "shorter" in feedback.lower():
+            image.description = f"A {adj1} {element} piece in {art_style} style."
+        elif "detailed" in feedback.lower():
+            image.description = (
+                f"This {image.category} artwork exemplifies {adj1} {element} with {adj2} details. "
+                f"The {art_term} demonstrates sophisticated artistic techniques, "
+                f"creating a compelling visual narrative."
+            )
+        else:
+            image.description = (
+                f"A {adj1} {art_style} piece featuring {element} with {adj2} {art_term}. "
+                f"The artwork showcases unique artistic expression."
+            )
+
+        image.hashtags = (
+            f"#art #{image.category.lower().replace(' ', '')} "
+            f"#{art_term} #{art_style} #{adj1}art"
+        ).replace('_', '')
+
+        db.session.commit()
+        return jsonify(image.to_dict()), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/reset_content/<int:image_id>', methods=['POST'])
+def reset_content(image_id):
+    image = Image.query.get(image_id)
+    if not image:
+        return jsonify({'error': 'Image not found'}), 404
+
+    try:
+        # Reset content to initial state
+        description, hashtags = generate_placeholder_content(image.original_filename)
+        image.description = description
+        image.hashtags = hashtags
+        db.session.commit()
+        return jsonify(image.to_dict()), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/export', methods=['GET'])
 def export_csv():
     images = Image.query.all()

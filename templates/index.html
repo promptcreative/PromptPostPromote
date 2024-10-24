@@ -33,4 +33,35 @@
         </tbody>
     </table>
 </div>
+
+<!-- Feedback Modal -->
+<div class="modal fade" id="feedbackModal" tabindex="-1" aria-labelledby="feedbackModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark">
+            <div class="modal-header">
+                <h5 class="modal-title" id="feedbackModalLabel">Content Feedback</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="generatedDescription" class="form-label">Generated Description:</label>
+                    <p id="generatedDescription" class="border p-2 rounded"></p>
+                </div>
+                <div class="mb-3">
+                    <label for="generatedHashtags" class="form-label">Generated Hashtags:</label>
+                    <p id="generatedHashtags" class="border p-2 rounded"></p>
+                </div>
+                <div class="mb-3">
+                    <label for="feedbackText" class="form-label">Feedback:</label>
+                    <textarea id="feedbackText" class="form-control" rows="3" placeholder="Enter your feedback to improve the generated content..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success" id="acceptContent">Accept</button>
+                <button type="button" class="btn btn-primary" id="refineContent">Refine</button>
+                <button type="button" class="btn btn-danger" id="restartContent">Delete & Restart</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

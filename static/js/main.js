@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const exportBtn = document.getElementById('exportBtn');
     const progressBar = document.querySelector('#uploadProgress');
     const progressBarInner = progressBar.querySelector('.progress-bar');
+    const feedbackModal = new bootstrap.Modal(document.getElementById('feedbackModal'));
     
     // Load existing images
     loadImages();
@@ -136,12 +137,13 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Handle Generate Content button click
+    // Handle Generate Content button click with feedback
     tableBody.addEventListener('click', async function(e) {
         if (e.target.classList.contains('generate-content-btn')) {
             const row = e.target.closest('tr');
             const categoryCell = row.cells[0];
             const category = categoryCell.textContent.trim();
+            const imageId = row.dataset.imageId;
             
             if (!category) {
                 alert('Please set a category first before generating content');
@@ -164,20 +166,97 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 const result = await response.json();
                 
-                // Update the table with new content
-                result.images.forEach(updatedImage => {
-                    const row = document.querySelector(`tr[data-image-id="${updatedImage.id}"]`);
-                    if (row) {
-                        row.querySelector('td:nth-child(4)').textContent = updatedImage.description;
-                        row.querySelector('td:nth-child(5)').textContent = updatedImage.hashtags;
-                    }
-                });
+                // Show feedback modal for the generated content
+                const image = result.images.find(img => img.id === parseInt(imageId));
+                if (image) {
+                    showFeedbackModal(image);
+                }
 
             } catch (error) {
                 alert(error.message);
             }
         }
     });
+    
+    function showFeedbackModal(image) {
+        document.getElementById('generatedDescription').textContent = image.description;
+        document.getElementById('generatedHashtags').textContent = image.hashtags;
+        
+        // Set up feedback buttons
+        const acceptBtn = document.getElementById('acceptContent');
+        const refineBtn = document.getElementById('refineContent');
+        const restartBtn = document.getElementById('restartContent');
+        const feedbackText = document.getElementById('feedbackText');
+        
+        // Remove existing event listeners
+        acceptBtn.replaceWith(acceptBtn.cloneNode(true));
+        refineBtn.replaceWith(refineBtn.cloneNode(true));
+        restartBtn.replaceWith(restartBtn.cloneNode(true));
+        
+        // Add new event listeners
+        document.getElementById('acceptContent').addEventListener('click', () => {
+            feedbackModal.hide();
+            updateTableContent(image);
+        });
+        
+        document.getElementById('refineContent').addEventListener('click', async () => {
+            const feedback = feedbackText.value.trim();
+            if (!feedback) {
+                alert('Please provide feedback for refinement');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/refine_content/${image.id}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ feedback: feedback })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to refine content');
+                }
+                
+                const refinedImage = await response.json();
+                updateTableContent(refinedImage);
+                feedbackModal.hide();
+                
+            } catch (error) {
+                alert('Error refining content: ' + error.message);
+            }
+        });
+        
+        document.getElementById('restartContent').addEventListener('click', async () => {
+            try {
+                const response = await fetch(`/reset_content/${image.id}`, {
+                    method: 'POST'
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to reset content');
+                }
+                
+                const resetImage = await response.json();
+                updateTableContent(resetImage);
+                feedbackModal.hide();
+                
+            } catch (error) {
+                alert('Error resetting content: ' + error.message);
+            }
+        });
+        
+        feedbackModal.show();
+    }
+    
+    function updateTableContent(image) {
+        const row = document.querySelector(`tr[data-image-id="${image.id}"]`);
+        if (row) {
+            row.querySelector('td:nth-child(4)').textContent = image.description;
+            row.querySelector('td:nth-child(5)').textContent = image.hashtags;
+        }
+    }
     
     async function loadImages() {
         try {
