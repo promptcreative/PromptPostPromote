@@ -1,0 +1,112 @@
+Task: Move the "Refine Content" functionality to its own button, placed next to the "Generate Content" button. Ensure that the "Generate Content" button is used only for the initial content generation via OpenAI GPT, and the "Refine Content" button is used for refining the content based on feedback.
+
+1. Keep "Generate Content" Button for Initial Generation:
+The "Generate Content" button should only handle the initial request to OpenAI for generating descriptions, hashtags, and captions for an image or category.
+Do not change its functionality; keep it focused on generating content for the first time.
+Existing Code Example (for Generate Content):
+
+javascript
+Copy code
+document.querySelectorAll('.generate-gpt-btn').forEach(button => {
+    button.addEventListener('click', function() {
+        const imageId = this.dataset.imageId;
+
+        // Make a request to generate initial content for the image or category
+        fetch(`/generate_gpt_content/${imageId}`, { method: 'POST' })
+        .then(response => response.json())
+        .then(data => {
+            // Populate the generated content in the table
+            document.querySelector(`#description-${imageId}`).innerText = data.description;
+            document.querySelector(`#hashtags-${imageId}`).innerText = data.hashtags;
+            document.querySelector(`#caption-${imageId}`).innerText = data.caption;
+
+            // After generating content, show the Refine Content button
+            document.querySelector(`#refine-content-btn-${imageId}`).style.display = 'inline';
+        })
+        .catch(error => console.error('Error generating content:', error));
+    });
+});
+2. Create a New "Refine Content" Button:
+Add a new button called "Refine Content" next to the "Generate Content" button.
+This button should handle the feedback provided by the user and allow the generated content to be refined using OpenAI GPT.
+The user can provide feedback via a textarea next to the refine button.
+Frontend Changes:
+Add the "Refine Content" button and a feedback textarea. This button should be hidden initially and only shown after content is generated.
+Example:
+HTML Example:
+
+html
+Copy code
+<button id="generate-gpt-btn" data-image-id="image_id">Generate Content</button>
+<button id="refine-content-btn-image_id" style="display:none;">Refine Content</button>
+<textarea id="refine-feedback-image_id" placeholder="Enter feedback for refinement"></textarea>
+JavaScript (main.js):
+
+Handle refinement via the Refine Content button, using the feedback entered by the user.
+New JavaScript for Refinement:
+
+javascript
+Copy code
+// Handle refining content with user feedback
+document.querySelectorAll('.refine-content-btn').forEach(button => {
+    button.addEventListener('click', function() {
+        const imageId = this.dataset.imageId;
+        const feedback = document.querySelector(`#refine-feedback-${imageId}`).value;
+
+        // Send the feedback to the backend for refinement
+        fetch(`/refine_gpt_content/${imageId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ feedback: feedback })
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Update the refined content in the table
+            document.querySelector(`#description-${imageId}`).innerText = data.description;
+            document.querySelector(`#hashtags-${imageId}`).innerText = data.hashtags;
+            document.querySelector(`#caption-${imageId}`).innerText = data.caption;
+        })
+        .catch(error => console.error('Error refining content:', error));
+    });
+});
+3. Backend: Refining Content with Feedback:
+Create a new backend route /refine_gpt_content/<image_id> that accepts user feedback and refines the generated content.
+The "Generate Content" route stays the same; only this new route handles content refinement based on feedback.
+Backend Example:
+
+python
+Copy code
+@app.route('/refine_gpt_content/<int:image_id>', methods=['POST'])
+def refine_gpt_content(image_id):
+    feedback = request.json.get('feedback')
+
+    # Fetch the image and its current content from the database
+    image = Image.query.get(image_id)
+
+    if not image:
+        return jsonify({'error': 'Image not found'}), 404
+
+    # Create a prompt based on feedback and current content
+    prompt = f"Refine the following content based on this feedback: {feedback}.\n"
+    prompt += f"Description: {image.description}\nHashtags: {image.hashtags}\nCaption: {image.caption}\n"
+
+    # Call GPT for refinement
+    response = openai.Completion.create(
+        engine="text-davinci-003",
+        prompt=prompt,
+        max_tokens=200
+    )
+
+    # Get the refined content from the response
+    refined_content = response.choices[0].text.strip().split('\n')
+    image.description = refined_content[0]
+    image.hashtags = refined_content[1]
+    image.caption = refined_content[2]
+    db.session.commit()
+
+    # Return the refined content to the frontend
+    return jsonify({
+        'description': image.description,
+        'hashtags': image.hashtags,
+        'caption': image.caption
+    })
