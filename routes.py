@@ -1,13 +1,12 @@
 import os
-import csv
-from io import StringIO, BytesIO
-import random
 from flask import render_template, request, jsonify, send_file
 from werkzeug.utils import secure_filename
 from app import app, db
 from models import Image
 from utils import allowed_file, generate_unique_filename, generate_placeholder_content
 from gpt_service import gpt_service
+from io import StringIO, BytesIO
+import csv
 
 @app.route('/')
 def index():
@@ -27,7 +26,7 @@ def upload_file():
         stored_filename = generate_unique_filename(original_filename)
         
         # Save file
-        file_path = os.path.join(app.static_folder, 'uploads', stored_filename)
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], stored_filename)
         file.save(file_path)
         
         # Generate placeholder content
@@ -194,6 +193,28 @@ def reset_content(image_id):
             'error': f'Failed to reset content: {error_message}',
             'code': 'GENERATION_ERROR'
         }), 500
+
+@app.route('/remove_image/<int:image_id>', methods=['POST'])
+def remove_image(image_id):
+    image = Image.query.get(image_id)
+    if not image:
+        return jsonify({'error': 'Image not found'}), 404
+        
+    try:
+        # Delete the file from uploads folder
+        file_path = os.path.join(app.static_folder, 'uploads', image.stored_filename)
+        if os.path.exists(file_path):
+            os.remove(file_path)
+            
+        # Delete database record
+        db.session.delete(image)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Image removed successfully'}), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Failed to remove image: {str(e)}'}), 500
 
 @app.route('/export', methods=['GET'])
 def export_csv():

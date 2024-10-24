@@ -7,6 +7,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const progressBarInner = progressBar.querySelector('.progress-bar');
     const feedbackModal = new bootstrap.Modal(document.getElementById('feedbackModal'));
     
+    // Initialize tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+    
     // Load existing images
     loadImages();
     
@@ -62,7 +68,7 @@ document.addEventListener('DOMContentLoaded', function() {
         window.location.href = '/export';
     });
 
-    // Handle cell editing
+    // Handle cell editing with Save button
     tableBody.addEventListener('dblclick', function(e) {
         const cell = e.target.closest('td');
         if (!cell) return;
@@ -74,6 +80,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (columnIndex !== 0 && columnIndex !== 3 && columnIndex !== 4) return;
         
         const currentText = cell.textContent.trim();
+        const inputGroup = document.createElement('div');
+        inputGroup.className = 'input-group';
+        
         const input = document.createElement('textarea');
         input.value = currentText;
         input.className = 'form-control';
@@ -85,14 +94,27 @@ document.addEventListener('DOMContentLoaded', function() {
             input.style.minHeight = 'auto';
         }
         
-        // Replace cell content with input
+        const saveButton = document.createElement('button');
+        saveButton.className = 'btn btn-success';
+        saveButton.innerHTML = '<i class="bi bi-check"></i> Save';
+        saveButton.style.height = 'fit-content';
+        
+        inputGroup.appendChild(input);
+        inputGroup.appendChild(saveButton);
+        
+        // Replace cell content with input group
         const originalContent = cell.innerHTML;
         cell.innerHTML = '';
-        cell.appendChild(input);
+        cell.appendChild(inputGroup);
         input.focus();
 
         async function saveChanges() {
             const newValue = input.value.trim();
+            if (!newValue) {
+                alert('Field cannot be empty');
+                return;
+            }
+            
             if (newValue === currentText) {
                 cell.innerHTML = originalContent;
                 return;
@@ -101,6 +123,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const imageId = row.dataset.imageId;
             const field = columnIndex === 0 ? 'category' : 
                          columnIndex === 3 ? 'description' : 'hashtags';
+            
+            saveButton.disabled = true;
+            saveButton.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Saving...';
 
             try {
                 const response = await fetch(`/update/${imageId}`, {
@@ -119,18 +144,34 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
 
                 cell.textContent = newValue;
+                
+                // Show success message
+                const toast = new bootstrap.Toast(document.createElement('div'));
+                toast.element.className = 'toast position-fixed bottom-0 end-0 m-3';
+                toast.element.innerHTML = `
+                    <div class="toast-header bg-success text-white">
+                        <strong class="me-auto">Success</strong>
+                        <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+                    </div>
+                    <div class="toast-body">
+                        Content updated successfully
+                    </div>
+                `;
+                document.body.appendChild(toast.element);
+                toast.show();
+                setTimeout(() => toast.element.remove(), 3000);
+                
             } catch (error) {
                 alert('Error updating: ' + error.message);
                 cell.innerHTML = originalContent;
             }
         }
 
-        // Save on blur or Enter key
-        input.addEventListener('blur', saveChanges);
+        saveButton.addEventListener('click', saveChanges);
         input.addEventListener('keydown', function(e) {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
-                input.blur();
+                saveChanges();
             }
             if (e.key === 'Escape') {
                 cell.innerHTML = originalContent;
@@ -138,7 +179,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Handle Generate Content and Feedback buttons
+    // Handle Generate Content, Feedback, and Remove buttons
     tableBody.addEventListener('click', async function(e) {
         const target = e.target;
         const row = target.closest('tr');
@@ -156,7 +197,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             try {
                 target.disabled = true;
-                target.textContent = 'Generating...';
+                target.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Generating...';
 
                 const response = await fetch('/generate_category_content', {
                     method: 'POST',
@@ -189,7 +230,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 alert('Error generating content: ' + error.message);
             } finally {
                 target.disabled = false;
-                target.textContent = 'Generate Content';
+                target.innerHTML = '<i class="bi bi-lightbulb"></i> Generate Content';
             }
         } else if (target.classList.contains('feedback-btn')) {
             const imageId = row.dataset.imageId;
@@ -203,6 +244,45 @@ document.addEventListener('DOMContentLoaded', function() {
             
             setupFeedbackButtons(imageId);
             feedbackModal.show();
+        } else if (target.classList.contains('remove-entry-btn')) {
+            if (confirm('Are you sure you want to remove this entry? This action cannot be undone.')) {
+                const imageId = row.dataset.imageId;
+                target.disabled = true;
+                target.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Removing...';
+                
+                try {
+                    const response = await fetch(`/remove_image/${imageId}`, {
+                        method: 'POST'
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Failed to remove image');
+                    }
+                    
+                    row.remove();
+                    
+                    // Show success message
+                    const toast = new bootstrap.Toast(document.createElement('div'));
+                    toast.element.className = 'toast position-fixed bottom-0 end-0 m-3';
+                    toast.element.innerHTML = `
+                        <div class="toast-header bg-success text-white">
+                            <strong class="me-auto">Success</strong>
+                            <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+                        </div>
+                        <div class="toast-body">
+                            Entry removed successfully
+                        </div>
+                    `;
+                    document.body.appendChild(toast.element);
+                    toast.show();
+                    setTimeout(() => toast.element.remove(), 3000);
+                    
+                } catch (error) {
+                    alert('Error removing entry: ' + error.message);
+                    target.disabled = false;
+                    target.innerHTML = '<i class="bi bi-trash"></i> Remove';
+                }
+            }
         }
     });
     
@@ -243,7 +323,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             try {
                 newRefineBtn.disabled = true;
-                newRefineBtn.textContent = 'Refining...';
+                newRefineBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Refining...';
                 
                 const response = await fetch(`/refine_content/${imageId}`, {
                     method: 'POST',
@@ -262,18 +342,34 @@ document.addEventListener('DOMContentLoaded', function() {
                 updateTableContent(refinedImage);
                 feedbackModal.hide();
                 
+                // Show success message
+                const toast = new bootstrap.Toast(document.createElement('div'));
+                toast.element.className = 'toast position-fixed bottom-0 end-0 m-3';
+                toast.element.innerHTML = `
+                    <div class="toast-header bg-success text-white">
+                        <strong class="me-auto">Success</strong>
+                        <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+                    </div>
+                    <div class="toast-body">
+                        Content refined successfully
+                    </div>
+                `;
+                document.body.appendChild(toast.element);
+                toast.show();
+                setTimeout(() => toast.element.remove(), 3000);
+                
             } catch (error) {
                 alert('Error refining content: ' + error.message);
             } finally {
                 newRefineBtn.disabled = false;
-                newRefineBtn.textContent = 'Refine';
+                newRefineBtn.innerHTML = '<i class="bi bi-pencil"></i> Refine';
             }
         });
         
         newRestartBtn.addEventListener('click', async () => {
             try {
                 newRestartBtn.disabled = true;
-                newRestartBtn.textContent = 'Restarting...';
+                newRestartBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Resetting...';
                 
                 const response = await fetch(`/reset_content/${imageId}`, {
                     method: 'POST'
@@ -317,12 +413,28 @@ document.addEventListener('DOMContentLoaded', function() {
                             feedbackBtn.classList.add('btn-outline-info');
                         }
                     }
+                    
+                    // Show success message
+                    const toast = new bootstrap.Toast(document.createElement('div'));
+                    toast.element.className = 'toast position-fixed bottom-0 end-0 m-3';
+                    toast.element.innerHTML = `
+                        <div class="toast-header bg-success text-white">
+                            <strong class="me-auto">Success</strong>
+                            <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+                        </div>
+                        <div class="toast-body">
+                            Content reset successfully
+                        </div>
+                    `;
+                    document.body.appendChild(toast.element);
+                    toast.show();
+                    setTimeout(() => toast.element.remove(), 3000);
                 }
             } catch (error) {
                 alert(error.message);
             } finally {
                 newRestartBtn.disabled = false;
-                newRestartBtn.textContent = 'Delete & Restart';
+                newRestartBtn.innerHTML = '<i class="bi bi-arrow-counterclockwise"></i> Delete & Restart';
             }
         });
     }
@@ -378,22 +490,34 @@ document.addEventListener('DOMContentLoaded', function() {
             <td>${image.hashtags || ''}</td>
             <td>${new Date(image.created_at).toLocaleString()}</td>
             <td>
-                <div class="btn-group">
+                <div class="btn-group" role="group">
                     <button type="button" 
                             class="btn btn-sm btn-outline-primary generate-content-btn" 
+                            data-bs-toggle="tooltip"
                             title="Generate initial content">
-                        Generate Content
+                        <i class="bi bi-lightbulb"></i> Generate
                     </button>
                     <button type="button" 
                             class="btn btn-sm btn-outline-info feedback-btn" 
                             style="display: ${image.description ? 'inline-block' : 'none'}"
+                            data-bs-toggle="tooltip"
                             title="Provide feedback and refine content">
-                        Feedback
+                        <i class="bi bi-chat-dots"></i> Feedback
+                    </button>
+                    <button type="button"
+                            class="btn btn-sm btn-outline-danger remove-entry-btn"
+                            data-bs-toggle="tooltip"
+                            title="Remove this entry">
+                        <i class="bi bi-trash"></i> Remove
                     </button>
                 </div>
             </td>
         `;
         
         tableBody.insertBefore(row, tableBody.firstChild);
+        
+        // Reinitialize tooltips for the new row
+        const tooltips = row.querySelectorAll('[data-bs-toggle="tooltip"]');
+        tooltips.forEach(el => new bootstrap.Tooltip(el));
     }
 });
