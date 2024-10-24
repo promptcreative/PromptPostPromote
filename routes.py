@@ -60,7 +60,7 @@ def update_image(image_id):
     field = data['field']
     value = data['value']
     
-    if field not in ['description', 'hashtags', 'category']:  # Added category to allowed fields
+    if field not in ['description', 'hashtags', 'category']:
         return jsonify({'error': 'Invalid field'}), 400
     
     image = Image.query.get(image_id)
@@ -75,11 +75,45 @@ def update_image(image_id):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
+@app.route('/generate_category_content', methods=['POST'])
+def generate_category_content():
+    data = request.get_json()
+    if not data or 'category' not in data:
+        return jsonify({'error': 'Category is required'}), 400
+    
+    category = data['category']
+    if not category:
+        return jsonify({'error': 'Category cannot be empty'}), 400
+    
+    try:
+        # Get all images in the category
+        images = Image.query.filter_by(category=category).all()
+        if not images:
+            return jsonify({'error': 'No images found in this category'}), 404
+        
+        # Update each image with generated content (placeholder for now)
+        for image in images:
+            # For now, using placeholder content
+            image.description = f"Generated description for {image.original_filename} in category {category}"
+            image.hashtags = f"#generated #{category.lower().replace(' ', '')} #artwork"
+        
+        db.session.commit()
+        
+        # Return updated images
+        return jsonify({
+            'success': True,
+            'images': [img.to_dict() for img in images]
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/export', methods=['GET'])
 def export_csv():
     images = Image.query.all()
     
-    output = BytesIO()  # Changed to BytesIO for binary mode
+    output = BytesIO()
     writer = csv.writer(output)
     writer.writerow(['Original Filename', 'Category', 'Stored Filename', 'Description', 'Hashtags', 'Created At'])
     

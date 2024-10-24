@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const exportBtn = document.getElementById('exportBtn');
     const progressBar = document.querySelector('#uploadProgress');
     const progressBarInner = progressBar.querySelector('.progress-bar');
+    const generateCategoryBtn = document.getElementById('generateCategoryContent');
     
     // Load existing images
     loadImages();
@@ -58,6 +59,42 @@ document.addEventListener('DOMContentLoaded', function() {
     // Handle export
     exportBtn.addEventListener('click', function() {
         window.location.href = '/export';
+    });
+
+    // Handle Generate Content for Category
+    generateCategoryBtn.addEventListener('click', async function() {
+        const selectedCategory = prompt('Enter category name to generate content for:');
+        if (!selectedCategory) return;
+
+        try {
+            const response = await fetch('/generate_category_content', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ category: selectedCategory })
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Failed to generate content');
+            }
+
+            const result = await response.json();
+            
+            // Update the table with new content
+            result.images.forEach(updatedImage => {
+                const row = document.querySelector(`tr[data-image-id="${updatedImage.id}"]`);
+                if (row) {
+                    row.querySelector('td:nth-child(4)').textContent = updatedImage.description;
+                    row.querySelector('td:nth-child(5)').textContent = updatedImage.hashtags;
+                }
+            });
+
+            alert('Content generated successfully for category: ' + selectedCategory);
+        } catch (error) {
+            alert(error.message);
+        }
     });
 
     // Handle cell editing
