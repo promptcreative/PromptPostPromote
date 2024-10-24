@@ -1,11 +1,33 @@
 import os
 import csv
 from io import StringIO, BytesIO
+import random
 from flask import render_template, request, jsonify, send_file
 from werkzeug.utils import secure_filename
 from app import app, db
 from models import Image
 from utils import allowed_file, generate_unique_filename, generate_placeholder_content
+
+# Arrays for random content generation
+ADJECTIVES = [
+    "vibrant", "mysterious", "ethereal", "dynamic", "serene",
+    "bold", "delicate", "dramatic", "harmonious", "intricate"
+]
+
+ELEMENTS = [
+    "composition", "palette", "brushwork", "texture", "perspective",
+    "pattern", "contrast", "movement", "balance", "detail"
+]
+
+ART_TERMS = [
+    "composition", "abstract", "figurative", "landscape", "portrait",
+    "stilllife", "mixed_media", "digital_art", "photography", "illustration"
+]
+
+ART_STYLES = [
+    "contemporary", "minimalist", "expressionist", "surrealist", "abstract",
+    "impressionist", "modernist", "traditional", "avantgarde", "postmodern"
+]
 
 @app.route('/')
 def index():
@@ -91,11 +113,27 @@ def generate_category_content():
         if not images:
             return jsonify({'error': 'No images found in this category'}), 404
         
-        # Update each image with generated content (placeholder for now)
+        # Update each image with generated content
         for image in images:
-            # For now, using placeholder content
-            image.description = f"Generated description for {image.original_filename} in category {category}"
-            image.hashtags = f"#generated #{category.lower().replace(' ', '')} #artwork"
+            # Generate random content with more variety
+            adj1 = random.choice(ADJECTIVES)
+            adj2 = random.choice(ADJECTIVES)
+            element = random.choice(ELEMENTS)
+            art_term = random.choice(ART_TERMS)
+            art_style = random.choice(ART_STYLES)
+            
+            # Create more interesting description
+            image.description = (
+                f"This {category} artwork shows {adj1} {element} with {adj2} details. "
+                f"The piece demonstrates masterful use of artistic techniques "
+                f"that capture the essence of the subject matter."
+            )
+            
+            # Create varied hashtags
+            image.hashtags = (
+                f"#art #{category.lower().replace(' ', '')} "
+                f"#{art_term} #{art_style} #{adj1}art"
+            ).replace('_', '')
         
         db.session.commit()
         
@@ -113,7 +151,7 @@ def generate_category_content():
 def export_csv():
     images = Image.query.all()
     
-    output = BytesIO()
+    output = StringIO()
     writer = csv.writer(output)
     writer.writerow(['Original Filename', 'Category', 'Stored Filename', 'Description', 'Hashtags', 'Created At'])
     
@@ -127,9 +165,11 @@ def export_csv():
             image.created_at
         ])
     
-    output.seek(0)
+    output_string = output.getvalue()
+    output.close()
+    
     return send_file(
-        output,
+        BytesIO(output_string.encode()),
         mimetype='text/csv',
         as_attachment=True,
         download_name='artwork_data.csv'
