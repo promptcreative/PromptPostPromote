@@ -5,7 +5,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const exportBtn = document.getElementById('exportBtn');
     const progressBar = document.querySelector('#uploadProgress');
     const progressBarInner = progressBar.querySelector('.progress-bar');
-    const generateCategoryBtn = document.getElementById('generateCategoryContent');
     
     // Load existing images
     loadImages();
@@ -59,42 +58,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Handle export
     exportBtn.addEventListener('click', function() {
         window.location.href = '/export';
-    });
-
-    // Handle Generate Content for Category
-    generateCategoryBtn.addEventListener('click', async function() {
-        const selectedCategory = prompt('Enter category name to generate content for:');
-        if (!selectedCategory) return;
-
-        try {
-            const response = await fetch('/generate_category_content', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ category: selectedCategory })
-            });
-
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error || 'Failed to generate content');
-            }
-
-            const result = await response.json();
-            
-            // Update the table with new content
-            result.images.forEach(updatedImage => {
-                const row = document.querySelector(`tr[data-image-id="${updatedImage.id}"]`);
-                if (row) {
-                    row.querySelector('td:nth-child(4)').textContent = updatedImage.description;
-                    row.querySelector('td:nth-child(5)').textContent = updatedImage.hashtags;
-                }
-            });
-
-            alert('Content generated successfully for category: ' + selectedCategory);
-        } catch (error) {
-            alert(error.message);
-        }
     });
 
     // Handle cell editing
@@ -172,6 +135,49 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+
+    // Handle Generate Content button click
+    tableBody.addEventListener('click', async function(e) {
+        if (e.target.classList.contains('generate-content-btn')) {
+            const row = e.target.closest('tr');
+            const categoryCell = row.cells[0];
+            const category = categoryCell.textContent.trim();
+            
+            if (!category) {
+                alert('Please set a category first before generating content');
+                return;
+            }
+
+            try {
+                const response = await fetch('/generate_category_content', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ category: category })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to generate content');
+                }
+
+                const result = await response.json();
+                
+                // Update the table with new content
+                result.images.forEach(updatedImage => {
+                    const row = document.querySelector(`tr[data-image-id="${updatedImage.id}"]`);
+                    if (row) {
+                        row.querySelector('td:nth-child(4)').textContent = updatedImage.description;
+                        row.querySelector('td:nth-child(5)').textContent = updatedImage.hashtags;
+                    }
+                });
+
+            } catch (error) {
+                alert(error.message);
+            }
+        }
+    });
     
     async function loadImages() {
         try {
@@ -196,9 +202,16 @@ document.addEventListener('DOMContentLoaded', function() {
                      style="max-width: 100px;">
             </td>
             <td>${image.original_filename}</td>
-            <td>${image.description}</td>
-            <td>${image.hashtags}</td>
+            <td>${image.description || ''}</td>
+            <td>${image.hashtags || ''}</td>
             <td>${new Date(image.created_at).toLocaleString()}</td>
+            <td>
+                <button type="button" 
+                        class="btn btn-sm btn-outline-info generate-content-btn" 
+                        title="Generate content for all images in '${image.category || 'this'}' category">
+                    Generate Content
+                </button>
+            </td>
         `;
         
         tableBody.insertBefore(row, tableBody.firstChild);
