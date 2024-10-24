@@ -21,9 +21,11 @@
         <thead>
             <tr>
                 <th>Category</th>
+                <th>Post Title</th>
                 <th>Preview</th>
                 <th>Original Filename</th>
                 <th>Description</th>
+                <th>Key Points</th>
                 <th>Hashtags</th>
                 <th>Created At</th>
                 <th>Actions</th>
@@ -36,7 +38,7 @@
 
 <!-- Feedback Modal -->
 <div class="modal fade" id="feedbackModal" tabindex="-1" aria-labelledby="feedbackModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content bg-dark">
             <div class="modal-header">
                 <h5 class="modal-title" id="feedbackModalLabel">Content Feedback</h5>
@@ -44,8 +46,16 @@
             </div>
             <div class="modal-body">
                 <div class="mb-3">
+                    <label for="generatedTitle" class="form-label">Generated Post Title:</label>
+                    <p id="generatedTitle" class="border p-2 rounded"></p>
+                </div>
+                <div class="mb-3">
                     <label for="generatedDescription" class="form-label">Generated Description:</label>
                     <p id="generatedDescription" class="border p-2 rounded"></p>
+                </div>
+                <div class="mb-3">
+                    <label for="generatedKeyPoints" class="form-label">Generated Key Points:</label>
+                    <p id="generatedKeyPoints" class="border p-2 rounded"></p>
                 </div>
                 <div class="mb-3">
                     <label for="generatedHashtags" class="form-label">Generated Hashtags:</label>

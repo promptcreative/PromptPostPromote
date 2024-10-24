@@ -115,8 +115,8 @@ document.addEventListener('DOMContentLoaded', function() {
             
             const columnIndex = Array.from(row.cells).indexOf(cell);
             
-            // Make category (index 0), description (index 3) and hashtags (index 4) editable
-            if (columnIndex !== 0 && columnIndex !== 3 && columnIndex !== 4) return;
+            // Make category, post title, description, key points, and hashtags editable
+            if (![0, 1, 4, 5, 6].includes(columnIndex)) return;
             
             const currentText = cell.textContent.trim();
             const inputGroup = document.createElement('div');
@@ -127,7 +127,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 input.value = currentText;
                 input.className = 'form-control';
                 input.style.width = '100%';
-                input.style.minHeight = columnIndex === 0 ? 'auto' : '60px';
+                input.style.minHeight = [0, 1].includes(columnIndex) ? 'auto' : '60px';
             }
             
             const saveButton = document.createElement('button');
@@ -162,7 +162,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
                     const imageId = row.dataset.imageId;
                     const field = columnIndex === 0 ? 'category' : 
-                                columnIndex === 3 ? 'description' : 'hashtags';
+                                columnIndex === 1 ? 'post_title' :
+                                columnIndex === 4 ? 'description' :
+                                columnIndex === 5 ? 'key_points' : 'hashtags';
                     
                     if (saveButton) {
                         saveButton.disabled = true;
@@ -270,15 +272,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             } else if (target.classList.contains('feedback-btn') && feedbackModal) {
                 const imageId = row.dataset.imageId;
-                const description = row.querySelector('td:nth-child(4)')?.textContent || '';
-                const hashtags = row.querySelector('td:nth-child(5)')?.textContent || '';
+                const postTitle = row.querySelector('td:nth-child(2)')?.textContent || '';
+                const description = row.querySelector('td:nth-child(5)')?.textContent || '';
+                const keyPoints = row.querySelector('td:nth-child(6)')?.textContent || '';
+                const hashtags = row.querySelector('td:nth-child(7)')?.textContent || '';
                 
                 // Show feedback modal
+                const titleEl = document.getElementById('generatedTitle');
                 const descriptionEl = document.getElementById('generatedDescription');
+                const keyPointsEl = document.getElementById('generatedKeyPoints');
                 const hashtagsEl = document.getElementById('generatedHashtags');
                 const feedbackTextEl = document.getElementById('feedbackText');
                 
+                if (titleEl) titleEl.textContent = postTitle;
                 if (descriptionEl) descriptionEl.textContent = description;
+                if (keyPointsEl) keyPointsEl.textContent = keyPoints;
                 if (hashtagsEl) hashtagsEl.textContent = hashtags;
                 if (feedbackTextEl) feedbackTextEl.value = '';
                 
@@ -462,10 +470,14 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const row = document.querySelector(`tr[data-image-id="${image.id}"]`);
         if (row) {
-            const descriptionCell = row.querySelector('td:nth-child(4)');
-            const hashtagsCell = row.querySelector('td:nth-child(5)');
+            const postTitleCell = row.querySelector('td:nth-child(2)');
+            const descriptionCell = row.querySelector('td:nth-child(5)');
+            const keyPointsCell = row.querySelector('td:nth-child(6)');
+            const hashtagsCell = row.querySelector('td:nth-child(7)');
             
+            if (postTitleCell) postTitleCell.textContent = image.post_title || '';
             if (descriptionCell) descriptionCell.textContent = image.description || '';
+            if (keyPointsCell) keyPointsCell.textContent = image.key_points || '';
             if (hashtagsCell) hashtagsCell.textContent = image.hashtags || '';
             
             const feedbackBtn = row.querySelector('.feedback-btn');
@@ -499,6 +511,7 @@ document.addEventListener('DOMContentLoaded', function() {
             row.dataset.imageId = image.id;
             row.innerHTML = `
                 <td>${image.category || ''}</td>
+                <td>${image.post_title || ''}</td>
                 <td>
                     <img src="/static/uploads/${image.stored_filename}" 
                          alt="${image.original_filename}"
@@ -508,6 +521,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 </td>
                 <td>${image.original_filename}</td>
                 <td>${image.description || ''}</td>
+                <td>${image.key_points || ''}</td>
                 <td>${image.hashtags || ''}</td>
                 <td>${new Date(image.created_at).toLocaleString()}</td>
                 <td>

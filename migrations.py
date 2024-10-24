@@ -1,10 +1,13 @@
 from app import app, db
 from sqlalchemy import text
 
-def add_category_column():
+def add_new_columns():
     with app.app_context():
-        db.session.execute(text('ALTER TABLE image ADD COLUMN IF NOT EXISTS category VARCHAR(255)'))
+        # Add post_title column if it doesn't exist
+        db.session.execute(text('ALTER TABLE image ADD COLUMN IF NOT EXISTS post_title VARCHAR(255)'))
+        # Add key_points column if it doesn't exist
+        db.session.execute(text('ALTER TABLE image ADD COLUMN IF NOT EXISTS key_points TEXT'))
         db.session.commit()
 
 if __name__ == '__main__':
-    add_category_column()
+    add_new_columns()
