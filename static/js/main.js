@@ -33,7 +33,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
                 
                 if (!response.ok) {
-                    throw new Error(`Upload failed for ${file.name}`);
+                    const error = await response.json();
+                    throw new Error(error.error || `Upload failed for ${file.name}`);
                 }
                 
                 const data = await response.json();
@@ -253,7 +254,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
                 
                 if (!response.ok) {
-                    throw new Error('Failed to refine content');
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to refine content');
                 }
                 
                 const refinedImage = await response.json();
@@ -278,24 +280,46 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
                 
                 if (!response.ok) {
-                    throw new Error('Failed to reset content');
+                    const error = await response.json();
+                    let errorMessage = 'Failed to reset content';
+                    
+                    // Handle specific error cases
+                    switch (error.code) {
+                        case 'NOT_FOUND':
+                            errorMessage = 'Image not found';
+                            break;
+                        case 'NO_CONTENT':
+                            errorMessage = 'No content to reset';
+                            break;
+                        case 'NO_CATEGORY':
+                            errorMessage = 'Please set a category before resetting content';
+                            break;
+                        case 'RATE_LIMIT':
+                            errorMessage = 'Rate limit exceeded. Please try again later';
+                            break;
+                        default:
+                            errorMessage = error.error || errorMessage;
+                    }
+                    throw new Error(errorMessage);
                 }
                 
                 const resetImage = await response.json();
-                updateTableContent(resetImage);
-                feedbackModal.hide();
-                
-                // Reset feedback button style
-                const row = document.querySelector(`tr[data-image-id="${imageId}"]`);
-                if (row) {
-                    const feedbackBtn = row.querySelector('.feedback-btn');
-                    if (feedbackBtn) {
-                        feedbackBtn.classList.remove('btn-outline-success');
-                        feedbackBtn.classList.add('btn-outline-info');
+                if (resetImage.success) {
+                    updateTableContent(resetImage);
+                    feedbackModal.hide();
+                    
+                    // Reset feedback button style
+                    const row = document.querySelector(`tr[data-image-id="${imageId}"]`);
+                    if (row) {
+                        const feedbackBtn = row.querySelector('.feedback-btn');
+                        if (feedbackBtn) {
+                            feedbackBtn.classList.remove('btn-outline-success');
+                            feedbackBtn.classList.add('btn-outline-info');
+                        }
                     }
                 }
             } catch (error) {
-                alert('Error resetting content: ' + error.message);
+                alert(error.message);
             } finally {
                 newRestartBtn.disabled = false;
                 newRestartBtn.textContent = 'Delete & Restart';
@@ -327,7 +351,8 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             const response = await fetch('/images');
             if (!response.ok) {
-                throw new Error('Failed to load images');
+                const error = await response.json();
+                throw new Error(error.error || 'Failed to load images');
             }
             const images = await response.json();
             images.forEach(image => addImageToTable(image));

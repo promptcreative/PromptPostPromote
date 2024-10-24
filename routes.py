@@ -50,8 +50,12 @@ def upload_file():
 
 @app.route('/images', methods=['GET'])
 def get_images():
-    images = Image.query.order_by(Image.created_at.desc()).all()
-    return jsonify([img.to_dict() for img in images])
+    try:
+        images = Image.query.order_by(Image.created_at.desc()).all()
+        return jsonify([img.to_dict() for img in images])
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'Failed to fetch images', 'details': str(e)}), 500
 
 @app.route('/update/<int:image_id>', methods=['POST'])
 def update_image(image_id):
@@ -144,24 +148,52 @@ def refine_content(image_id):
 
 @app.route('/reset_content/<int:image_id>', methods=['POST'])
 def reset_content(image_id):
+    # Validate image exists
     image = Image.query.get(image_id)
     if not image:
-        return jsonify({'error': 'Image not found'}), 404
+        return jsonify({'error': 'Image not found', 'code': 'NOT_FOUND'}), 404
+
+    # Validate image has content to reset
+    if not image.description and not image.hashtags:
+        return jsonify({'error': 'No content to reset', 'code': 'NO_CONTENT'}), 400
+
+    # Validate category exists for content generation
+    if not image.category:
+        return jsonify({
+            'error': 'Cannot reset content without a category', 
+            'code': 'NO_CATEGORY'
+        }), 400
 
     try:
-        # Reset content using GPT without any feedback
+        # Generate new content
         description, hashtags = gpt_service.generate_artwork_content(
             category=image.category,
             filename=image.original_filename
         )
+
+        # Update image with new content
         image.description = description
         image.hashtags = hashtags
         db.session.commit()
-        return jsonify(image.to_dict()), 200
+
+        return jsonify({
+            'success': True,
+            'message': 'Content reset successfully',
+            **image.to_dict()
+        }), 200
 
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        error_message = str(e)
+        if 'rate limit' in error_message.lower():
+            return jsonify({
+                'error': 'Rate limit exceeded. Please try again later.',
+                'code': 'RATE_LIMIT'
+            }), 429
+        return jsonify({
+            'error': f'Failed to reset content: {error_message}',
+            'code': 'GENERATION_ERROR'
+        }), 500
 
 @app.route('/export', methods=['GET'])
 def export_csv():
