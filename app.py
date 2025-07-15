@@ -11,11 +11,11 @@ app = Flask(__name__)
 
 # Configuration
 app.secret_key = os.environ.get("FLASK_SECRET_KEY") or "dev_key_123"
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
-app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-    "pool_recycle": 300,
-    "pool_pre_ping": True,
-}
+
+# Force SQLite usage by ignoring DATABASE_URL
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///artwork_manager.db"
+app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {}
+print("Forcing SQLite database usage")
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 app.config['UPLOAD_FOLDER'] = os.path.join(app.static_folder, 'uploads')
 
@@ -25,7 +25,20 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 # Initialize extensions
 db.init_app(app)
 
-with app.app_context():
-    import models
-    import routes
-    db.create_all()
+# Import models and routes
+import models
+import routes
+
+# Initialize database tables
+def init_db():
+    """Initialize database tables"""
+    try:
+        with app.app_context():
+            db.create_all()
+            print("Database tables created successfully")
+            print(f"Using database: {app.config['SQLALCHEMY_DATABASE_URI']}")
+    except Exception as e:
+        print(f"Error creating database tables: {e}")
+        raise
+
+# Don't initialize database at module level
