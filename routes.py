@@ -125,43 +125,29 @@ def batch_update():
 
 @app.route('/generate_content/<int:image_id>', methods=['POST'])
 def generate_content(image_id):
-    """Generate AI content for a specific image"""
+    """Generate AI content for a specific image using vision analysis"""
     image = Image.query.get(image_id)
     if not image:
         return jsonify({'error': 'Image not found'}), 404
     
     data = request.get_json() or {}
-    content_type = data.get('content_type', 'general')
+    platform = data.get('platform', 'all')
     
     try:
-        if content_type == 'instagram':
-            description, hashtags = gpt_service.generate_artwork_content(
-                category=image.painting_name or 'artwork',
-                filename=image.original_filename
-            )
-            image.instagram_first_comment = hashtags
-            image.text = description
-        elif content_type == 'pinterest':
-            description, hashtags = gpt_service.generate_artwork_content(
-                category=image.painting_name or 'artwork',
-                filename=image.original_filename
-            )
-            image.pinterest_description = description
-            image.seo_tags = hashtags
-        elif content_type == 'etsy':
-            description, tags = gpt_service.generate_artwork_content(
-                category=image.painting_name or 'artwork',
-                filename=image.original_filename
-            )
-            image.etsy_description = description
-            image.seo_tags = tags
-        else:
-            description, hashtags = gpt_service.generate_artwork_content(
-                category=image.painting_name or 'artwork',
-                filename=image.original_filename
-            )
-            image.text = description
-            image.seo_tags = hashtags
+        image_path = os.path.join(app.config['UPLOAD_FOLDER'], image.stored_filename)
+        
+        if not os.path.exists(image_path):
+            return jsonify({'error': 'Image file not found'}), 404
+        
+        content = gpt_service.analyze_image_and_generate_content(
+            image_path=image_path,
+            painting_name=image.painting_name or 'Untitled Artwork',
+            platform=platform
+        )
+        
+        for field, value in content.items():
+            if hasattr(image, field) and value:
+                setattr(image, field, value)
         
         db.session.commit()
         return jsonify(image.to_dict()), 200

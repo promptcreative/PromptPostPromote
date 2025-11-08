@@ -405,29 +405,42 @@ document.addEventListener('DOMContentLoaded', function() {
     if (generateContentBtn) {
         generateContentBtn.addEventListener('click', async function() {
             const selectedIds = getSelectedImageIds();
-            const contentType = document.getElementById('contentType').value;
+            const platform = document.getElementById('aiPlatform').value;
             
             if (selectedIds.length === 0) {
                 showMessage('Select items first', 'warning');
                 return;
             }
             
-            showMessage('Generating content...', 'info');
+            const platformNames = {
+                'all': 'ALL platforms',
+                'instagram': 'Instagram',
+                'pinterest': 'Pinterest',
+                'etsy': 'Etsy'
+            };
             
+            showMessage(`Analyzing ${selectedIds.length} image(s) with Vision AI for ${platformNames[platform]}...`, 'info');
+            
+            let successCount = 0;
             for (const imageId of selectedIds) {
                 try {
-                    await fetch(`/generate_content/${imageId}`, {
+                    const response = await fetch(`/generate_content/${imageId}`, {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({content_type: contentType})
+                        body: JSON.stringify({platform: platform})
                     });
+                    
+                    if (response.ok) {
+                        successCount++;
+                    }
                 } catch (error) {
                     console.error('Content generation failed for ' + imageId, error);
                 }
             }
             
-            showMessage('Content generated');
+            showMessage(`✅ Generated ${platformNames[platform]} content for ${successCount} item(s) using Vision AI`);
             loadImages();
+            updateSelectedPreview();
         });
     }
 

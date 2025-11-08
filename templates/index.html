@@ -172,19 +172,27 @@
             <div class="col-md-4">
                 <div class="card">
                     <div class="card-body">
-                        <h5 class="card-title"><i class="bi bi-robot"></i> AI Content</h5>
-                        <p class="text-muted small">Generate platform content</p>
+                        <h5 class="card-title"><i class="bi bi-robot"></i> AI Vision Content</h5>
+                        <p class="text-muted small">AI analyzes images and fills in content</p>
                         <div class="mb-3">
-                            <label class="form-label">Content Type</label>
-                            <select class="form-select" id="contentType">
-                                <option value="general">General</option>
-                                <option value="instagram">Instagram</option>
-                                <option value="pinterest">Pinterest</option>
-                                <option value="etsy">Etsy</option>
+                            <label class="form-label">Platform</label>
+                            <select class="form-select" id="aiPlatform">
+                                <option value="all">🌟 ALL Platforms (Complete)</option>
+                                <option value="instagram">📸 Instagram Only</option>
+                                <option value="pinterest">📌 Pinterest Only</option>
+                                <option value="etsy">🛍️ Etsy Only</option>
                             </select>
+                            <div class="form-text">
+                                <small>
+                                    <strong>ALL</strong>: Fills Instagram, Pinterest, Etsy, SEO<br>
+                                    <strong>Instagram</strong>: Caption + hashtags<br>
+                                    <strong>Pinterest</strong>: Description + keywords<br>
+                                    <strong>Etsy</strong>: Title + full listing
+                                </small>
+                            </div>
                         </div>
                         <button class="btn btn-primary w-100" id="generateContentBtn">
-                            <i class="bi bi-stars"></i> Generate
+                            <i class="bi bi-stars"></i> Generate with Vision AI
                         </button>
                     </div>
                 </div>
