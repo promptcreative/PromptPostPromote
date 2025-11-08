@@ -147,24 +147,56 @@
         </div>
         
         <div class="row">
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <div class="card">
                     <div class="card-body">
-                        <h5 class="card-title"><i class="bi bi-clock"></i> Assign Times</h5>
-                        <p class="text-muted small">Select rows in Content tab</p>
+                        <h5 class="card-title"><i class="bi bi-robot"></i> AI Vision Content</h5>
+                        <p class="text-muted small">AI analyzes images and fills in content</p>
                         <div class="mb-3">
-                            <label class="form-label">Calendar</label>
-                            <select class="form-select" id="batchCalendarSelect">
-                                <option value="">Select calendar...</option>
+                            <label class="form-label">Platform</label>
+                            <select class="form-select" id="aiPlatform">
+                                <option value="all">🌟 ALL Platforms (Complete)</option>
+                                <option value="instagram">📸 Instagram Only</option>
+                                <option value="pinterest">📌 Pinterest Only</option>
+                                <option value="etsy">🛍️ Etsy Only</option>
                             </select>
                         </div>
-                        <button class="btn btn-primary w-100" id="assignTimesBtn">
-                            <i class="bi bi-calendar-event"></i> Assign Times
+                        <button class="btn btn-primary w-100" id="generateContentBtn">
+                            <i class="bi bi-stars"></i> Generate with Vision AI
                         </button>
                     </div>
                 </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="bi bi-image"></i> Generate Mockups</h5>
+                        <p class="text-muted small">Create wall art mockups using collection templates</p>
+                        <div class="form-text mb-3">
+                            <small>Select images from a collection with saved mockup templates</small>
+                        </div>
+                        <button class="btn btn-success w-100" id="generateMockupsBtn">
+                            <i class="bi bi-images"></i> Generate Mockups
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="bi bi-film"></i> Generate Video</h5>
+                        <p class="text-muted small">Create AI video with Pika</p>
+                        <div class="mb-3">
+                            <label class="form-label">Motion Prompt</label>
+                            <input type="text" class="form-control" id="videoPrompt" placeholder="e.g., gentle camera pan">
+                        </div>
+                        <button class="btn btn-success w-100" id="generateVideoBtn">
+                            <i class="bi bi-play-circle"></i> Generate Video
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
                 <div class="card">
                     <div class="card-body">
                         <h5 class="card-title"><i class="bi bi-pencil-square"></i> Batch Update</h5>
@@ -183,34 +215,6 @@
                         </div>
                         <button class="btn btn-primary w-100" id="batchUpdateBtn">
                             <i class="bi bi-save"></i> Update Selected
-                        </button>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title"><i class="bi bi-robot"></i> AI Vision Content</h5>
-                        <p class="text-muted small">AI analyzes images and fills in content</p>
-                        <div class="mb-3">
-                            <label class="form-label">Platform</label>
-                            <select class="form-select" id="aiPlatform">
-                                <option value="all">🌟 ALL Platforms (Complete)</option>
-                                <option value="instagram">📸 Instagram Only</option>
-                                <option value="pinterest">📌 Pinterest Only</option>
-                                <option value="etsy">🛍️ Etsy Only</option>
-                            </select>
-                            <div class="form-text">
-                                <small>
-                                    <strong>ALL</strong>: Fills Instagram, Pinterest, Etsy, SEO<br>
-                                    <strong>Instagram</strong>: Caption + hashtags<br>
-                                    <strong>Pinterest</strong>: Description + keywords<br>
-                                    <strong>Etsy</strong>: Title + full listing
-                                </small>
-                            </div>
-                        </div>
-                        <button class="btn btn-primary w-100" id="generateContentBtn">
-                            <i class="bi bi-stars"></i> Generate with Vision AI
                         </button>
                     </div>
                 </div>

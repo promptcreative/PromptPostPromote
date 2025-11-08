@@ -565,22 +565,26 @@ document.addEventListener('DOMContentLoaded', function() {
             const batchCalendarSelect = document.getElementById('batchCalendarSelect');
             
             if (calendars.length === 0) {
-                calendarList.innerHTML = '<p class="text-muted">No calendars loaded</p>';
-                batchCalendarSelect.innerHTML = '<option value="">Select calendar...</option>';
+                if (calendarList) calendarList.innerHTML = '<p class="text-muted">No calendars loaded</p>';
+                if (batchCalendarSelect) batchCalendarSelect.innerHTML = '<option value="">Select calendar...</option>';
                 return;
             }
             
-            calendarList.innerHTML = calendars.map(cal => `
-                <div class="card mb-2">
-                    <div class="card-body py-2">
-                        <strong>${cal.calendar_name}</strong>
-                        <br><small class="text-muted">${cal.event_count} events</small>
+            if (calendarList) {
+                calendarList.innerHTML = calendars.map(cal => `
+                    <div class="card mb-2">
+                        <div class="card-body py-2">
+                            <strong>${cal.calendar_name}</strong>
+                            <br><small class="text-muted">${cal.event_count} events</small>
+                        </div>
                     </div>
-                </div>
-            `).join('');
+                `).join('');
+            }
             
-            batchCalendarSelect.innerHTML = '<option value="">Select calendar...</option>' +
-                calendars.map(cal => `<option value="${cal.calendar_type}">${cal.calendar_name}</option>`).join('');
+            if (batchCalendarSelect) {
+                batchCalendarSelect.innerHTML = '<option value="">Select calendar...</option>' +
+                    calendars.map(cal => `<option value="${cal.calendar_type}">${cal.calendar_name}</option>`).join('');
+            }
             
         } catch (error) {
             console.error('Error loading calendars:', error);
@@ -884,5 +888,147 @@ document.addEventListener('DOMContentLoaded', function() {
                 showMessage('Error saving templates: ' + error.message, 'danger');
             }
         });
+    }
+
+    const generateMockupsBtn = document.getElementById('generateMockupsBtn');
+    if (generateMockupsBtn) {
+        generateMockupsBtn.addEventListener('click', async function() {
+            const selectedIds = getSelectedImageIds();
+            
+            if (selectedIds.length === 0) {
+                showMessage('Select images first', 'warning');
+                return;
+            }
+            
+            try {
+                const images = allImages.filter(img => selectedIds.includes(img.id));
+                let successCount = 0;
+                let errorCount = 0;
+                
+                showMessage(`Generating mockups for ${selectedIds.length} images...`, 'info');
+                
+                for (const imageId of selectedIds) {
+                    const image = images.find(img => img.id === imageId);
+                    if (!image || !image.collection_id) {
+                        showMessage(`Image ${imageId} has no collection, skipping`, 'warning');
+                        errorCount++;
+                        continue;
+                    }
+                    
+                    const collection = allCollections.find(c => c.id == image.collection_id);
+                    if (!collection || !collection.mockup_template_ids) {
+                        showMessage(`Collection has no templates, skipping image ${imageId}`, 'warning');
+                        errorCount++;
+                        continue;
+                    }
+                    
+                    try {
+                        const response = await fetch('/generate-mockups', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({
+                                image_id: imageId
+                            })
+                        });
+                        
+                        if (response.ok) {
+                            const result = await response.json();
+                            successCount++;
+                            showMessage(`Generated ${result.mockups.length} mockups for image ${imageId}`, 'success');
+                        } else {
+                            throw new Error('Mockup generation failed');
+                        }
+                    } catch (error) {
+                        errorCount++;
+                        showMessage(`Error generating mockups for image ${imageId}: ${error.message}`, 'danger');
+                    }
+                }
+                
+                showMessage(`Mockup generation complete: ${successCount} successful, ${errorCount} failed`, successCount > 0 ? 'success' : 'warning');
+                loadImages();
+                
+            } catch (error) {
+                showMessage('Mockup generation error: ' + error.message, 'danger');
+            }
+        });
+    }
+
+    const generateVideoBtn = document.getElementById('generateVideoBtn');
+    if (generateVideoBtn) {
+        generateVideoBtn.addEventListener('click', async function() {
+            const selectedIds = getSelectedImageIds();
+            const motionPrompt = document.getElementById('videoPrompt').value;
+            
+            if (selectedIds.length === 0) {
+                showMessage('Select an image first', 'warning');
+                return;
+            }
+            
+            if (selectedIds.length > 1) {
+                showMessage('Select only ONE image for video generation', 'warning');
+                return;
+            }
+            
+            if (!motionPrompt) {
+                showMessage('Enter a motion prompt (e.g., "gentle camera pan")', 'warning');
+                return;
+            }
+            
+            try {
+                const imageId = selectedIds[0];
+                showMessage('Starting video generation with Pika AI...', 'info');
+                
+                const response = await fetch('/generate-video', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        image_id: imageId,
+                        motion_prompt: motionPrompt
+                    })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    showMessage(`Video generation started! Job ID: ${result.job_id}. Polling for completion...`, 'info');
+                    
+                    pollVideoStatus(result.job_id, imageId);
+                } else {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Video generation failed');
+                }
+            } catch (error) {
+                showMessage('Video generation error: ' + error.message, 'danger');
+            }
+        });
+    }
+
+    async function pollVideoStatus(jobId, imageId) {
+        const maxAttempts = 60;
+        let attempts = 0;
+        
+        const poll = async () => {
+            try {
+                const response = await fetch(`/video-status/${jobId}`);
+                const result = await response.json();
+                
+                if (result.status === 'COMPLETED') {
+                    showMessage(`Video generation complete! Video saved for image ${imageId}`, 'success');
+                    loadImages();
+                } else if (result.status === 'FAILED') {
+                    showMessage(`Video generation failed: ${result.error || 'Unknown error'}`, 'danger');
+                } else if (result.status === 'IN_PROGRESS' || result.status === 'PENDING') {
+                    attempts++;
+                    if (attempts < maxAttempts) {
+                        setTimeout(poll, 5000);
+                    } else {
+                        showMessage('Video generation timeout - check back later', 'warning');
+                    }
+                }
+            } catch (error) {
+                showMessage('Error checking video status: ' + error.message, 'danger');
+            }
+        };
+        
+        poll();
     }
 });
