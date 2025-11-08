@@ -40,6 +40,9 @@ def upload_file():
         collection_id = request.form.get('collection_id')
         if collection_id and collection_id.isdigit():
             image.collection_id = int(collection_id)
+            collection = Collection.query.get(int(collection_id))
+            if collection:
+                image.painting_name = collection.name
         
         db.session.add(image)
         db.session.commit()

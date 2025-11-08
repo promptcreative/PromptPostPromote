@@ -215,16 +215,21 @@ document.addEventListener('DOMContentLoaded', function() {
             `<video src="/static/uploads/${image.stored_filename}" style="width: 60px; height: 60px; object-fit: cover;"></video>` :
             `<img src="/static/uploads/${image.stored_filename}" class="img-thumbnail" style="width: 60px; height: 60px; object-fit: cover;">`;
         
+        const instagramPreview = image.text ? 
+            (image.text.length > 60 ? image.text.substring(0, 60) + '...' : image.text) : 
+            '<span class="text-muted fst-italic">No content</span>';
+        
+        const pinterestPreview = image.pinterest_description ? 
+            (image.pinterest_description.length > 60 ? image.pinterest_description.substring(0, 60) + '...' : image.pinterest_description) : 
+            '<span class="text-muted fst-italic">No content</span>';
+        
         row.innerHTML = `
             <td><input type="checkbox" class="row-select"></td>
             <td>${mediaHtml}</td>
-            <td class="editable" data-field="painting_name">${image.painting_name || ''}</td>
-            <td class="editable" data-field="platform">${image.platform || ''}</td>
-            <td class="editable" data-field="post_subtype">${image.post_subtype || ''}</td>
-            <td class="editable" data-field="date">${image.date || ''}</td>
-            <td class="editable" data-field="time">${image.time || ''}</td>
+            <td class="editable" data-field="painting_name">${image.painting_name || '<span class="text-muted fst-italic">No name</span>'}</td>
+            <td class="small">${instagramPreview}</td>
+            <td class="small">${pinterestPreview}</td>
             <td class="editable" data-field="status">${image.status || ''}</td>
-            <td><span class="badge bg-info">${image.calendar_selection || 'None'}</span></td>
             <td>
                 <button class="btn btn-sm btn-primary edit-details-btn" title="Edit Details">
                     <i class="bi bi-pencil"></i>
