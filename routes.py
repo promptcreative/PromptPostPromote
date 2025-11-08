@@ -2,7 +2,7 @@ import os
 from flask import render_template, request, jsonify, send_file
 from werkzeug.utils import secure_filename
 from app import app, db
-from models import Image, Calendar, CalendarEvent
+from models import Image, Calendar, CalendarEvent, Collection
 from utils import allowed_file, generate_unique_filename, parse_ics_content
 from gpt_service import gpt_service
 from io import StringIO, BytesIO
@@ -33,6 +33,10 @@ def upload_file():
         image.stored_filename = stored_filename
         image.status = 'Draft'
         image.media = stored_filename
+        
+        collection_id = request.form.get('collection_id')
+        if collection_id and collection_id.isdigit():
+            image.collection_id = int(collection_id)
         
         db.session.add(image)
         db.session.commit()
@@ -67,7 +71,7 @@ def update_image(image_id):
         'links', 'media_source', 'media_urls', 'pin_board_fb_album_google_category',
         'pinterest_description', 'pinterest_link_url', 'reminder',
         'seo_description', 'seo_tags', 'seo_title', 'text', 'video_pin_pdf_title',
-        'calendar_selection'
+        'calendar_selection', 'collection_id'
     ]
     
     if field not in valid_fields:
@@ -103,7 +107,7 @@ def batch_update():
         'links', 'media_source', 'media_urls', 'pin_board_fb_album_google_category',
         'pinterest_description', 'pinterest_link_url', 'reminder',
         'seo_description', 'seo_tags', 'seo_title', 'text', 'video_pin_pdf_title',
-        'calendar_selection'
+        'calendar_selection', 'collection_id'
     ]
     
     for field in updates.keys():
@@ -175,6 +179,91 @@ def remove_image(image_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': f'Failed to remove image: {str(e)}'}), 500
+
+@app.route('/collections', methods=['GET'])
+def get_collections():
+    """Get all collections"""
+    try:
+        collections = Collection.query.order_by(Collection.created_at.desc()).all()
+        return jsonify([col.to_dict() for col in collections])
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/collections', methods=['POST'])
+def create_collection():
+    """Create a new collection"""
+    data = request.get_json()
+    if not data or 'name' not in data:
+        return jsonify({'error': 'Collection name is required'}), 400
+    
+    try:
+        collection = Collection()
+        collection.name = data['name']
+        collection.description = data.get('description', '')
+        collection.thumbnail_image_id = data.get('thumbnail_image_id')
+        
+        db.session.add(collection)
+        db.session.commit()
+        
+        return jsonify(collection.to_dict()), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/collections/<int:collection_id>', methods=['PUT'])
+def update_collection(collection_id):
+    """Update a collection"""
+    collection = Collection.query.get(collection_id)
+    if not collection:
+        return jsonify({'error': 'Collection not found'}), 404
+    
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'Invalid request data'}), 400
+    
+    try:
+        if 'name' in data:
+            collection.name = data['name']
+        if 'description' in data:
+            collection.description = data['description']
+        if 'thumbnail_image_id' in data:
+            collection.thumbnail_image_id = data['thumbnail_image_id']
+        
+        db.session.commit()
+        return jsonify(collection.to_dict()), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/collections/<int:collection_id>', methods=['DELETE'])
+def delete_collection(collection_id):
+    """Delete a collection (images are preserved, collection_id set to null)"""
+    collection = Collection.query.get(collection_id)
+    if not collection:
+        return jsonify({'error': 'Collection not found'}), 404
+    
+    try:
+        Image.query.filter_by(collection_id=collection_id).update({'collection_id': None})
+        db.session.delete(collection)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Collection deleted successfully'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/collections/<int:collection_id>/images', methods=['GET'])
+def get_collection_images(collection_id):
+    """Get all images in a collection"""
+    collection = Collection.query.get(collection_id)
+    if not collection:
+        return jsonify({'error': 'Collection not found'}), 404
+    
+    try:
+        images = Image.query.filter_by(collection_id=collection_id).order_by(Image.created_at.desc()).all()
+        return jsonify([img.to_dict() for img in images])
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/calendars', methods=['GET'])
 def get_calendars():
@@ -301,6 +390,7 @@ def export_csv():
     writer = csv.writer(output)
     
     writer.writerow([
+        'Collection',
         'Title',
         'Painting Name',
         'Post subtype',
@@ -337,7 +427,14 @@ def export_csv():
     ])
     
     for image in images:
+        collection_name = ''
+        if image.collection_id:
+            collection = Collection.query.get(image.collection_id)
+            if collection:
+                collection_name = collection.name
+        
         writer.writerow([
+            collection_name,
             image.title or '',
             image.painting_name or '',
             image.post_subtype or '',

@@ -26,11 +26,32 @@ def migrate_schema():
         print(f"Existing columns: {existing_columns}")
         
         if 'title' in existing_columns:
-            print("Schema already migrated. Skipping migration.")
+            print("Schema already migrated. Checking for collection support...")
             
             if 'calendar' not in inspector.get_table_names():
                 print("Creating Calendar tables...")
                 db.create_all()
+            
+            if 'collection' not in inspector.get_table_names():
+                print("Creating Collection table...")
+                db.create_all()
+            
+            if 'collection_id' not in existing_columns:
+                print("Adding collection_id column to Image table with foreign key...")
+                try:
+                    db.session.execute(text(
+                        'ALTER TABLE image ADD COLUMN collection_id INTEGER '
+                        'REFERENCES collection(id) ON DELETE SET NULL'
+                    ))
+                    db.session.commit()
+                    print("collection_id column with FK constraint added successfully!")
+                except Exception as e:
+                    print(f"Note: FK constraint may not be supported in this database ({e})")
+                    print("Adding column without FK constraint...")
+                    db.session.rollback()
+                    db.session.execute(text('ALTER TABLE image ADD COLUMN collection_id INTEGER'))
+                    db.session.commit()
+                    print("collection_id column added (FK will be enforced at ORM level)")
             
             print("Migration complete!")
             return

@@ -25,11 +25,33 @@
             <div class="col-md-4">
                 <div class="card upload-section">
                     <div class="card-body">
-                        <h5 class="card-title"><i class="bi bi-upload"></i> Upload Images</h5>
+                        <h5 class="card-title"><i class="bi bi-upload"></i> Upload Files</h5>
                         <form id="uploadForm">
                             <div class="mb-3">
-                                <input class="form-control" type="file" id="file" name="file" accept="image/*" multiple required>
-                                <div class="form-text">PNG, JPG, JPEG, GIF (max 16MB)</div>
+                                <label class="form-label">Collection</label>
+                                <select class="form-select mb-2" id="collectionSelect">
+                                    <option value="">No Collection</option>
+                                </select>
+                                <button type="button" class="btn btn-sm btn-outline-primary w-100" id="createCollectionBtn">
+                                    <i class="bi bi-plus-circle"></i> Create New Collection
+                                </button>
+                            </div>
+                            <div id="newCollectionForm" class="mb-3 d-none">
+                                <input type="text" class="form-control mb-2" id="newCollectionName" placeholder="Collection name (e.g., Accidental Iris)">
+                                <textarea class="form-control mb-2" id="newCollectionDesc" placeholder="Description (optional)" rows="2"></textarea>
+                                <div class="btn-group w-100">
+                                    <button type="button" class="btn btn-success btn-sm" id="saveNewCollection">
+                                        <i class="bi bi-check"></i> Save
+                                    </button>
+                                    <button type="button" class="btn btn-secondary btn-sm" id="cancelNewCollection">
+                                        <i class="bi bi-x"></i> Cancel
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Files</label>
+                                <input class="form-control" type="file" id="file" name="file" accept="image/*,video/*" multiple required>
+                                <div class="form-text">Images: PNG, JPG, GIF | Videos: MP4, MOV, AVI, WEBM (max 16MB)</div>
                             </div>
                             <button type="submit" class="btn btn-primary w-100">
                                 <i class="bi bi-cloud-upload"></i> Upload
@@ -46,11 +68,11 @@
                     <div class="card-body">
                         <h5 class="card-title"><i class="bi bi-info-circle"></i> Quick Start</h5>
                         <ol class="mb-0 small">
-                            <li>Upload artwork images</li>
-                            <li>Double-click table cells to edit content</li>
-                            <li>Import .ics calendars in the Calendars tab</li>
-                            <li>Use Batch Actions to assign times and platforms</li>
-                            <li>Export to Publer when ready</li>
+                            <li><strong>Create Collection</strong> (e.g., "Accidental Iris")</li>
+                            <li><strong>Upload artwork</strong> images/videos to that collection</li>
+                            <li><strong>AI Generate</strong> all content via Batch Actions → Vision AI</li>
+                            <li><strong>Edit as needed</strong> - double-click table cells</li>
+                            <li><strong>Export to Publer</strong> when ready</li>
                         </ol>
                     </div>
                 </div>

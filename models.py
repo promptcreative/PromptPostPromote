@@ -6,6 +6,8 @@ class Image(db.Model):
     original_filename = db.Column(db.String(255), nullable=False)
     stored_filename = db.Column(db.String(255), nullable=False, unique=True)
     
+    collection_id = db.Column(db.Integer, db.ForeignKey('collection.id'), nullable=True)
+    
     title = db.Column(db.String(500))
     painting_name = db.Column(db.String(500))
     post_subtype = db.Column(db.String(100))
@@ -57,6 +59,7 @@ class Image(db.Model):
             'id': self.id,
             'original_filename': self.original_filename,
             'stored_filename': self.stored_filename,
+            'collection_id': self.collection_id,
             'title': self.title or '',
             'painting_name': self.painting_name or '',
             'post_subtype': self.post_subtype or '',
@@ -90,6 +93,38 @@ class Image(db.Model):
             'text': self.text or '',
             'video_pin_pdf_title': self.video_pin_pdf_title or '',
             'calendar_selection': self.calendar_selection or '',
+            'created_at': self.created_at.isoformat() if self.created_at else '',
+            'updated_at': self.updated_at.isoformat() if self.updated_at else ''
+        }
+
+
+class Collection(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.Text)
+    thumbnail_image_id = db.Column(db.Integer, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    images = db.relationship('Image', backref='collection', lazy=True, foreign_keys='Image.collection_id')
+    
+    def to_dict(self):
+        from sqlalchemy import select, func
+        image_count = db.session.scalar(select(func.count()).select_from(Image).where(Image.collection_id == self.id)) or 0
+        
+        thumbnail_url = None
+        if self.thumbnail_image_id:
+            thumbnail_image = db.session.get(Image, self.thumbnail_image_id)
+            if thumbnail_image:
+                thumbnail_url = f'/static/uploads/{thumbnail_image.stored_filename}'
+        
+        return {
+            'id': self.id,
+            'name': self.name,
+            'description': self.description or '',
+            'thumbnail_image_id': self.thumbnail_image_id,
+            'thumbnail_url': thumbnail_url,
+            'image_count': image_count,
             'created_at': self.created_at.isoformat() if self.created_at else '',
             'updated_at': self.updated_at.isoformat() if self.updated_at else ''
         }

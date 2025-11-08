@@ -6,7 +6,17 @@ This is a Flask-based content planning and scheduling system for artwork across 
 
 ## Recent Changes (November 2025)
 
-**Major System Expansion - Publer Integration:**
+**Collection/Series Management System:**
+- Added Collection model for grouping artwork into series (e.g., "Accidental Iris", "Ocean Dreams")
+- Grouped table view with expand/collapse per collection
+- "Select All in Collection" and "Generate AI Content for Collection" quick actions
+- Collection selector in upload form with inline collection creation
+- Video file upload support (MP4, MOV, AVI, WEBM) alongside images
+- GPT-4o Vision AI integration - analyzes actual artwork to generate platform-specific content
+- CSV export includes collection name for organization in Publer
+- AI-first workflow: Create Collection → Upload → AI Generate All → Edit → Export
+
+**Previous: Publer Integration (November 2025):**
 - Expanded database schema from 8 fields to 35+ Publer-compatible fields
 - Added calendar import (.ics) functionality with midpoint time calculation
 - Implemented batch processing for multi-platform content management
@@ -37,10 +47,17 @@ Preferred communication style: Simple, everyday language.
 
 ### Data Models
 
+#### Collection Model
+Groups related artwork into series/collections:
+- **Fields**: id, name, description, thumbnail_image_id, created_at, updated_at
+- **Relationship**: One-to-many with Image (images can belong to one collection)
+- **Use Case**: Organize artwork series like "Accidental Iris" for batch operations
+
 #### Image Model (Content Item)
 Stores all Publer-compatible fields for multi-platform content:
-- **Core Fields**: id, original_filename, stored_filename, created_at, updated_at
+- **Core Fields**: id, original_filename, stored_filename, collection_id (FK to Collection), created_at, updated_at
 - **Content Fields**: title, painting_name, text, video_pin_pdf_title
+- **Media Types**: Images (PNG, JPG, GIF) and Videos (MP4, MOV, AVI, WEBM)
 - **Platform Fields**: platform, post_subtype, status, labels
 - **Scheduling Fields**: date, time, calendar_selection
 - **Media Fields**: media, media_source, media_urls, cover_image_url, links
@@ -65,10 +82,11 @@ Stores individual calendar events with calculated midpoints:
 ### Core Services
 
 #### GPT Service (gpt_service.py)
-- Generates platform-specific content for artwork
-- Supports Instagram captions, Pinterest descriptions, Etsy listings
+- **Vision AI**: Uses GPT-4o to analyze actual artwork images and generate content
+- Generates platform-specific content based on what the AI sees (colors, style, composition)
+- **Platforms**: Instagram (caption + hashtags), Pinterest (description + SEO), Etsy (full listing), or ALL at once
 - Implements rate limiting to prevent API abuse
-- Customizable feedback-based content refinement
+- Legacy text-based generation available for backward compatibility
 
 #### Calendar Parser (utils.py)
 - Parses .ics (iCalendar) file format
@@ -89,12 +107,19 @@ Stores individual calendar events with calculated midpoints:
 
 ### API Endpoints
 
+#### Collection Management
+- `GET /collections` - List all collections
+- `POST /collections` - Create new collection
+- `PUT /collections/<id>` - Update collection details
+- `DELETE /collections/<id>` - Delete collection (images preserved, collection_id nulled)
+- `GET /collections/<id>/images` - Get all images in a collection
+
 #### Content Management
-- `POST /upload` - Upload artwork images
+- `POST /upload` - Upload artwork images/videos (with optional collection_id)
 - `GET /images` - Retrieve all content items
 - `POST /update/<id>` - Update single field
 - `POST /batch_update` - Update multiple items at once (with field validation)
-- `POST /generate_content/<id>` - AI content generation for specific platform
+- `POST /generate_content/<id>` - Vision AI content generation for specific platform or all
 - `POST /remove_image/<id>` - Delete content item
 
 #### Calendar Management

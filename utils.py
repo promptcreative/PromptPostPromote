@@ -4,7 +4,7 @@ from werkzeug.utils import secure_filename
 from datetime import datetime
 import re
 
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'mov', 'avi', 'webm'}
 UPLOAD_FOLDER = 'static/uploads'
 
 def allowed_file(filename):

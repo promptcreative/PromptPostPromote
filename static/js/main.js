@@ -13,9 +13,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const generateContentBtn = document.getElementById('generateContentBtn');
 
     let allImages = [];
+    let allCollections = [];
 
-    loadImages();
-    loadCalendars();
+    async function initializeApp() {
+        await loadCollections();
+        await loadImages();
+        loadCalendars();
+    }
+    
+    initializeApp();
     
     document.querySelectorAll('button[data-bs-toggle="tab"]').forEach(button => {
         button.addEventListener('shown.bs.tab', function(e) {
@@ -37,25 +43,181 @@ document.addEventListener('DOMContentLoaded', function() {
         setTimeout(() => alertDiv.remove(), 4000);
     }
 
+    async function loadCollections() {
+        try {
+            const response = await fetch('/collections');
+            const collections = await response.json();
+            allCollections = collections;
+            updateCollectionSelect();
+            return collections;
+        } catch (error) {
+            console.error('Error loading collections:', error);
+            return [];
+        }
+    }
+
+    function updateCollectionSelect() {
+        const collectionSelect = document.getElementById('collectionSelect');
+        if (!collectionSelect) return;
+        
+        collectionSelect.innerHTML = '<option value="">No Collection</option>';
+        allCollections.forEach(collection => {
+            const option = document.createElement('option');
+            option.value = collection.id;
+            option.textContent = `${collection.name} (${collection.image_count} items)`;
+            collectionSelect.appendChild(option);
+        });
+    }
+
+    const createCollectionBtn = document.getElementById('createCollectionBtn');
+    const newCollectionForm = document.getElementById('newCollectionForm');
+    const saveNewCollection = document.getElementById('saveNewCollection');
+    const cancelNewCollection = document.getElementById('cancelNewCollection');
+
+    if (createCollectionBtn) {
+        createCollectionBtn.addEventListener('click', function() {
+            newCollectionForm.classList.remove('d-none');
+            createCollectionBtn.classList.add('d-none');
+        });
+    }
+
+    if (cancelNewCollection) {
+        cancelNewCollection.addEventListener('click', function() {
+            newCollectionForm.classList.add('d-none');
+            createCollectionBtn.classList.remove('d-none');
+            document.getElementById('newCollectionName').value = '';
+            document.getElementById('newCollectionDesc').value = '';
+        });
+    }
+
+    if (saveNewCollection) {
+        saveNewCollection.addEventListener('click', async function() {
+            const name = document.getElementById('newCollectionName').value.trim();
+            const description = document.getElementById('newCollectionDesc').value.trim();
+            
+            if (!name) {
+                showMessage('Please enter a collection name', 'warning');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/collections', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ name, description })
+                });
+                
+                if (response.ok) {
+                    const newCollection = await response.json();
+                    showMessage(`Collection "${name}" created!`);
+                    await loadCollections();
+                    await loadImages();
+                    document.getElementById('collectionSelect').value = newCollection.id;
+                    newCollectionForm.classList.add('d-none');
+                    createCollectionBtn.classList.remove('d-none');
+                    document.getElementById('newCollectionName').value = '';
+                    document.getElementById('newCollectionDesc').value = '';
+                } else {
+                    showMessage('Failed to create collection', 'danger');
+                }
+            } catch (error) {
+                showMessage('Error creating collection: ' + error.message, 'danger');
+            }
+        });
+    }
+
     async function loadImages() {
         try {
             const response = await fetch('/images');
             const images = await response.json();
             allImages = images;
-            tableBody.innerHTML = '';
-            images.forEach(addImageToTable);
+            renderGroupedTable(images);
         } catch (error) {
             showMessage('Error loading images: ' + error.message, 'danger');
         }
     }
 
-    function addImageToTable(image) {
+    function renderGroupedTable(images) {
+        tableBody.innerHTML = '';
+        
+        const grouped = {};
+        const noCollection = [];
+        
+        images.forEach(img => {
+            if (img.collection_id) {
+                if (!grouped[img.collection_id]) {
+                    grouped[img.collection_id] = [];
+                }
+                grouped[img.collection_id].push(img);
+            } else {
+                noCollection.push(img);
+            }
+        });
+        
+        Object.keys(grouped).forEach(collectionId => {
+            const collection = allCollections.find(c => c.id == collectionId);
+            const collectionImages = grouped[collectionId];
+            
+            if (collection) {
+                addCollectionHeader(collection, collectionImages.length);
+                collectionImages.forEach(img => addImageRow(img, collectionId));
+            }
+        });
+        
+        if (noCollection.length > 0) {
+            addCollectionHeader({id: 'none', name: 'No Collection', image_count: noCollection.length}, noCollection.length);
+            noCollection.forEach(img => addImageRow(img, 'none'));
+        }
+    }
+
+    function addCollectionHeader(collection, imageCount) {
+        const headerRow = document.createElement('tr');
+        headerRow.classList.add('collection-header', 'table-secondary');
+        headerRow.dataset.collectionId = collection.id;
+        
+        headerRow.innerHTML = `
+            <td colspan="10" class="py-2">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-3">
+                        <button class="btn btn-sm btn-outline-light toggle-collection">
+                            <i class="bi bi-chevron-down"></i>
+                        </button>
+                        <h6 class="mb-0">
+                            <i class="bi bi-folder"></i> ${collection.name}
+                            <span class="badge bg-primary ms-2">${imageCount} items</span>
+                        </h6>
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn btn-sm btn-success select-all-collection" data-collection-id="${collection.id}">
+                            <i class="bi bi-check-square"></i> Select All
+                        </button>
+                        <button class="btn btn-sm btn-info generate-collection" data-collection-id="${collection.id}">
+                            <i class="bi bi-stars"></i> Generate AI Content
+                        </button>
+                    </div>
+                </div>
+            </td>
+        `;
+        
+        tableBody.appendChild(headerRow);
+    }
+
+    function addImageRow(image, collectionId) {
         const row = document.createElement('tr');
+        row.classList.add('image-row');
         row.dataset.imageId = image.id;
+        row.dataset.collectionGroup = collectionId;
+        
+        const fileExt = image.stored_filename.split('.').pop().toLowerCase();
+        const isVideo = ['mp4', 'mov', 'avi', 'webm'].includes(fileExt);
+        
+        const mediaHtml = isVideo ? 
+            `<video src="/static/uploads/${image.stored_filename}" style="width: 60px; height: 60px; object-fit: cover;"></video>` :
+            `<img src="/static/uploads/${image.stored_filename}" class="img-thumbnail" style="width: 60px; height: 60px; object-fit: cover;">`;
         
         row.innerHTML = `
             <td><input type="checkbox" class="row-select"></td>
-            <td><img src="/static/uploads/${image.stored_filename}" class="img-thumbnail" style="width: 60px; height: 60px; object-fit: cover;"></td>
+            <td>${mediaHtml}</td>
             <td class="editable" data-field="painting_name">${image.painting_name || ''}</td>
             <td class="editable" data-field="platform">${image.platform || ''}</td>
             <td class="editable" data-field="post_subtype">${image.post_subtype || ''}</td>
@@ -76,13 +238,20 @@ document.addEventListener('DOMContentLoaded', function() {
         tableBody.appendChild(row);
     }
 
+    function addImageToTable(image) {
+        loadImages();
+    }
+
     if (uploadForm) {
         uploadForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             const fileInput = document.getElementById('file');
+            const collectionSelect = document.getElementById('collectionSelect');
             const files = fileInput.files;
             
             if (files.length === 0) return;
+            
+            const collectionId = collectionSelect ? collectionSelect.value : '';
             
             if (progressBar) progressBar.classList.remove('d-none');
             if (progressBarInner) progressBarInner.style.width = '0%';
@@ -91,6 +260,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 for (let i = 0; i < files.length; i++) {
                     const formData = new FormData();
                     formData.append('file', files[i]);
+                    if (collectionId) {
+                        formData.append('collection_id', collectionId);
+                    }
                     
                     const response = await fetch('/upload', {
                         method: 'POST',
@@ -108,8 +280,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }
                 
-                showMessage('Images uploaded successfully');
+                showMessage('Files uploaded successfully');
                 fileInput.value = '';
+                await loadCollections();
                 setTimeout(() => progressBar?.classList.add('d-none'), 1000);
             } catch (error) {
                 showMessage('Upload failed: ' + error.message, 'danger');
@@ -196,6 +369,73 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             } else if (e.target.closest('.edit-details-btn')) {
                 openDetailModal(imageId);
+            } else if (e.target.closest('.toggle-collection')) {
+                const headerRow = e.target.closest('.collection-header');
+                const collectionId = headerRow.dataset.collectionId;
+                const icon = e.target.querySelector('i') || e.target;
+                const rows = document.querySelectorAll(`tr.image-row[data-collection-group="${collectionId}"]`);
+                
+                rows.forEach(row => {
+                    row.classList.toggle('d-none');
+                });
+                
+                if (icon.classList.contains('bi-chevron-down')) {
+                    icon.classList.remove('bi-chevron-down');
+                    icon.classList.add('bi-chevron-right');
+                } else {
+                    icon.classList.remove('bi-chevron-right');
+                    icon.classList.add('bi-chevron-down');
+                }
+            } else if (e.target.closest('.select-all-collection')) {
+                const btn = e.target.closest('.select-all-collection');
+                const collectionId = btn.dataset.collectionId;
+                const rows = document.querySelectorAll(`tr.image-row[data-collection-group="${collectionId}"]`);
+                
+                rows.forEach(row => {
+                    const checkbox = row.querySelector('.row-select');
+                    if (checkbox) checkbox.checked = true;
+                });
+                
+                updateSelectedPreview();
+                showMessage(`Selected all items in collection`);
+            } else if (e.target.closest('.generate-collection')) {
+                const btn = e.target.closest('.generate-collection');
+                const collectionId = btn.dataset.collectionId;
+                const rows = document.querySelectorAll(`tr.image-row[data-collection-group="${collectionId}"]`);
+                
+                const imageIds = [];
+                rows.forEach(row => {
+                    if (row.dataset.imageId) {
+                        imageIds.push(parseInt(row.dataset.imageId));
+                    }
+                });
+                
+                if (imageIds.length === 0) {
+                    showMessage('No images in this collection', 'warning');
+                    return;
+                }
+                
+                showMessage(`Generating AI content for ${imageIds.length} items...`, 'info');
+                
+                let successCount = 0;
+                for (const imageId of imageIds) {
+                    try {
+                        const response = await fetch(`/generate_content/${imageId}`, {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({platform: 'all'})
+                        });
+                        
+                        if (response.ok) {
+                            successCount++;
+                        }
+                    } catch (error) {
+                        console.error('Content generation failed for ' + imageId, error);
+                    }
+                }
+                
+                showMessage(`✅ Generated content for ${successCount}/${imageIds.length} items using Vision AI`);
+                loadImages();
             }
         });
     }
