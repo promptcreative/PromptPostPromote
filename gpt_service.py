@@ -146,7 +146,7 @@ TEXT: [general caption]"""
         if artist_note:
             artwork_details += f"\nArtist's Note: {artist_note}"
         
-        prompt = f"{artwork_details}\n\n{prompt}\n\nIMPORTANT: Incorporate the size, materials, and artist's personal note into your descriptions to make the content unique and authentic."
+        prompt = f"{artwork_details}\n\n{prompt}\n\nIMPORTANT: \n1. Describe the COLORS you see in the artwork (specific shades like 'deep turquoise', 'warm coral', 'soft lavender')\n2. Incorporate the size, materials, and artist's personal note into your descriptions\n3. Make the content unique, vivid, and authentic by focusing on visual details"
         
         try:
             response = self.client.chat.completions.create(
@@ -154,7 +154,7 @@ TEXT: [general caption]"""
                 messages=[
                     {
                         "role": "system",
-                        "content": "You are an expert art curator and digital marketing specialist. Analyze artwork images and create compelling, SEO-optimized content for social media and e-commerce platforms."
+                        "content": "You are an expert art curator and digital marketing specialist. Analyze artwork images carefully, describing specific COLORS, textures, and visual elements you observe. Create compelling, SEO-optimized content for social media and e-commerce platforms that helps viewers visualize the artwork."
                     },
                     {
                         "role": "user",
