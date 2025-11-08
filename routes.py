@@ -560,7 +560,7 @@ def generate_mockups():
 
 @app.route('/generate-video', methods=['POST'])
 def generate_video():
-    """Generate a video for a single image using Pika 2.2"""
+    """Start async video generation for a single image using Pika 2.2"""
     data = request.get_json()
     if not data or 'image_id' not in data:
         return jsonify({'error': 'No image_id provided'}), 400
@@ -578,19 +578,21 @@ def generate_video():
         image_url = f"{request.host_url}static/uploads/{image.stored_filename}"
         
         service = FalService()
-        result = service.generate_video(image_url, prompt, resolution, duration)
+        request_id = service.generate_video_async(image_url, prompt, resolution, duration)
         
-        if not result:
-            return jsonify({'error': 'Video generation failed'}), 500
+        if not request_id:
+            return jsonify({'error': 'Failed to start video generation'}), 500
         
         asset = GeneratedAsset(
             image_id=image_id,
             asset_type='video',
-            url=result['video_url'],
+            url='',
             asset_metadata=json.dumps({
-                'prompt': result.get('prompt'),
-                'resolution': result.get('resolution'),
-                'duration': result.get('duration')
+                'request_id': request_id,
+                'prompt': prompt,
+                'resolution': resolution,
+                'duration': duration,
+                'status': 'processing'
             })
         )
         db.session.add(asset)
@@ -598,12 +600,77 @@ def generate_video():
         
         return jsonify({
             'success': True,
-            'video_url': result['video_url'],
-            'asset_id': asset.id
-        }), 200
+            'asset_id': asset.id,
+            'request_id': request_id,
+            'status': 'processing'
+        }), 202
         
     except Exception as e:
         db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/video-status/<int:asset_id>', methods=['GET'])
+def check_video_status(asset_id):
+    """Check the status of a video generation request"""
+    try:
+        asset = GeneratedAsset.query.get(asset_id)
+        if not asset or asset.asset_type != 'video':
+            return jsonify({'error': 'Video asset not found'}), 404
+        
+        metadata = json.loads(asset.asset_metadata) if asset.asset_metadata else {}
+        request_id = metadata.get('request_id')
+        
+        if not request_id:
+            return jsonify({'error': 'No request_id found'}), 400
+        
+        if asset.url:
+            return jsonify({
+                'status': 'completed',
+                'video_url': asset.url
+            }), 200
+        
+        service = FalService()
+        status = service.check_video_status(request_id)
+        
+        if status['status'] == 'completed':
+            asset.url = status['video_url']
+            metadata['status'] = 'completed'
+            metadata['video_url'] = status['video_url']
+            asset.asset_metadata = json.dumps(metadata)
+            db.session.commit()
+            
+            return jsonify({
+                'status': 'completed',
+                'video_url': status['video_url']
+            }), 200
+        
+        elif status['status'] == 'failed':
+            metadata['status'] = 'failed'
+            metadata['error'] = status.get('error')
+            asset.asset_metadata = json.dumps(metadata)
+            db.session.commit()
+            
+            return jsonify({
+                'status': 'failed',
+                'error': status.get('error')
+            }), 200
+        
+        elif status['status'] == 'error':
+            metadata['status'] = 'error'
+            metadata['error'] = status.get('error', 'Network or API error')
+            asset.asset_metadata = json.dumps(metadata)
+            db.session.commit()
+            
+            return jsonify({
+                'status': 'error',
+                'error': status.get('error', 'Network or API error')
+            }), 200
+        
+        else:
+            return jsonify({'status': 'processing'}), 200
+            
+    except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 

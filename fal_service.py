@@ -17,9 +17,9 @@ class FalService:
             "Content-Type": "application/json"
         }
     
-    def generate_video(self, image_url: str, prompt: str = "camera slowly zooming in", 
-                      resolution: str = "720p", duration: int = 5) -> Optional[Dict]:
-        """Generate a video from an image using Pika 2.2
+    def generate_video_async(self, image_url: str, prompt: str = "camera slowly zooming in", 
+                             resolution: str = "720p", duration: int = 5) -> Optional[str]:
+        """Start async video generation from an image using Pika 2.2
         
         Args:
             image_url: Public URL of the artwork image
@@ -28,7 +28,7 @@ class FalService:
             duration: Video duration in seconds (3-5)
             
         Returns:
-            Dict with video_url and metadata, or None if failed
+            request_id for polling status, or None if failed
         """
         payload = {
             "image_url": image_url,
@@ -52,13 +52,59 @@ class FalService:
                 print("No request_id in response")
                 return None
             
-            return self._poll_for_result(request_id)
+            return request_id
             
         except requests.exceptions.RequestException as e:
             print(f"Error generating video: {e}")
             if hasattr(e, 'response') and e.response is not None:
                 print(f"Response: {e.response.text}")
             return None
+    
+    def check_video_status(self, request_id: str) -> Dict:
+        """Check the status of an async video generation request
+        
+        Args:
+            request_id: The request ID from generate_video_async
+            
+        Returns:
+            Dict with status and optional video_url/error
+        """
+        status_url = f"https://queue.fal.run/fal-ai/pika/v2.2/image-to-video/requests/{request_id}"
+        
+        try:
+            response = requests.get(status_url, headers=self.headers, timeout=10)
+            response.raise_for_status()
+            data = response.json()
+            
+            status = data.get('status')
+            
+            if status == 'COMPLETED':
+                output = data.get('output', {})
+                video_url = output.get('video', {}).get('url')
+                
+                if video_url:
+                    return {
+                        'status': 'completed',
+                        'video_url': video_url,
+                        'duration': output.get('duration'),
+                        'resolution': output.get('resolution'),
+                        'prompt': data.get('input', {}).get('prompt')
+                    }
+                else:
+                    return {'status': 'failed', 'error': 'No video URL in response'}
+            
+            elif status == 'FAILED':
+                error = data.get('error', 'Unknown error')
+                return {'status': 'failed', 'error': error}
+            
+            elif status in ['IN_QUEUE', 'IN_PROGRESS']:
+                return {'status': 'processing'}
+            
+            else:
+                return {'status': 'unknown', 'raw_status': status}
+                
+        except requests.exceptions.RequestException as e:
+            return {'status': 'error', 'error': str(e)}
     
     def _poll_for_result(self, request_id: str, max_wait: int = 300, poll_interval: int = 5) -> Optional[Dict]:
         """Poll fal.ai for video generation result
