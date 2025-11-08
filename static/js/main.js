@@ -73,12 +73,47 @@ document.addEventListener('DOMContentLoaded', function() {
         if (currentValue) {
             collectionSelect.value = currentValue;
         }
+        
+        updateCollectionInfo();
+    }
+    
+    function updateCollectionInfo() {
+        const collectionSelect = document.getElementById('collectionSelect');
+        const collectionInfo = document.getElementById('collectionInfo');
+        const collectionInfoName = document.getElementById('collectionInfoName');
+        const collectionInfoDetails = document.getElementById('collectionInfoDetails');
+        
+        if (!collectionSelect || !collectionInfo) return;
+        
+        const selectedId = collectionSelect.value;
+        
+        if (selectedId) {
+            const collection = allCollections.find(c => c.id == selectedId);
+            if (collection) {
+                collectionInfoName.textContent = collection.name;
+                const details = [];
+                if (collection.materials) details.push(`Materials: ${collection.materials}`);
+                if (collection.size) details.push(`Size: ${collection.size}`);
+                collectionInfoDetails.textContent = details.join(' | ') || 'No details added yet';
+                collectionInfo.classList.remove('d-none');
+            } else {
+                collectionInfo.classList.add('d-none');
+            }
+        } else {
+            collectionInfo.classList.add('d-none');
+        }
     }
 
     const createCollectionBtn = document.getElementById('createCollectionBtn');
     const newCollectionForm = document.getElementById('newCollectionForm');
     const saveNewCollection = document.getElementById('saveNewCollection');
     const cancelNewCollection = document.getElementById('cancelNewCollection');
+    const collectionSelect = document.getElementById('collectionSelect');
+    
+    // Update collection info when dropdown changes
+    if (collectionSelect) {
+        collectionSelect.addEventListener('change', updateCollectionInfo);
+    }
 
     if (createCollectionBtn) {
         createCollectionBtn.addEventListener('click', function() {
