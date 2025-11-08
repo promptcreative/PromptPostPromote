@@ -94,6 +94,9 @@ document.addEventListener('DOMContentLoaded', function() {
         saveNewCollection.addEventListener('click', async function() {
             const name = document.getElementById('newCollectionName').value.trim();
             const description = document.getElementById('newCollectionDesc').value.trim();
+            const materials = document.getElementById('newCollectionMaterials').value.trim();
+            const size = document.getElementById('newCollectionSize').value.trim();
+            const artist_note = document.getElementById('newCollectionArtistNote').value.trim();
             
             if (!name) {
                 showMessage('Please enter a collection name', 'warning');
@@ -104,7 +107,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const response = await fetch('/collections', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ name, description })
+                    body: JSON.stringify({ name, description, materials, size, artist_note })
                 });
                 
                 if (response.ok) {
@@ -117,6 +120,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     createCollectionBtn.classList.remove('d-none');
                     document.getElementById('newCollectionName').value = '';
                     document.getElementById('newCollectionDesc').value = '';
+                    document.getElementById('newCollectionMaterials').value = '';
+                    document.getElementById('newCollectionSize').value = '';
+                    document.getElementById('newCollectionArtistNote').value = '';
                 } else {
                     showMessage('Failed to create collection', 'danger');
                 }

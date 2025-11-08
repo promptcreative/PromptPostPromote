@@ -85,6 +85,26 @@ def migrate_schema():
                 db.session.commit()
                 print("artist_note column added successfully!")
             
+            # Add materials, size, and artist_note columns to Collection table if they don't exist
+            collection_columns_fresh = [col['name'] for col in inspector.get_columns('collection')]
+            if 'materials' not in collection_columns_fresh:
+                print("Adding materials column to Collection table...")
+                db.session.execute(text('ALTER TABLE collection ADD COLUMN materials TEXT'))
+                db.session.commit()
+                print("materials column added to Collection successfully!")
+            
+            if 'size' not in collection_columns_fresh:
+                print("Adding size column to Collection table...")
+                db.session.execute(text('ALTER TABLE collection ADD COLUMN size VARCHAR(100)'))
+                db.session.commit()
+                print("size column added to Collection successfully!")
+            
+            if 'artist_note' not in collection_columns_fresh:
+                print("Adding artist_note column to Collection table...")
+                db.session.execute(text('ALTER TABLE collection ADD COLUMN artist_note TEXT'))
+                db.session.commit()
+                print("artist_note column added to Collection successfully!")
+            
             print("Migration complete!")
             return
         

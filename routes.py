@@ -151,13 +151,25 @@ def generate_content(image_id):
         if not os.path.exists(image_path):
             return jsonify({'error': 'Image file not found'}), 404
         
+        # Pull materials, size, and artist_note from collection if available
+        materials = None
+        size = None
+        artist_note = None
+        
+        if image.collection_id:
+            collection = Collection.query.get(image.collection_id)
+            if collection:
+                materials = collection.materials
+                size = collection.size
+                artist_note = collection.artist_note
+        
         content = gpt_service.analyze_image_and_generate_content(
             image_path=image_path,
             painting_name=image.painting_name or 'Untitled Artwork',
             platform=platform,
-            materials=image.materials,
-            size=image.size,
-            artist_note=image.artist_note
+            materials=materials,
+            size=size,
+            artist_note=artist_note
         )
         
         for field, value in content.items():
@@ -211,6 +223,9 @@ def create_collection():
         collection = Collection()
         collection.name = data['name']
         collection.description = data.get('description', '')
+        collection.materials = data.get('materials', '')
+        collection.size = data.get('size', '')
+        collection.artist_note = data.get('artist_note', '')
         collection.thumbnail_image_id = data.get('thumbnail_image_id')
         
         db.session.add(collection)

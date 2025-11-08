@@ -108,6 +108,9 @@ class Collection(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255), nullable=False)
     description = db.Column(db.Text)
+    materials = db.Column(db.Text)
+    size = db.Column(db.String(100))
+    artist_note = db.Column(db.Text)
     thumbnail_image_id = db.Column(db.Integer, nullable=True)
     mockup_template_ids = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -138,6 +141,9 @@ class Collection(db.Model):
             'id': self.id,
             'name': self.name,
             'description': self.description or '',
+            'materials': self.materials or '',
+            'size': self.size or '',
+            'artist_note': self.artist_note or '',
             'thumbnail_image_id': self.thumbnail_image_id,
             'thumbnail_url': thumbnail_url,
             'mockup_template_ids': template_ids,
