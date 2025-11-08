@@ -142,8 +142,13 @@ body {
 }
 
 /* Collection Headers */
+.collection-header.table-secondary {
+    background-color: #5a5550 !important;
+    color: var(--text-light) !important;
+}
+
 .collection-header {
-    background-color: #3d3530 !important;
+    background-color: #5a5550 !important;
     color: var(--text-light) !important;
 }
 
