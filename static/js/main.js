@@ -176,12 +176,8 @@ document.addEventListener('DOMContentLoaded', function() {
         headerRow.dataset.collectionId = collection.id;
         
         let templateCount = 0;
-        try {
-            if (collection.mockup_template_ids) {
-                templateCount = JSON.parse(collection.mockup_template_ids).length;
-            }
-        } catch (e) {
-            templateCount = 0;
+        if (collection.mockup_template_ids && Array.isArray(collection.mockup_template_ids)) {
+            templateCount = collection.mockup_template_ids.length;
         }
         const templateBadge = templateCount > 0 ? `<span class="badge bg-success ms-2">${templateCount} templates</span>` : '';
         
@@ -799,12 +795,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const collection = allCollections.find(c => c.id == currentCollectionForTemplates);
             if (!collection) return;
             
-            try {
-                selectedTemplateIds = collection.mockup_template_ids ? JSON.parse(collection.mockup_template_ids) : [];
-            } catch (e) {
-                console.error('Failed to parse mockup_template_ids:', e);
-                selectedTemplateIds = [];
-            }
+            selectedTemplateIds = (collection.mockup_template_ids && Array.isArray(collection.mockup_template_ids)) 
+                ? collection.mockup_template_ids 
+                : [];
             
             const modal = new bootstrap.Modal(document.getElementById('mockupTemplateModal'));
             modal.show();
