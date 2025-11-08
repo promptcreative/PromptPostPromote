@@ -12,17 +12,28 @@ document.addEventListener('DOMContentLoaded', function() {
     const batchUpdateBtn = document.getElementById('batchUpdateBtn');
     const generateContentBtn = document.getElementById('generateContentBtn');
 
+    let allImages = [];
+
     loadImages();
     loadCalendars();
+    
+    document.querySelectorAll('button[data-bs-toggle="tab"]').forEach(button => {
+        button.addEventListener('shown.bs.tab', function(e) {
+            if (e.target.id === 'batch-tab') {
+                updateSelectedPreview();
+            }
+        });
+    });
 
     function showMessage(message, type = 'success') {
         const alertDiv = document.createElement('div');
-        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3`;
+        alertDiv.style.zIndex = '9999';
         alertDiv.innerHTML = `
             ${message}
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         `;
-        document.querySelector('.container-fluid').insertBefore(alertDiv, document.querySelector('.tab-content'));
+        document.body.appendChild(alertDiv);
         setTimeout(() => alertDiv.remove(), 4000);
     }
 
@@ -30,6 +41,7 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             const response = await fetch('/images');
             const images = await response.json();
+            allImages = images;
             tableBody.innerHTML = '';
             images.forEach(addImageToTable);
         } catch (error) {
@@ -193,7 +205,59 @@ document.addEventListener('DOMContentLoaded', function() {
             document.querySelectorAll('.row-select').forEach(cb => {
                 cb.checked = this.checked;
             });
+            updateSelectedPreview();
         });
+    }
+    
+    if (tableBody) {
+        tableBody.addEventListener('change', function(e) {
+            if (e.target.classList.contains('row-select')) {
+                updateSelectedPreview();
+            }
+        });
+    }
+    
+    function updateSelectedPreview() {
+        const selectedIds = getSelectedImageIds();
+        const selectedCount = document.getElementById('selectedCount');
+        const selectedPreview = document.getElementById('selectedPreview');
+        
+        if (!selectedCount || !selectedPreview) return;
+        
+        selectedCount.textContent = selectedIds.length;
+        
+        if (selectedIds.length === 0) {
+            selectedPreview.innerHTML = '<p class="text-muted w-100">No items selected. Go to Content tab and check items to select.</p>';
+            return;
+        }
+        
+        const selectedImages = allImages.filter(img => selectedIds.includes(img.id));
+        
+        selectedPreview.innerHTML = selectedImages.map(img => {
+            const missingContent = [];
+            if (!img.text) missingContent.push('Text');
+            if (!img.seo_tags) missingContent.push('SEO Tags');
+            if (!img.etsy_description) missingContent.push('Etsy Desc');
+            if (!img.pinterest_description) missingContent.push('Pinterest Desc');
+            if (!img.instagram_first_comment) missingContent.push('IG Comment');
+            
+            const statusColor = missingContent.length > 0 ? 'warning' : 'success';
+            const statusIcon = missingContent.length > 0 ? 'exclamation-circle' : 'check-circle';
+            
+            return `
+                <div class="card" style="width: 200px;">
+                    <img src="/static/uploads/${img.stored_filename}" class="card-img-top" style="height: 150px; object-fit: cover;">
+                    <div class="card-body p-2">
+                        <p class="card-text small mb-1"><strong>${img.painting_name || 'Untitled'}</strong></p>
+                        <p class="small mb-1">${img.platform || 'No platform'}</p>
+                        ${missingContent.length > 0 ? 
+                            `<p class="small text-${statusColor} mb-0"><i class="bi bi-${statusIcon}"></i> Missing: ${missingContent.join(', ')}</p>` :
+                            `<p class="small text-${statusColor} mb-0"><i class="bi bi-${statusIcon}"></i> Complete</p>`
+                        }
+                    </div>
+                </div>
+            `;
+        }).join('');
     }
 
     if (exportBtn) {
