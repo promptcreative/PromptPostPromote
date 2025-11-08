@@ -865,7 +865,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     method: 'PUT',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
-                        mockup_template_ids: JSON.stringify(selectedIds)
+                        mockup_template_ids: selectedIds
                     })
                 });
                 
