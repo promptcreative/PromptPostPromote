@@ -103,6 +103,7 @@ class Collection(db.Model):
     name = db.Column(db.String(255), nullable=False)
     description = db.Column(db.Text)
     thumbnail_image_id = db.Column(db.Integer, nullable=True)
+    mockup_template_ids = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -110,6 +111,8 @@ class Collection(db.Model):
     
     def to_dict(self):
         from sqlalchemy import select, func
+        import json
+        
         image_count = db.session.scalar(select(func.count()).select_from(Image).where(Image.collection_id == self.id)) or 0
         
         thumbnail_url = None
@@ -118,12 +121,20 @@ class Collection(db.Model):
             if thumbnail_image:
                 thumbnail_url = f'/static/uploads/{thumbnail_image.stored_filename}'
         
+        template_ids = []
+        if self.mockup_template_ids:
+            try:
+                template_ids = json.loads(self.mockup_template_ids)
+            except:
+                template_ids = []
+        
         return {
             'id': self.id,
             'name': self.name,
             'description': self.description or '',
             'thumbnail_image_id': self.thumbnail_image_id,
             'thumbnail_url': thumbnail_url,
+            'mockup_template_ids': template_ids,
             'image_count': image_count,
             'created_at': self.created_at.isoformat() if self.created_at else '',
             'updated_at': self.updated_at.isoformat() if self.updated_at else ''
@@ -176,5 +187,36 @@ class CalendarEvent(db.Model):
             'midpoint_time': self.midpoint_time.isoformat() if self.midpoint_time else '',
             'event_type': self.event_type or '',
             'is_assigned': self.is_assigned,
+            'created_at': self.created_at.isoformat() if self.created_at else ''
+        }
+
+
+class GeneratedAsset(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    image_id = db.Column(db.Integer, db.ForeignKey('image.id'), nullable=False)
+    asset_type = db.Column(db.String(50), nullable=False)
+    url = db.Column(db.Text, nullable=False)
+    template_id = db.Column(db.String(255))
+    asset_metadata = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    image = db.relationship('Image', backref='generated_assets', lazy=True)
+    
+    def to_dict(self):
+        import json
+        metadata_dict = {}
+        if self.asset_metadata:
+            try:
+                metadata_dict = json.loads(self.asset_metadata)
+            except:
+                metadata_dict = {}
+        
+        return {
+            'id': self.id,
+            'image_id': self.image_id,
+            'asset_type': self.asset_type,
+            'url': self.url,
+            'template_id': self.template_id or '',
+            'metadata': metadata_dict,
             'created_at': self.created_at.isoformat() if self.created_at else ''
         }

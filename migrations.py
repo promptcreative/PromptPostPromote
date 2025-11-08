@@ -53,6 +53,18 @@ def migrate_schema():
                     db.session.commit()
                     print("collection_id column added (FK will be enforced at ORM level)")
             
+            collection_columns = [col['name'] for col in inspector.get_columns('collection')]
+            if 'mockup_template_ids' not in collection_columns:
+                print("Adding mockup_template_ids column to Collection table...")
+                db.session.execute(text('ALTER TABLE collection ADD COLUMN mockup_template_ids TEXT'))
+                db.session.commit()
+                print("mockup_template_ids column added successfully!")
+            
+            if 'generated_asset' not in inspector.get_table_names():
+                print("Creating GeneratedAsset table...")
+                db.create_all()
+                print("GeneratedAsset table created successfully!")
+            
             print("Migration complete!")
             return
         
