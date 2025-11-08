@@ -175,8 +175,18 @@ document.addEventListener('DOMContentLoaded', function() {
         headerRow.classList.add('collection-header', 'table-secondary');
         headerRow.dataset.collectionId = collection.id;
         
+        let templateCount = 0;
+        try {
+            if (collection.mockup_template_ids) {
+                templateCount = JSON.parse(collection.mockup_template_ids).length;
+            }
+        } catch (e) {
+            templateCount = 0;
+        }
+        const templateBadge = templateCount > 0 ? `<span class="badge bg-success ms-2">${templateCount} templates</span>` : '';
+        
         headerRow.innerHTML = `
-            <td colspan="10" class="py-2">
+            <td colspan="7" class="py-2">
                 <div class="d-flex align-items-center justify-content-between">
                     <div class="d-flex align-items-center gap-3">
                         <button class="btn btn-sm btn-outline-light toggle-collection">
@@ -185,9 +195,15 @@ document.addEventListener('DOMContentLoaded', function() {
                         <h6 class="mb-0">
                             <i class="bi bi-folder"></i> ${collection.name}
                             <span class="badge bg-primary ms-2">${imageCount} items</span>
+                            ${templateBadge}
                         </h6>
                     </div>
                     <div class="btn-group">
+                        ${collection.id !== 'none' ? `
+                        <button class="btn btn-sm btn-outline-light select-mockup-templates" data-collection-id="${collection.id}">
+                            <i class="bi bi-images"></i> Mockup Templates
+                        </button>
+                        ` : ''}
                         <button class="btn btn-sm btn-success select-all-collection" data-collection-id="${collection.id}">
                             <i class="bi bi-check-square"></i> Select All
                         </button>
@@ -765,5 +781,108 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (error) {
             showMessage('Error loading details: ' + error.message, 'danger');
         }
+    }
+
+    let currentCollectionForTemplates = null;
+    let availableTemplates = [];
+    let selectedTemplateIds = [];
+
+    document.addEventListener('click', async function(e) {
+        if (e.target.closest('.select-mockup-templates')) {
+            const button = e.target.closest('.select-mockup-templates');
+            currentCollectionForTemplates = button.dataset.collectionId;
+            
+            const collection = allCollections.find(c => c.id == currentCollectionForTemplates);
+            if (!collection) return;
+            
+            try {
+                selectedTemplateIds = collection.mockup_template_ids ? JSON.parse(collection.mockup_template_ids) : [];
+            } catch (e) {
+                console.error('Failed to parse mockup_template_ids:', e);
+                selectedTemplateIds = [];
+            }
+            
+            const modal = new bootstrap.Modal(document.getElementById('mockupTemplateModal'));
+            modal.show();
+            
+            await loadMockupTemplates();
+        }
+    });
+
+    async function loadMockupTemplates() {
+        const templateGrid = document.getElementById('templateGrid');
+        templateGrid.innerHTML = '<div class="col-12 text-center"><div class="spinner-border text-primary" role="status"></div></div>';
+        
+        try {
+            const response = await fetch('/mockup-templates');
+            if (!response.ok) throw new Error('Failed to load templates');
+            
+            const data = await response.json();
+            availableTemplates = data.templates;
+            
+            templateGrid.innerHTML = availableTemplates.map(template => {
+                const isSelected = selectedTemplateIds.includes(template.id);
+                return `
+                    <div class="col-md-3">
+                        <div class="card template-card ${isSelected ? 'border-primary' : ''}" data-template-id="${template.id}" style="cursor: pointer;">
+                            <img src="${template.thumbnail}" class="card-img-top" alt="${template.name}" style="height: 200px; object-fit: cover;">
+                            <div class="card-body">
+                                <div class="form-check">
+                                    <input class="form-check-input template-checkbox" type="checkbox" value="${template.id}" ${isSelected ? 'checked' : ''}>
+                                    <label class="form-check-label">
+                                        <strong>${template.name}</strong>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            document.querySelectorAll('.template-card').forEach(card => {
+                card.addEventListener('click', function(e) {
+                    if (e.target.type !== 'checkbox') {
+                        const checkbox = this.querySelector('.template-checkbox');
+                        checkbox.checked = !checkbox.checked;
+                        this.classList.toggle('border-primary');
+                    } else {
+                        this.classList.toggle('border-primary');
+                    }
+                });
+            });
+            
+        } catch (error) {
+            showMessage('Error loading templates: ' + error.message, 'danger');
+            templateGrid.innerHTML = '<div class="col-12"><p class="text-danger">Failed to load templates</p></div>';
+        }
+    }
+
+    const saveTemplatesBtn = document.getElementById('saveTemplatesBtn');
+    if (saveTemplatesBtn) {
+        saveTemplatesBtn.addEventListener('click', async function() {
+            const checkedBoxes = document.querySelectorAll('.template-checkbox:checked');
+            const selectedIds = Array.from(checkedBoxes).map(cb => cb.value);
+            
+            try {
+                const response = await fetch(`/collections/${currentCollectionForTemplates}`, {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        mockup_template_ids: JSON.stringify(selectedIds)
+                    })
+                });
+                
+                if (response.ok) {
+                    showMessage(`${selectedIds.length} templates saved to collection`);
+                    bootstrap.Modal.getInstance(document.getElementById('mockupTemplateModal')).hide();
+                    await loadCollections();
+                    loadImages();
+                } else {
+                    throw new Error('Failed to save templates');
+                }
+            } catch (error) {
+                showMessage('Error saving templates: ' + error.message, 'danger');
+            }
+        });
     }
 });

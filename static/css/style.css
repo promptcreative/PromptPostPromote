@@ -297,3 +297,24 @@ body {
 ::-webkit-scrollbar-thumb:hover {
     background: var(--accent-primary);
 }
+
+/* Template selector */
+.template-card {
+    transition: all 0.2s ease;
+    border: 2px solid var(--border-color);
+}
+
+.template-card:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+}
+
+.template-card.border-primary {
+    border-color: var(--accent-primary) !important;
+    box-shadow: 0 0 0 3px rgba(137, 159, 245, 0.2);
+}
+
+#templateGrid {
+    max-height: 60vh;
+    overflow-y: auto;
+}
