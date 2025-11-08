@@ -56,9 +56,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    function updateCollectionSelect() {
+    function updateCollectionSelect(selectedId = null) {
         const collectionSelect = document.getElementById('collectionSelect');
         if (!collectionSelect) return;
+        
+        const currentValue = selectedId || collectionSelect.value;
         
         collectionSelect.innerHTML = '<option value="">No Collection</option>';
         allCollections.forEach(collection => {
@@ -67,6 +69,10 @@ document.addEventListener('DOMContentLoaded', function() {
             option.textContent = `${collection.name} (${collection.image_count} items)`;
             collectionSelect.appendChild(option);
         });
+        
+        if (currentValue) {
+            collectionSelect.value = currentValue;
+        }
     }
 
     const createCollectionBtn = document.getElementById('createCollectionBtn');
@@ -112,10 +118,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 if (response.ok) {
                     const newCollection = await response.json();
-                    showMessage(`Collection "${name}" created!`);
+                    showMessage(`Collection "${name}" created! Ready to upload images.`);
+                    
+                    // Reload collections and auto-select the new one
                     await loadCollections();
+                    updateCollectionSelect(newCollection.id);
+                    
                     await loadImages();
-                    document.getElementById('collectionSelect').value = newCollection.id;
+                    
+                    // Hide form and clear fields
                     newCollectionForm.classList.add('d-none');
                     createCollectionBtn.classList.remove('d-none');
                     document.getElementById('newCollectionName').value = '';
