@@ -297,6 +297,9 @@ document.addEventListener('DOMContentLoaded', function() {
             <td class="small">${pinterestPreview}</td>
             <td class="editable" data-field="status">${image.status || ''}</td>
             <td>
+                <button class="btn btn-sm btn-success generate-ai-btn" data-image-id="${image.id}" title="Generate AI Content">
+                    <i class="bi bi-stars"></i>
+                </button>
                 <button class="btn btn-sm btn-primary edit-details-btn" title="Edit Details">
                     <i class="bi bi-pencil"></i>
                 </button>
@@ -440,6 +443,33 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             } else if (e.target.closest('.edit-details-btn')) {
                 openDetailModal(imageId);
+            } else if (e.target.closest('.generate-ai-btn')) {
+                const btn = e.target.closest('.generate-ai-btn');
+                const originalHtml = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = '<i class="bi bi-hourglass-split"></i>';
+                
+                try {
+                    const response = await fetch(`/generate_content/${imageId}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ platform: 'all' })
+                    });
+                    
+                    if (response.ok) {
+                        showMessage('AI content generated! Refresh to see updates.', 'success');
+                        // Reload the table to show updated content
+                        setTimeout(() => loadImages(), 1000);
+                    } else {
+                        const data = await response.json();
+                        throw new Error(data.error || 'Generation failed');
+                    }
+                } catch (error) {
+                    showMessage('AI generation failed: ' + error.message, 'danger');
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
+                }
             } else if (e.target.closest('.toggle-collection')) {
                 const headerRow = e.target.closest('.collection-header');
                 const collectionId = headerRow.dataset.collectionId;
