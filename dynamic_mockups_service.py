@@ -16,27 +16,53 @@ class DynamicMockupsService:
             "Content-Type": "application/json"
         }
     
-    def get_templates(self, category: str = "wall-art", limit: int = 50) -> List[Dict]:
-        """Fetch available mockup templates
+    def get_templates(self, category: str = None, limit: int = 200) -> List[Dict]:
+        """Fetch available mockup templates filtered for home decor/wall art only
         
         Args:
-            category: Template category (wall-art, frames, posters, etc.)
-            limit: Maximum number of templates to return
+            category: Template category (optional - we filter manually)
+            limit: Maximum number of templates to fetch initially
             
         Returns:
-            List of template dictionaries with id, name, preview_url
+            List of template dictionaries with id, name, thumbnail (filtered for home decor)
         """
         try:
             response = requests.get(
                 f"{self.base_url}/templates",
                 headers=self.headers,
-                params={"category": category, "limit": limit},
+                params={"limit": limit},
                 timeout=30
             )
             response.raise_for_status()
             data = response.json()
             
-            return data.get('templates', [])
+            all_templates = data.get('templates', [])
+            
+            # Filter for home decor categories only
+            home_decor_keywords = [
+                'frame', 'canvas', 'poster', 'wall', 'room', 'interior',
+                'gallery', 'living', 'bedroom', 'mockup', 'art print',
+                'hanging', 'mounted', 'display'
+            ]
+            
+            filtered_templates = []
+            for template in all_templates:
+                name_lower = template.get('name', '').lower()
+                category_lower = template.get('category', '').lower()
+                tags = template.get('tags', [])
+                tags_lower = ' '.join(tags).lower() if tags else ''
+                
+                combined_text = f"{name_lower} {category_lower} {tags_lower}"
+                
+                if any(keyword in combined_text for keyword in home_decor_keywords):
+                    # Exclude non-wall-art items
+                    exclude_keywords = ['tshirt', 't-shirt', 'shirt', 'mug', 'phone', 'case', 
+                                       'book', 'magazine', 'card', 'sticker', 'bag', 'tote']
+                    if not any(excl in combined_text for excl in exclude_keywords):
+                        filtered_templates.append(template)
+            
+            return filtered_templates[:50]  # Limit to 50 home decor templates
+            
         except requests.exceptions.RequestException as e:
             print(f"Error fetching templates: {e}")
             return []
