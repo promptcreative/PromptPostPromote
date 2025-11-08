@@ -2,11 +2,14 @@ import os
 from flask import render_template, request, jsonify, send_file
 from werkzeug.utils import secure_filename
 from app import app, db
-from models import Image, Calendar, CalendarEvent, Collection
+from models import Image, Calendar, CalendarEvent, Collection, GeneratedAsset
 from utils import allowed_file, generate_unique_filename, parse_ics_content
 from gpt_service import gpt_service
+from dynamic_mockups_service import DynamicMockupsService
+from fal_service import FalService
 from io import StringIO, BytesIO
 import csv
+import json
 
 @app.route('/')
 def index():
@@ -228,6 +231,8 @@ def update_collection(collection_id):
             collection.description = data['description']
         if 'thumbnail_image_id' in data:
             collection.thumbnail_image_id = data['thumbnail_image_id']
+        if 'mockup_template_ids' in data:
+            collection.mockup_template_ids = json.dumps(data['mockup_template_ids'])
         
         db.session.commit()
         return jsonify(collection.to_dict()), 200
@@ -479,3 +484,134 @@ def export_csv():
         as_attachment=True,
         download_name='publer_content.csv'
     )
+
+
+@app.route('/mockup-templates', methods=['GET'])
+def get_mockup_templates():
+    """Get available mockup templates from Dynamic Mockups"""
+    try:
+        service = DynamicMockupsService()
+        templates = service.get_templates()
+        return jsonify({'templates': templates}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/generate-mockups', methods=['POST'])
+def generate_mockups():
+    """Generate mockups for selected images using their collection's templates"""
+    data = request.get_json()
+    if not data or 'image_ids' not in data:
+        return jsonify({'error': 'No image_ids provided'}), 400
+    
+    image_ids = data['image_ids']
+    
+    try:
+        service = DynamicMockupsService()
+        results = []
+        
+        for image_id in image_ids:
+            image = Image.query.get(image_id)
+            if not image:
+                continue
+            
+            template_ids = []
+            if image.collection_id:
+                collection = Collection.query.get(image.collection_id)
+                if collection and collection.mockup_template_ids:
+                    try:
+                        template_ids = json.loads(collection.mockup_template_ids)
+                    except:
+                        template_ids = []
+            
+            if not template_ids:
+                results.append({
+                    'image_id': image_id,
+                    'error': 'No templates selected for this collection'
+                })
+                continue
+            
+            image_url = f"{request.host_url}static/uploads/{image.stored_filename}"
+            
+            mockups = service.generate_multiple_mockups(image_url, template_ids)
+            
+            for mockup in mockups:
+                asset = GeneratedAsset(
+                    image_id=image_id,
+                    asset_type='mockup',
+                    url=mockup['mockup_url'],
+                    template_id=mockup['template_id']
+                )
+                db.session.add(asset)
+            
+            db.session.commit()
+            
+            results.append({
+                'image_id': image_id,
+                'mockups_generated': len(mockups)
+            })
+        
+        return jsonify({'results': results}), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/generate-video', methods=['POST'])
+def generate_video():
+    """Generate a video for a single image using Pika 2.2"""
+    data = request.get_json()
+    if not data or 'image_id' not in data:
+        return jsonify({'error': 'No image_id provided'}), 400
+    
+    image_id = data['image_id']
+    prompt = data.get('prompt', 'camera slowly zooming in on the artwork, smooth cinematic movement')
+    resolution = data.get('resolution', '720p')
+    duration = data.get('duration', 5)
+    
+    try:
+        image = Image.query.get(image_id)
+        if not image:
+            return jsonify({'error': 'Image not found'}), 404
+        
+        image_url = f"{request.host_url}static/uploads/{image.stored_filename}"
+        
+        service = FalService()
+        result = service.generate_video(image_url, prompt, resolution, duration)
+        
+        if not result:
+            return jsonify({'error': 'Video generation failed'}), 500
+        
+        asset = GeneratedAsset(
+            image_id=image_id,
+            asset_type='video',
+            url=result['video_url'],
+            asset_metadata=json.dumps({
+                'prompt': result.get('prompt'),
+                'resolution': result.get('resolution'),
+                'duration': result.get('duration')
+            })
+        )
+        db.session.add(asset)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'video_url': result['video_url'],
+            'asset_id': asset.id
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/generated-assets/<int:image_id>', methods=['GET'])
+def get_generated_assets(image_id):
+    """Get all generated assets (mockups, videos) for an image"""
+    try:
+        assets = GeneratedAsset.query.filter_by(image_id=image_id).all()
+        return jsonify([asset.to_dict() for asset in assets]), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
