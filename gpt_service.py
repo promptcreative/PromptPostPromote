@@ -22,7 +22,10 @@ class GPTService:
         self,
         image_path: str,
         painting_name: str,
-        platform: str = "all"
+        platform: str = "all",
+        materials: Optional[str] = None,
+        size: Optional[str] = None,
+        artist_note: Optional[str] = None
     ) -> Dict[str, str]:
         """
         Analyze artwork image using GPT-4 Vision and generate platform-specific content
@@ -31,6 +34,9 @@ class GPTService:
             image_path: Path to the image file
             painting_name: Name of the painting
             platform: Target platform (instagram, pinterest, etsy, or all)
+            materials: Materials used (e.g., "Acrylic Mixed Media, Acrylic pour")
+            size: Artwork dimensions (e.g., "18x24x1")
+            artist_note: Personal story or context about the artwork
         
         Returns:
             Dictionary with platform-specific content fields
@@ -131,7 +137,16 @@ TEXT: [general caption]"""
         }
         
         prompt = platform_prompts.get(platform.lower(), platform_prompts["all"])
-        prompt = f"Painting name: '{painting_name}'\n\n{prompt}"
+        
+        artwork_details = f"Painting name: '{painting_name}'"
+        if materials:
+            artwork_details += f"\nMaterials: {materials}"
+        if size:
+            artwork_details += f"\nSize: {size}"
+        if artist_note:
+            artwork_details += f"\nArtist's Note: {artist_note}"
+        
+        prompt = f"{artwork_details}\n\n{prompt}\n\nIMPORTANT: Incorporate the size, materials, and artist's personal note into your descriptions to make the content unique and authentic."
         
         try:
             response = self.client.chat.completions.create(

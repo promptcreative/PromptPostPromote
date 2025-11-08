@@ -10,6 +10,9 @@ class Image(db.Model):
     
     title = db.Column(db.String(500))
     painting_name = db.Column(db.String(500))
+    materials = db.Column(db.Text)
+    size = db.Column(db.String(100))
+    artist_note = db.Column(db.Text)
     post_subtype = db.Column(db.String(100))
     platform = db.Column(db.String(100))
     date = db.Column(db.String(50))
@@ -62,6 +65,9 @@ class Image(db.Model):
             'collection_id': self.collection_id,
             'title': self.title or '',
             'painting_name': self.painting_name or '',
+            'materials': self.materials or '',
+            'size': self.size or '',
+            'artist_note': self.artist_note or '',
             'post_subtype': self.post_subtype or '',
             'platform': self.platform or '',
             'date': self.date or '',

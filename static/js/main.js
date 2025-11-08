@@ -182,7 +182,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const templateBadge = templateCount > 0 ? `<span class="badge bg-success ms-2">${templateCount} templates</span>` : '';
         
         headerRow.innerHTML = `
-            <td colspan="7" class="py-2">
+            <td colspan="9" class="py-2">
                 <div class="d-flex align-items-center justify-content-between">
                     <div class="d-flex align-items-center gap-3">
                         <button class="btn btn-sm btn-outline-light toggle-collection">
@@ -196,8 +196,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                     <div class="btn-group">
                         ${collection.id !== 'none' ? `
-                        <button class="btn btn-sm btn-outline-light select-mockup-templates" data-collection-id="${collection.id}">
-                            <i class="bi bi-images"></i> Mockup Templates
+                        <button class="btn btn-sm btn-outline-light" disabled title="Create mockups externally and upload them to your collection">
+                            <i class="bi bi-images"></i> Mockup Templates (Coming Soon)
                         </button>
                         ` : ''}
                         <button class="btn btn-sm btn-success select-all-collection" data-collection-id="${collection.id}">
@@ -239,6 +239,8 @@ document.addEventListener('DOMContentLoaded', function() {
             <td><input type="checkbox" class="row-select"></td>
             <td>${mediaHtml}</td>
             <td class="editable" data-field="painting_name">${image.painting_name || '<span class="text-muted fst-italic">No name</span>'}</td>
+            <td class="editable small" data-field="materials">${image.materials || '<span class="text-muted fst-italic">-</span>'}</td>
+            <td class="editable small" data-field="size">${image.size || '<span class="text-muted fst-italic">-</span>'}</td>
             <td class="small">${instagramPreview}</td>
             <td class="small">${pinterestPreview}</td>
             <td class="editable" data-field="status">${image.status || ''}</td>
@@ -732,6 +734,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     <div class="col-md-6">
                         <label class="form-label">Painting Name</label>
                         <input type="text" class="form-control" data-field="painting_name" value="${image.painting_name || ''}">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Size</label>
+                        <input type="text" class="form-control" data-field="size" value="${image.size || ''}" placeholder="e.g., 18x24x1">
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label">Materials</label>
+                        <input type="text" class="form-control" data-field="materials" value="${image.materials || ''}" placeholder="e.g., Acrylic Mixed Media, Acrylic pour">
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label">Artist Note</label>
+                        <textarea class="form-control" rows="2" data-field="artist_note" placeholder="Personal story or context (e.g., 'Happy accident while experimenting...')">${image.artist_note || ''}</textarea>
                     </div>
                     <div class="col-md-12">
                         <label class="form-label">Text/Caption</label>

@@ -70,7 +70,8 @@ def update_image(image_id):
     value = data['value']
     
     valid_fields = [
-        'title', 'painting_name', 'post_subtype', 'platform', 'date', 'time', 
+        'title', 'painting_name', 'materials', 'size', 'artist_note',
+        'post_subtype', 'platform', 'date', 'time', 
         'status', 'labels', 'post_url', 'alt_text', 'cta', 'comments', 
         'cover_image_url', 'etsy_description', 'etsy_listing_title', 
         'etsy_price', 'etsy_quantity', 'etsy_sku', 'instagram_first_comment',
@@ -106,7 +107,8 @@ def batch_update():
     updates = data['updates']
     
     valid_fields = [
-        'title', 'painting_name', 'post_subtype', 'platform', 'date', 'time', 
+        'title', 'painting_name', 'materials', 'size', 'artist_note',
+        'post_subtype', 'platform', 'date', 'time', 
         'status', 'labels', 'post_url', 'alt_text', 'cta', 'comments', 
         'cover_image_url', 'etsy_description', 'etsy_listing_title', 
         'etsy_price', 'etsy_quantity', 'etsy_sku', 'instagram_first_comment',
@@ -152,7 +154,10 @@ def generate_content(image_id):
         content = gpt_service.analyze_image_and_generate_content(
             image_path=image_path,
             painting_name=image.painting_name or 'Untitled Artwork',
-            platform=platform
+            platform=platform,
+            materials=image.materials,
+            size=image.size,
+            artist_note=image.artist_note
         )
         
         for field, value in content.items():
@@ -401,6 +406,9 @@ def export_csv():
         'Collection',
         'Title',
         'Painting Name',
+        'Materials',
+        'Size',
+        'Artist Note',
         'Post subtype',
         'Platform',
         'Date',
@@ -445,6 +453,9 @@ def export_csv():
             collection_name,
             image.title or '',
             image.painting_name or '',
+            image.materials or '',
+            image.size or '',
+            image.artist_note or '',
             image.post_subtype or '',
             image.platform or '',
             image.date or '',

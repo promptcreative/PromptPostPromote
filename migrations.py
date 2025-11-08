@@ -65,6 +65,26 @@ def migrate_schema():
                 db.create_all()
                 print("GeneratedAsset table created successfully!")
             
+            # Add materials, size, and artist_note columns if they don't exist
+            image_columns = [col['name'] for col in inspector.get_columns('image')]
+            if 'materials' not in image_columns:
+                print("Adding materials column to Image table...")
+                db.session.execute(text('ALTER TABLE image ADD COLUMN materials TEXT'))
+                db.session.commit()
+                print("materials column added successfully!")
+            
+            if 'size' not in image_columns:
+                print("Adding size column to Image table...")
+                db.session.execute(text('ALTER TABLE image ADD COLUMN size VARCHAR(100)'))
+                db.session.commit()
+                print("size column added successfully!")
+            
+            if 'artist_note' not in image_columns:
+                print("Adding artist_note column to Image table...")
+                db.session.execute(text('ALTER TABLE image ADD COLUMN artist_note TEXT'))
+                db.session.commit()
+                print("artist_note column added successfully!")
+            
             print("Migration complete!")
             return
         
