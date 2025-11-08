@@ -2,8 +2,8 @@ import os
 from flask import render_template, request, jsonify, send_file
 from werkzeug.utils import secure_filename
 from app import app, db
-from models import Image
-from utils import allowed_file, generate_unique_filename, generate_placeholder_content
+from models import Image, Calendar, CalendarEvent
+from utils import allowed_file, generate_unique_filename, parse_ics_content
 from gpt_service import gpt_service
 from io import StringIO, BytesIO
 import csv
@@ -18,30 +18,22 @@ def upload_file():
         return jsonify({'error': 'No file part'}), 400
     
     file = request.files['file']
-    if file.filename == '':
+    if not file or file.filename == '' or file.filename is None:
         return jsonify({'error': 'No selected file'}), 400
     
     if file and allowed_file(file.filename):
         original_filename = secure_filename(file.filename)
         stored_filename = generate_unique_filename(original_filename)
         
-        # Save file
         file_path = os.path.join(app.config['UPLOAD_FOLDER'], stored_filename)
         file.save(file_path)
         
-        # Generate placeholder content
-        description, hashtags = generate_placeholder_content(original_filename)
+        image = Image()
+        image.original_filename = original_filename
+        image.stored_filename = stored_filename
+        image.status = 'Draft'
+        image.media = stored_filename
         
-        # Save to database
-        image = Image(
-            original_filename=original_filename,
-            stored_filename=stored_filename,
-            description=description,
-            hashtags=hashtags,
-            category="",  # Initialize empty category
-            post_title="",  # Initialize empty post title
-            key_points=""  # Initialize empty key points
-        )
         db.session.add(image)
         db.session.commit()
         
@@ -67,8 +59,18 @@ def update_image(image_id):
     field = data['field']
     value = data['value']
     
-    # Update allowed fields list to include post_title and key_points
-    if field not in ['category', 'post_title', 'description', 'key_points', 'hashtags']:
+    valid_fields = [
+        'title', 'painting_name', 'post_subtype', 'platform', 'date', 'time', 
+        'status', 'labels', 'post_url', 'alt_text', 'cta', 'comments', 
+        'cover_image_url', 'etsy_description', 'etsy_listing_title', 
+        'etsy_price', 'etsy_quantity', 'etsy_sku', 'instagram_first_comment',
+        'links', 'media_source', 'media_urls', 'pin_board_fb_album_google_category',
+        'pinterest_description', 'pinterest_link_url', 'reminder',
+        'seo_description', 'seo_tags', 'seo_title', 'text', 'video_pin_pdf_title',
+        'calendar_selection'
+    ]
+    
+    if field not in valid_fields:
         return jsonify({'error': 'Invalid field'}), 400
     
     image = Image.query.get(image_id)
@@ -83,114 +85,89 @@ def update_image(image_id):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-@app.route('/generate_category_content', methods=['POST'])
-def generate_category_content():
+@app.route('/batch_update', methods=['POST'])
+def batch_update():
+    """Update multiple images at once"""
     data = request.get_json()
-    if not data or 'category' not in data:
-        return jsonify({'error': 'Category is required'}), 400
+    if not data or 'image_ids' not in data or 'updates' not in data:
+        return jsonify({'error': 'Invalid request data'}), 400
     
-    category = data['category']
-    if not category:
-        return jsonify({'error': 'Category cannot be empty'}), 400
+    image_ids = data['image_ids']
+    updates = data['updates']
+    
+    valid_fields = [
+        'title', 'painting_name', 'post_subtype', 'platform', 'date', 'time', 
+        'status', 'labels', 'post_url', 'alt_text', 'cta', 'comments', 
+        'cover_image_url', 'etsy_description', 'etsy_listing_title', 
+        'etsy_price', 'etsy_quantity', 'etsy_sku', 'instagram_first_comment',
+        'links', 'media_source', 'media_urls', 'pin_board_fb_album_google_category',
+        'pinterest_description', 'pinterest_link_url', 'reminder',
+        'seo_description', 'seo_tags', 'seo_title', 'text', 'video_pin_pdf_title',
+        'calendar_selection'
+    ]
+    
+    for field in updates.keys():
+        if field not in valid_fields:
+            return jsonify({'error': f'Invalid field: {field}'}), 400
     
     try:
-        # Get all images in the category
-        images = Image.query.filter_by(category=category).all()
-        if not images:
-            return jsonify({'error': 'No images found in this category'}), 404
-        
-        # Update each image with GPT-generated content
-        for image in images:
-            description, hashtags = gpt_service.generate_artwork_content(
-                category=category,
-                filename=image.original_filename
-            )
-            image.description = description
-            image.hashtags = hashtags
+        for image_id in image_ids:
+            image = Image.query.get(image_id)
+            if image:
+                for field, value in updates.items():
+                    setattr(image, field, value)
         
         db.session.commit()
-        
-        # Return updated images
-        return jsonify({
-            'success': True,
-            'images': [img.to_dict() for img in images]
-        }), 200
-        
+        return jsonify({'success': True, 'updated_count': len(image_ids)}), 200
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-@app.route('/refine_content/<int:image_id>', methods=['POST'])
-def refine_content(image_id):
-    data = request.get_json()
-    if not data or 'feedback' not in data:
-        return jsonify({'error': 'Feedback is required'}), 400
-
+@app.route('/generate_content/<int:image_id>', methods=['POST'])
+def generate_content(image_id):
+    """Generate AI content for a specific image"""
     image = Image.query.get(image_id)
     if not image:
         return jsonify({'error': 'Image not found'}), 404
-
+    
+    data = request.get_json() or {}
+    content_type = data.get('content_type', 'general')
+    
     try:
-        feedback = data['feedback']
-        description, hashtags = gpt_service.generate_artwork_content(
-            category=image.category,
-            filename=image.original_filename,
-            feedback=feedback
-        )
+        if content_type == 'instagram':
+            description, hashtags = gpt_service.generate_artwork_content(
+                category=image.painting_name or 'artwork',
+                filename=image.original_filename
+            )
+            image.instagram_first_comment = hashtags
+            image.text = description
+        elif content_type == 'pinterest':
+            description, hashtags = gpt_service.generate_artwork_content(
+                category=image.painting_name or 'artwork',
+                filename=image.original_filename
+            )
+            image.pinterest_description = description
+            image.seo_tags = hashtags
+        elif content_type == 'etsy':
+            description, tags = gpt_service.generate_artwork_content(
+                category=image.painting_name or 'artwork',
+                filename=image.original_filename
+            )
+            image.etsy_description = description
+            image.seo_tags = tags
+        else:
+            description, hashtags = gpt_service.generate_artwork_content(
+                category=image.painting_name or 'artwork',
+                filename=image.original_filename
+            )
+            image.text = description
+            image.seo_tags = hashtags
         
-        image.description = description
-        image.hashtags = hashtags
         db.session.commit()
-        
         return jsonify(image.to_dict()), 200
-
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
-
-@app.route('/reset_content/<int:image_id>', methods=['POST'])
-def reset_content(image_id):
-    image = Image.query.get(image_id)
-    if not image:
-        return jsonify({'error': 'Image not found', 'code': 'NOT_FOUND'}), 404
-
-    if not image.description and not image.hashtags:
-        return jsonify({'error': 'No content to reset', 'code': 'NO_CONTENT'}), 400
-
-    if not image.category:
-        return jsonify({
-            'error': 'Cannot reset content without a category', 
-            'code': 'NO_CATEGORY'
-        }), 400
-
-    try:
-        description, hashtags = gpt_service.generate_artwork_content(
-            category=image.category,
-            filename=image.original_filename
-        )
-
-        image.description = description
-        image.hashtags = hashtags
-        db.session.commit()
-
-        return jsonify({
-            'success': True,
-            'message': 'Content reset successfully',
-            **image.to_dict()
-        }), 200
-
-    except Exception as e:
-        db.session.rollback()
-        error_message = str(e)
-        if 'rate limit' in error_message.lower():
-            return jsonify({
-                'error': 'Rate limit exceeded. Please try again later.',
-                'code': 'RATE_LIMIT'
-            }), 429
-        return jsonify({
-            'error': f'Failed to reset content: {error_message}',
-            'code': 'GENERATION_ERROR'
-        }), 500
 
 @app.route('/remove_image/<int:image_id>', methods=['POST'])
 def remove_image(image_id):
@@ -199,12 +176,11 @@ def remove_image(image_id):
         return jsonify({'error': 'Image not found'}), 404
         
     try:
-        # Delete the file from uploads folder
-        file_path = os.path.join(app.static_folder, 'uploads', image.stored_filename)
-        if os.path.exists(file_path):
-            os.remove(file_path)
+        if app.static_folder and image.stored_filename:
+            file_path = os.path.join(app.static_folder, 'uploads', image.stored_filename)
+            if os.path.exists(file_path):
+                os.remove(file_path)
             
-        # Delete database record
         db.session.delete(image)
         db.session.commit()
         
@@ -214,23 +190,201 @@ def remove_image(image_id):
         db.session.rollback()
         return jsonify({'error': f'Failed to remove image: {str(e)}'}), 500
 
+@app.route('/calendars', methods=['GET'])
+def get_calendars():
+    """Get all calendars"""
+    try:
+        calendars = Calendar.query.all()
+        return jsonify([cal.to_dict() for cal in calendars])
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/calendar/import', methods=['POST'])
+def import_calendar():
+    """Import .ics calendar file"""
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part'}), 400
+    
+    file = request.files['file']
+    calendar_type = request.form.get('calendar_type', 'default')
+    calendar_name = request.form.get('calendar_name', file.filename if file.filename else 'Calendar')
+    
+    if not file or file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+    
+    try:
+        content = file.read().decode('utf-8')
+        events = parse_ics_content(content)
+        
+        existing_calendar = Calendar.query.filter_by(calendar_type=calendar_type).first()
+        if existing_calendar:
+            CalendarEvent.query.filter_by(calendar_id=existing_calendar.id).delete()
+            calendar = existing_calendar
+            calendar.calendar_name = calendar_name
+        else:
+            calendar = Calendar()
+            calendar.calendar_type = calendar_type
+            calendar.calendar_name = calendar_name
+            db.session.add(calendar)
+            db.session.flush()
+        
+        for event_data in events:
+            event = CalendarEvent()
+            event.calendar_id = calendar.id
+            event.summary = event_data['summary']
+            event.start_time = event_data['start_time']
+            event.end_time = event_data['end_time']
+            event.midpoint_time = event_data['midpoint_time']
+            event.event_type = event_data['event_type']
+            db.session.add(event)
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'calendar': calendar.to_dict(),
+            'event_count': len(events)
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/calendar/<int:calendar_id>/events', methods=['GET'])
+def get_calendar_events(calendar_id):
+    """Get all events for a calendar"""
+    try:
+        events = CalendarEvent.query.filter_by(calendar_id=calendar_id, is_assigned=False).order_by(CalendarEvent.midpoint_time).all()
+        return jsonify([event.to_dict() for event in events])
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/assign_times', methods=['POST'])
+def assign_times():
+    """Assign calendar times to selected images"""
+    data = request.get_json()
+    if not data or 'image_ids' not in data or 'calendar_type' not in data:
+        return jsonify({'error': 'Invalid request data'}), 400
+    
+    image_ids = data['image_ids']
+    calendar_type = data['calendar_type']
+    
+    try:
+        calendar = Calendar.query.filter_by(calendar_type=calendar_type).first()
+        if not calendar:
+            return jsonify({'error': 'Calendar not found'}), 404
+        
+        available_events = CalendarEvent.query.filter_by(
+            calendar_id=calendar.id,
+            is_assigned=False
+        ).order_by(CalendarEvent.midpoint_time).all()
+        
+        if not available_events:
+            return jsonify({'error': 'No available time slots in this calendar'}), 400
+        
+        assigned_count = 0
+        for i, image_id in enumerate(image_ids):
+            image = Image.query.get(image_id)
+            if image and i < len(available_events):
+                event = available_events[i]
+                midpoint = event.midpoint_time
+                
+                image.date = midpoint.strftime('%Y-%m-%d')
+                image.time = midpoint.strftime('%H:%M')
+                image.calendar_selection = calendar_type
+                
+                event.is_assigned = True
+                assigned_count += 1
+        
+        db.session.commit()
+        return jsonify({
+            'success': True,
+            'assigned_count': assigned_count
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/export', methods=['GET'])
 def export_csv():
-    images = Image.query.all()
+    """Export to Publer-compatible CSV format with all required columns"""
+    images = Image.query.order_by(Image.date, Image.time).all()
     
     output = StringIO()
     writer = csv.writer(output)
-    writer.writerow(['Original Filename', 'Category', 'Post Title', 'Description', 'Key Points', 'Hashtags', 'Created At'])
+    
+    writer.writerow([
+        'Title',
+        'Painting Name',
+        'Post subtype',
+        'Platform',
+        'Date',
+        'Time',
+        'Status',
+        'Label(s)',
+        'Post URL',
+        'Alt text(s)',
+        'CTA',
+        'Comment(s)',
+        'Cover Image URL',
+        'Etsy Description',
+        'Etsy Listing Title',
+        'Etsy Price',
+        'Etsy Quantity',
+        'Etsy SKU',
+        'Instagram First Comment',
+        'Link(s)',
+        'Media',
+        'Media Source',
+        'Media URL(s)',
+        'Pin board, FB album, or Google category',
+        'Pinterest Description',
+        'Pinterest Link URL',
+        'Reminder',
+        'SEO Description',
+        'SEO Tags',
+        'SEO Title',
+        'Text',
+        'Title - For the video, pin, PDF',
+        'Calendar Selection'
+    ])
     
     for image in images:
         writer.writerow([
-            image.original_filename,
-            image.category,
-            image.post_title,
-            image.description,
-            image.key_points,
-            image.hashtags,
-            image.created_at
+            image.title or '',
+            image.painting_name or '',
+            image.post_subtype or '',
+            image.platform or '',
+            image.date or '',
+            image.time or '',
+            image.status or '',
+            image.labels or '',
+            image.post_url or '',
+            image.alt_text or '',
+            image.cta or '',
+            image.comments or '',
+            image.cover_image_url or '',
+            image.etsy_description or '',
+            image.etsy_listing_title or '',
+            image.etsy_price or '',
+            image.etsy_quantity or '',
+            image.etsy_sku or '',
+            image.instagram_first_comment or '',
+            image.links or '',
+            image.media or '',
+            image.media_source or '',
+            image.media_urls or '',
+            image.pin_board_fb_album_google_category or '',
+            image.pinterest_description or '',
+            image.pinterest_link_url or '',
+            image.reminder or '',
+            image.seo_description or '',
+            image.seo_tags or '',
+            image.seo_title or '',
+            image.text or '',
+            image.video_pin_pdf_title or '',
+            image.calendar_selection or ''
         ])
     
     output_string = output.getvalue()
@@ -240,5 +394,5 @@ def export_csv():
         BytesIO(output_string.encode()),
         mimetype='text/csv',
         as_attachment=True,
-        download_name='artwork_data.csv'
+        download_name='publer_content.csv'
     )

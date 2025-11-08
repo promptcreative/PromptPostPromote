@@ -1,458 +1,447 @@
 document.addEventListener('DOMContentLoaded', function() {
     const uploadForm = document.getElementById('uploadForm');
     const imageTable = document.getElementById('imageTable');
-    const tableBody = imageTable ? imageTable.querySelector('tbody') : null;
+    const tableBody = document.getElementById('imageTableBody');
     const exportBtn = document.getElementById('exportBtn');
+    const selectAllCheckbox = document.getElementById('selectAll');
     const progressBar = document.querySelector('#uploadProgress');
-    const progressBarInner = progressBar ? progressBar.querySelector('.progress-bar') : null;
-    const feedbackModal = new bootstrap.Modal(document.getElementById('feedbackModal'));
+    const progressBarInner = progressBar?.querySelector('.progress-bar');
     
-    // Initialize tooltips
-    const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-    tooltipTriggerList.forEach(el => new bootstrap.Tooltip(el));
+    const calendarImportForm = document.getElementById('calendarImportForm');
+    const assignTimesBtn = document.getElementById('assignTimesBtn');
+    const batchUpdateBtn = document.getElementById('batchUpdateBtn');
+    const generateContentBtn = document.getElementById('generateContentBtn');
 
-    // Load existing images
+    loadImages();
+    loadCalendars();
+
+    function showMessage(message, type = 'success') {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.querySelector('.container-fluid').insertBefore(alertDiv, document.querySelector('.tab-content'));
+        setTimeout(() => alertDiv.remove(), 4000);
+    }
+
     async function loadImages() {
         try {
             const response = await fetch('/images');
-            if (!response.ok) throw new Error('Failed to load images');
             const images = await response.json();
-            if (Array.isArray(images)) {
-                images.forEach(addImageToTable);
-            }
+            tableBody.innerHTML = '';
+            images.forEach(addImageToTable);
         } catch (error) {
-            showErrorMessage('Error loading images: ' + error.message);
+            showMessage('Error loading images: ' + error.message, 'danger');
         }
     }
 
-    loadImages();
-
-    function showErrorMessage(message) {
-        const alertDiv = document.createElement('div');
-        alertDiv.className = 'alert alert-danger alert-dismissible fade show';
-        alertDiv.innerHTML = `
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    function addImageToTable(image) {
+        const row = document.createElement('tr');
+        row.dataset.imageId = image.id;
+        
+        row.innerHTML = `
+            <td><input type="checkbox" class="row-select"></td>
+            <td><img src="/static/uploads/${image.stored_filename}" class="img-thumbnail" style="width: 60px; height: 60px; object-fit: cover;"></td>
+            <td class="editable" data-field="painting_name">${image.painting_name || ''}</td>
+            <td class="editable" data-field="platform">${image.platform || ''}</td>
+            <td class="editable" data-field="post_subtype">${image.post_subtype || ''}</td>
+            <td class="editable" data-field="date">${image.date || ''}</td>
+            <td class="editable" data-field="time">${image.time || ''}</td>
+            <td class="editable" data-field="status">${image.status || ''}</td>
+            <td><span class="badge bg-info">${image.calendar_selection || 'None'}</span></td>
+            <td>
+                <button class="btn btn-sm btn-primary edit-details-btn" title="Edit Details">
+                    <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-sm btn-danger remove-btn" title="Remove">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </td>
         `;
-
-        const container = document.querySelector('.container');
-        if (container) {
-            try {
-                const imageTable = document.getElementById('imageTable');
-                if (imageTable && imageTable.parentNode === container) {
-                    container.insertBefore(alertDiv, imageTable);
-                } else {
-                    container.appendChild(alertDiv);
-                }
-            } catch (error) {
-                console.error('DOM insertion error:', error);
-                container.appendChild(alertDiv);
-            }
-            setTimeout(() => alertDiv.remove(), 5000);
-        }
+        
+        tableBody.appendChild(row);
     }
 
-    function showSuccessMessage(message) {
-        const alertDiv = document.createElement('div');
-        alertDiv.className = 'alert alert-success alert-dismissible fade show';
-        alertDiv.innerHTML = `
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        `;
-        document.querySelector('.container').insertBefore(alertDiv, imageTable);
-        setTimeout(() => alertDiv.remove(), 3000);
-    }
-
-    // Handle file upload
     if (uploadForm) {
         uploadForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             const fileInput = document.getElementById('file');
             const files = fileInput.files;
-
-            if (files.length === 0) {
-                showErrorMessage('Please select at least one file to upload');
-                return;
-            }
-
+            
+            if (files.length === 0) return;
+            
             if (progressBar) progressBar.classList.remove('d-none');
-            if (progressBarInner) {
-                progressBarInner.style.width = '0%';
-                progressBarInner.setAttribute('aria-valuenow', 0);
-            }
-
+            if (progressBarInner) progressBarInner.style.width = '0%';
+            
             try {
-                let completed = 0;
-                const totalFiles = files.length;
-
-                for (const file of files) {
+                for (let i = 0; i < files.length; i++) {
                     const formData = new FormData();
-                    formData.append('file', file);
-
+                    formData.append('file', files[i]);
+                    
                     const response = await fetch('/upload', {
                         method: 'POST',
                         body: formData
                     });
-
-                    if (!response.ok) {
-                        throw new Error(`Upload failed for ${file.name}`);
+                    
+                    if (response.ok) {
+                        const imageData = await response.json();
+                        addImageToTable(imageData);
                     }
-
-                    const imageData = await response.json();
-                    addImageToTable(imageData);
-
-                    completed++;
+                    
                     if (progressBarInner) {
-                        const progress = (completed / totalFiles) * 100;
+                        const progress = ((i + 1) / files.length) * 100;
                         progressBarInner.style.width = `${progress}%`;
-                        progressBarInner.setAttribute('aria-valuenow', progress);
                     }
                 }
-
-                showSuccessMessage('Files uploaded successfully');
+                
+                showMessage('Images uploaded successfully');
                 fileInput.value = '';
-
-                setTimeout(() => {
-                    if (progressBar) progressBar.classList.add('d-none');
-                }, 1000);
+                setTimeout(() => progressBar?.classList.add('d-none'), 1000);
             } catch (error) {
-                showErrorMessage(error.message);
-                if (progressBar) progressBar.classList.add('d-none');
+                showMessage('Upload failed: ' + error.message, 'danger');
+                progressBar?.classList.add('d-none');
             }
         });
     }
 
-    // Handle export
+    if (tableBody) {
+        tableBody.addEventListener('dblclick', async function(e) {
+            const cell = e.target.closest('td.editable');
+            if (!cell) return;
+            
+            const currentText = cell.textContent.trim();
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'form-control form-control-sm';
+            input.value = currentText;
+            
+            const originalContent = cell.innerHTML;
+            cell.innerHTML = '';
+            cell.appendChild(input);
+            input.focus();
+            
+            async function saveChanges() {
+                const newValue = input.value.trim();
+                const row = cell.closest('tr');
+                const imageId = row.dataset.imageId;
+                const field = cell.dataset.field;
+                
+                if (newValue !== currentText) {
+                    try {
+                        const response = await fetch(`/update/${imageId}`, {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({field, value: newValue})
+                        });
+                        
+                        if (response.ok) {
+                            cell.textContent = newValue;
+                            showMessage('Updated successfully');
+                        } else {
+                            throw new Error('Update failed');
+                        }
+                    } catch (error) {
+                        showMessage('Update failed: ' + error.message, 'danger');
+                        cell.innerHTML = originalContent;
+                    }
+                } else {
+                    cell.innerHTML = originalContent;
+                }
+            }
+            
+            input.addEventListener('blur', saveChanges);
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    saveChanges();
+                } else if (e.key === 'Escape') {
+                    cell.innerHTML = originalContent;
+                }
+            });
+        });
+        
+        tableBody.addEventListener('click', async function(e) {
+            const row = e.target.closest('tr');
+            if (!row) return;
+            
+            const imageId = row.dataset.imageId;
+            
+            if (e.target.closest('.remove-btn')) {
+                if (confirm('Remove this image?')) {
+                    try {
+                        const response = await fetch(`/remove_image/${imageId}`, {
+                            method: 'POST'
+                        });
+                        if (response.ok) {
+                            row.remove();
+                            showMessage('Image removed');
+                        }
+                    } catch (error) {
+                        showMessage('Remove failed: ' + error.message, 'danger');
+                    }
+                }
+            } else if (e.target.closest('.edit-details-btn')) {
+                openDetailModal(imageId);
+            }
+        });
+    }
+
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            document.querySelectorAll('.row-select').forEach(cb => {
+                cb.checked = this.checked;
+            });
+        });
+    }
+
     if (exportBtn) {
         exportBtn.addEventListener('click', function() {
             window.location.href = '/export';
         });
     }
 
-    // Handle cell editing
-    if (tableBody) {
-        tableBody.addEventListener('dblclick', async function(e) {
-            const cell = e.target.closest('td');
-            if (!cell) return;
-
-            const row = cell.parentElement;
-            const columnIndex = Array.from(row.cells).indexOf(cell);
-
-            // Only allow editing Category, Post Title, Description, Key Points, and Hashtags
-            if (![0, 3, 4, 5, 6].includes(columnIndex)) return;
-
-            const currentText = cell.textContent.trim();
-            const textarea = document.createElement('textarea');
-            textarea.value = currentText;
-            textarea.className = 'form-control';
-            textarea.style.width = '100%';
-            textarea.style.minHeight = '60px';
-
-            const originalContent = cell.innerHTML;
-            cell.innerHTML = '';
-            cell.appendChild(textarea);
-            textarea.focus();
-
-            async function saveChanges() {
-                const newValue = textarea.value.trim();
-                if (!newValue) {
-                    showErrorMessage('Field cannot be empty');
-                    cell.innerHTML = originalContent;
-                    return;
-                }
-
-                if (newValue === currentText) {
-                    cell.innerHTML = originalContent;
-                    return;
-                }
-
-                const imageId = row.dataset.imageId;
-                const field = columnIndex === 0 ? 'category' :
-                            columnIndex === 3 ? 'post_title' :
-                            columnIndex === 4 ? 'description' :
-                            columnIndex === 5 ? 'key_points' : 'hashtags';
-
-                try {
-                    const response = await fetch(`/update/${imageId}`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            field: field,
-                            value: newValue
-                        })
-                    });
-
-                    if (!response.ok) {
-                        throw new Error('Failed to update');
-                    }
-
-                    cell.textContent = newValue;
-                    showSuccessMessage('Content updated successfully');
-
-                } catch (error) {
-                    showErrorMessage('Error updating: ' + error.message);
-                    cell.innerHTML = originalContent;
-                }
-            }
-
-            textarea.addEventListener('blur', saveChanges);
-            textarea.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    saveChanges();
-                }
-                if (e.key === 'Escape') {
-                    cell.innerHTML = originalContent;
-                }
-            });
-        });
-
-        // Handle buttons
-        tableBody.addEventListener('click', async function(e) {
-            const target = e.target.closest('button');
-            if (!target) return;
-
-            const row = target.closest('tr');
-            const imageId = row.dataset.imageId;
-
-            if (target.classList.contains('generate-content-btn')) {
-                const category = row.cells[0].textContent.trim();
+    if (calendarImportForm) {
+        calendarImportForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData();
+            formData.append('file', document.getElementById('calendarFile').files[0]);
+            formData.append('calendar_type', document.getElementById('calendarType').value);
+            formData.append('calendar_name', document.getElementById('calendarType').value + ' Calendar');
+            
+            try {
+                const response = await fetch('/calendar/import', {
+                    method: 'POST',
+                    body: formData
+                });
                 
-                if (!category) {
-                    showErrorMessage('Please set a category first before generating content');
-                    return;
-                }
-
-                try {
-                    target.disabled = true;
-                    target.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Generating...';
-
-                    const response = await fetch('/generate_category_content', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({ category: category })
-                    });
-
-                    if (!response.ok) {
-                        throw new Error('Failed to generate content');
-                    }
-
+                if (response.ok) {
                     const result = await response.json();
-                    if (result.success) {
-                        result.images.forEach(updateTableContent);
-                        showSuccessMessage('Content generated successfully');
-                    }
-                } catch (error) {
-                    showErrorMessage('Error generating content: ' + error.message);
-                } finally {
-                    target.disabled = false;
-                    target.innerHTML = '<i class="bi bi-lightbulb"></i> Generate';
+                    showMessage(`Calendar imported: ${result.event_count} events`);
+                    loadCalendars();
+                    calendarImportForm.reset();
+                } else {
+                    throw new Error('Import failed');
                 }
-            } else if (target.classList.contains('feedback-btn')) {
-                try {
-                    const postTitle = row.cells[3].textContent.trim();
-                    const description = row.cells[4].textContent.trim();
-                    const keyPoints = row.cells[5].textContent.trim();
-                    const hashtags = row.cells[6].textContent.trim();
-
-                    document.getElementById('generatedTitle').textContent = postTitle;
-                    document.getElementById('generatedDescription').textContent = description;
-                    document.getElementById('generatedKeyPoints').textContent = keyPoints;
-                    document.getElementById('generatedHashtags').textContent = hashtags;
-                    document.getElementById('feedbackText').value = '';
-
-                    setupFeedbackButtons(imageId);
-                    feedbackModal.show();
-                } catch (error) {
-                    showErrorMessage('Error showing feedback dialog: ' + error.message);
-                }
-            } else if (target.classList.contains('remove-entry-btn')) {
-                if (confirm('Are you sure you want to remove this entry? This action cannot be undone.')) {
-                    try {
-                        target.disabled = true;
-                        target.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Removing...';
-
-                        const response = await fetch(`/remove_image/${imageId}`, {
-                            method: 'POST'
-                        });
-
-                        if (!response.ok) {
-                            throw new Error('Failed to remove image');
-                        }
-
-                        row.remove();
-                        showSuccessMessage('Entry removed successfully');
-                    } catch (error) {
-                        showErrorMessage('Error removing entry: ' + error.message);
-                        target.disabled = false;
-                        target.innerHTML = '<i class="bi bi-trash"></i> Remove';
-                    }
-                }
+            } catch (error) {
+                showMessage('Calendar import failed: ' + error.message, 'danger');
             }
         });
     }
 
-    function setupFeedbackButtons(imageId) {
-        const acceptBtn = document.getElementById('acceptContent');
-        const refineBtn = document.getElementById('refineContent');
-        const restartBtn = document.getElementById('restartContent');
-
-        const newAcceptBtn = acceptBtn.cloneNode(true);
-        const newRefineBtn = refineBtn.cloneNode(true);
-        const newRestartBtn = restartBtn.cloneNode(true);
-
-        acceptBtn.parentNode.replaceChild(newAcceptBtn, acceptBtn);
-        refineBtn.parentNode.replaceChild(newRefineBtn, refineBtn);
-        restartBtn.parentNode.replaceChild(newRestartBtn, restartBtn);
-
-        newAcceptBtn.addEventListener('click', function() {
-            feedbackModal.hide();
-            const row = document.querySelector(`tr[data-image-id="${imageId}"]`);
-            if (row) {
-                const feedbackBtn = row.querySelector('.feedback-btn');
-                if (feedbackBtn) {
-                    feedbackBtn.classList.remove('btn-outline-info');
-                    feedbackBtn.classList.add('btn-outline-success');
-                }
-            }
-        });
-
-        newRefineBtn.addEventListener('click', async function() {
-            const feedback = document.getElementById('feedbackText').value.trim();
+    async function loadCalendars() {
+        try {
+            const response = await fetch('/calendars');
+            const calendars = await response.json();
             
-            if (!feedback) {
-                showErrorMessage('Please provide feedback for refinement');
+            const calendarList = document.getElementById('calendarList');
+            const batchCalendarSelect = document.getElementById('batchCalendarSelect');
+            
+            if (calendars.length === 0) {
+                calendarList.innerHTML = '<p class="text-muted">No calendars loaded</p>';
+                batchCalendarSelect.innerHTML = '<option value="">Select calendar...</option>';
                 return;
             }
-
-            try {
-                this.disabled = true;
-                this.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Refining...';
-
-                const response = await fetch(`/refine_content/${imageId}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ feedback: feedback })
-                });
-
-                if (!response.ok) {
-                    throw new Error('Failed to refine content');
-                }
-
-                const refinedImage = await response.json();
-                updateTableContent(refinedImage);
-                feedbackModal.hide();
-                showSuccessMessage('Content refined successfully');
-
-            } catch (error) {
-                showErrorMessage('Error refining content: ' + error.message);
-            } finally {
-                this.disabled = false;
-                this.innerHTML = '<i class="bi bi-pencil"></i> Refine';
-            }
-        });
-
-        newRestartBtn.addEventListener('click', async function() {
-            try {
-                this.disabled = true;
-                this.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Resetting...';
-
-                const response = await fetch(`/reset_content/${imageId}`, {
-                    method: 'POST'
-                });
-
-                if (!response.ok) {
-                    throw new Error('Failed to reset content');
-                }
-
-                const resetImage = await response.json();
-                updateTableContent(resetImage);
-                feedbackModal.hide();
-                showSuccessMessage('Content reset successfully');
-
-            } catch (error) {
-                showErrorMessage('Error resetting content: ' + error.message);
-            } finally {
-                this.disabled = false;
-                this.innerHTML = '<i class="bi bi-arrow-counterclockwise"></i> Delete & Restart';
-            }
-        });
-    }
-
-    function updateTableContent(image) {
-        if (!image) return;
-
-        const row = document.querySelector(`tr[data-image-id="${image.id}"]`);
-        if (row) {
-            row.cells[0].textContent = image.category || '';
-            row.cells[2].textContent = image.original_filename || '';
-            row.cells[3].textContent = image.post_title || '';
-            row.cells[4].textContent = image.description || '';
-            row.cells[5].textContent = image.key_points || '';
-            row.cells[6].textContent = image.hashtags || '';
-
-            const feedbackBtn = row.querySelector('.feedback-btn');
-            if (feedbackBtn && (image.description || image.hashtags)) {
-                feedbackBtn.style.display = 'inline-block';
-            }
+            
+            calendarList.innerHTML = calendars.map(cal => `
+                <div class="card mb-2">
+                    <div class="card-body py-2">
+                        <strong>${cal.calendar_name}</strong>
+                        <br><small class="text-muted">${cal.event_count} events</small>
+                    </div>
+                </div>
+            `).join('');
+            
+            batchCalendarSelect.innerHTML = '<option value="">Select calendar...</option>' +
+                calendars.map(cal => `<option value="${cal.calendar_type}">${cal.calendar_name}</option>`).join('');
+            
+        } catch (error) {
+            console.error('Error loading calendars:', error);
         }
     }
 
-    function addImageToTable(image) {
-        if (!image || !tableBody) return;
-
-        const row = document.createElement('tr');
-        row.dataset.imageId = image.id;
-        row.innerHTML = `
-            <td>${image.category || ''}</td>
-            <td>
-                <img src="/static/uploads/${image.stored_filename}" 
-                     alt="${image.original_filename}"
-                     class="img-thumbnail"
-                     style="max-width: 100px;"
-                     onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22><rect width=%22100%22 height=%22100%22 fill=%22%23ccc%22/><text x=%2250%%22 y=%2250%%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%23666%22>Error</text></svg>'">
-            </td>
-            <td>${image.original_filename || ''}</td>
-            <td>${image.post_title || ''}</td>
-            <td>${image.description || ''}</td>
-            <td>${image.key_points || ''}</td>
-            <td>${image.hashtags || ''}</td>
-            <td>
-                <div class="btn-group" role="group">
-                    <button type="button" 
-                            class="btn btn-sm btn-outline-primary generate-content-btn" 
-                            data-bs-toggle="tooltip"
-                            title="Generate initial content">
-                        <i class="bi bi-lightbulb"></i> Generate
-                    </button>
-                    <button type="button" 
-                            class="btn btn-sm btn-outline-info feedback-btn" 
-                            style="display: ${image.description || image.post_title ? 'inline-block' : 'none'}"
-                            data-bs-toggle="tooltip"
-                            title="Provide feedback and refine content">
-                        <i class="bi bi-chat-dots"></i> Feedback
-                    </button>
-                    <button type="button"
-                            class="btn btn-sm btn-outline-danger remove-entry-btn"
-                            data-bs-toggle="tooltip"
-                            title="Remove this entry">
-                        <i class="bi bi-trash"></i> Remove
-                    </button>
-                </div>
-            </td>
-        `;
-
-        tableBody.insertBefore(row, tableBody.firstChild);
-
-        // Initialize tooltips for the new row
-        row.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
-            new bootstrap.Tooltip(el);
+    if (assignTimesBtn) {
+        assignTimesBtn.addEventListener('click', async function() {
+            const selectedIds = getSelectedImageIds();
+            const calendarType = document.getElementById('batchCalendarSelect').value;
+            
+            if (selectedIds.length === 0) {
+                showMessage('Select items first', 'warning');
+                return;
+            }
+            
+            if (!calendarType) {
+                showMessage('Select a calendar', 'warning');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/assign_times', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        image_ids: selectedIds,
+                        calendar_type: calendarType
+                    })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    showMessage(`Assigned ${result.assigned_count} time slots`);
+                    loadImages();
+                } else {
+                    throw new Error('Assignment failed');
+                }
+            } catch (error) {
+                showMessage('Time assignment failed: ' + error.message, 'danger');
+            }
         });
+    }
+
+    if (batchUpdateBtn) {
+        batchUpdateBtn.addEventListener('click', async function() {
+            const selectedIds = getSelectedImageIds();
+            const field = document.getElementById('batchField').value;
+            const value = document.getElementById('batchValue').value;
+            
+            if (selectedIds.length === 0) {
+                showMessage('Select items first', 'warning');
+                return;
+            }
+            
+            if (!value) {
+                showMessage('Enter a value', 'warning');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/batch_update', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        image_ids: selectedIds,
+                        updates: {[field]: value}
+                    })
+                });
+                
+                if (response.ok) {
+                    showMessage('Batch update complete');
+                    loadImages();
+                } else {
+                    throw new Error('Batch update failed');
+                }
+            } catch (error) {
+                showMessage('Batch update failed: ' + error.message, 'danger');
+            }
+        });
+    }
+
+    if (generateContentBtn) {
+        generateContentBtn.addEventListener('click', async function() {
+            const selectedIds = getSelectedImageIds();
+            const contentType = document.getElementById('contentType').value;
+            
+            if (selectedIds.length === 0) {
+                showMessage('Select items first', 'warning');
+                return;
+            }
+            
+            showMessage('Generating content...', 'info');
+            
+            for (const imageId of selectedIds) {
+                try {
+                    await fetch(`/generate_content/${imageId}`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({content_type: contentType})
+                    });
+                } catch (error) {
+                    console.error('Content generation failed for ' + imageId, error);
+                }
+            }
+            
+            showMessage('Content generated');
+            loadImages();
+        });
+    }
+
+    function getSelectedImageIds() {
+        const ids = [];
+        document.querySelectorAll('.row-select:checked').forEach(cb => {
+            const row = cb.closest('tr');
+            ids.push(parseInt(row.dataset.imageId));
+        });
+        return ids;
+    }
+
+    async function openDetailModal(imageId) {
+        try {
+            const response = await fetch('/images');
+            const images = await response.json();
+            const image = images.find(img => img.id == imageId);
+            
+            if (!image) return;
+            
+            const modalContent = document.getElementById('modalContent');
+            modalContent.innerHTML = `
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Title</label>
+                        <input type="text" class="form-control" data-field="title" value="${image.title || ''}">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Painting Name</label>
+                        <input type="text" class="form-control" data-field="painting_name" value="${image.painting_name || ''}">
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label">Text/Caption</label>
+                        <textarea class="form-control" rows="3" data-field="text">${image.text || ''}</textarea>
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label">SEO Tags</label>
+                        <textarea class="form-control" rows="2" data-field="seo_tags">${image.seo_tags || ''}</textarea>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Pinterest Description</label>
+                        <textarea class="form-control" rows="2" data-field="pinterest_description">${image.pinterest_description || ''}</textarea>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Instagram First Comment</label>
+                        <textarea class="form-control" rows="2" data-field="instagram_first_comment">${image.instagram_first_comment || ''}</textarea>
+                    </div>
+                </div>
+            `;
+            
+            const modal = new bootstrap.Modal(document.getElementById('detailModal'));
+            modal.show();
+            
+            document.getElementById('saveDetailsBtn').onclick = async function() {
+                const updates = {};
+                modalContent.querySelectorAll('[data-field]').forEach(input => {
+                    updates[input.dataset.field] = input.value;
+                });
+                
+                try {
+                    await fetch(`/batch_update`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            image_ids: [imageId],
+                            updates: updates
+                        })
+                    });
+                    
+                    showMessage('Details saved');
+                    modal.hide();
+                    loadImages();
+                } catch (error) {
+                    showMessage('Save failed: ' + error.message, 'danger');
+                }
+            };
+        } catch (error) {
+            showMessage('Error loading details: ' + error.message, 'danger');
+        }
     }
 });

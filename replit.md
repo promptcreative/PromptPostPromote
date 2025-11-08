@@ -1,8 +1,17 @@
-# Artwork Image Manager
+# Painting Content Planner
 
 ## Overview
 
-This is a Flask-based web application for managing artwork images with AI-powered content generation capabilities. The system allows users to upload artwork images, organize them by categories, and generate descriptions, hashtags, and other metadata using OpenAI's GPT service. It features a modern Bootstrap frontend with real-time content editing and export functionality.
+This is a Flask-based content planning and scheduling system for artwork across multiple social media platforms. The system integrates with Publer for automated content scheduling, supports .ics calendar imports for optimal time slot assignment, and provides AI-powered content generation for platform-specific needs (Instagram, Pinterest, Etsy, etc.).
+
+## Recent Changes (November 2025)
+
+**Major System Expansion - Publer Integration:**
+- Expanded database schema from 8 fields to 35+ Publer-compatible fields
+- Added calendar import (.ics) functionality with midpoint time calculation
+- Implemented batch processing for multi-platform content management
+- Created comprehensive CSV export matching Publer's exact format
+- Rebuilt frontend with tabbed interface for Content, Calendars, and Batch Actions
 
 ## User Preferences
 
@@ -12,102 +21,202 @@ Preferred communication style: Simple, everyday language.
 
 ### Backend Architecture
 - **Framework**: Flask with SQLAlchemy ORM
-- **Database**: PostgreSQL (configured via DATABASE_URL environment variable)
-- **API Pattern**: RESTful endpoints for image management and content generation
+- **Database**: SQLite (forced override of DATABASE_URL for stability)
+- **API Pattern**: RESTful endpoints for content management, calendar import, batch operations
 - **File Storage**: Local file system storage in `static/uploads` directory
-- **AI Integration**: OpenAI GPT service for content generation with rate limiting
+- **AI Integration**: OpenAI GPT service for platform-specific content generation
 
 ### Frontend Architecture
 - **Template Engine**: Jinja2 templates with Bootstrap 5 dark theme
-- **JavaScript**: Vanilla JavaScript with Bootstrap components
+- **JavaScript**: Vanilla JavaScript with Bootstrap 5 components
 - **Styling**: Custom CSS with Bootstrap framework
-- **Real-time Updates**: AJAX-based interactions for seamless user experience
+- **Interface**: Three-tab layout (Content, Calendars, Batch Actions)
+- **Interactions**: Double-click cell editing, batch selection, modal detail editing
 
 ## Key Components
 
 ### Data Models
-- **Image Model**: Central entity storing artwork metadata
-  - Fields: id, original_filename, stored_filename, description, hashtags, category, post_title, key_points, created_at
-  - Includes `to_dict()` method for JSON serialization
+
+#### Image Model (Content Item)
+Stores all Publer-compatible fields for multi-platform content:
+- **Core Fields**: id, original_filename, stored_filename, created_at, updated_at
+- **Content Fields**: title, painting_name, text, video_pin_pdf_title
+- **Platform Fields**: platform, post_subtype, status, labels
+- **Scheduling Fields**: date, time, calendar_selection
+- **Media Fields**: media, media_source, media_urls, cover_image_url, links
+- **Platform-Specific**:
+  - Instagram: instagram_first_comment
+  - Pinterest: pinterest_description, pinterest_link_url, pin_board_fb_album_google_category
+  - Etsy: etsy_description, etsy_listing_title, etsy_price, etsy_quantity, etsy_sku
+  - SEO: seo_title, seo_description, seo_tags
+  - Facebook: cta, comments
+- **Other**: alt_text, post_url, reminder
+
+#### Calendar Model
+Stores imported calendar data:
+- Fields: id, calendar_type (AB/YP/POF), calendar_name, created_at, updated_at
+- Relationship: One-to-many with CalendarEvent
+
+#### CalendarEvent Model
+Stores individual calendar events with calculated midpoints:
+- Fields: id, calendar_id, summary, start_time, end_time, midpoint_time, event_type, is_assigned
+- Used for optimal time slot assignment to content items
 
 ### Core Services
-- **GPT Service**: Handles OpenAI API integration with rate limiting
-  - Generates descriptions and hashtags for artwork
-  - Supports content refinement based on user feedback
-  - Implements simple rate limiting to prevent API abuse
 
-### File Management
-- **Upload System**: Secure file handling with unique filename generation
-- **File Validation**: Supports PNG, JPG, JPEG, GIF formats
-- **Size Limits**: 16MB maximum file size
-- **Storage**: Local storage with UUID-based naming convention
+#### GPT Service (gpt_service.py)
+- Generates platform-specific content for artwork
+- Supports Instagram captions, Pinterest descriptions, Etsy listings
+- Implements rate limiting to prevent API abuse
+- Customizable feedback-based content refinement
+
+#### Calendar Parser (utils.py)
+- Parses .ics (iCalendar) file format
+- Extracts VEVENT blocks with DTSTART and DTEND
+- Calculates midpoint timestamps for optimal posting times
+- Handles multiple datetime formats (YYYYMMDDTHHMMSS, YYYYMMDD)
+
+#### Migration System (migrations.py)
+- Safe schema migration with complete data preservation
+- Legacy field mapping:
+  - category → painting_name
+  - post_title → title
+  - description → text
+  - hashtags → seo_tags
+  - key_points → reminder
+- Automatic detection of existing schema
+- Calendar table creation
+
+### API Endpoints
+
+#### Content Management
+- `POST /upload` - Upload artwork images
+- `GET /images` - Retrieve all content items
+- `POST /update/<id>` - Update single field
+- `POST /batch_update` - Update multiple items at once (with field validation)
+- `POST /generate_content/<id>` - AI content generation for specific platform
+- `POST /remove_image/<id>` - Delete content item
+
+#### Calendar Management
+- `GET /calendars` - List all imported calendars
+- `POST /calendar/import` - Import .ics calendar file
+- `GET /calendar/<id>/events` - Get available time slots
+- `POST /assign_times` - Batch assign calendar times to selected content
+
+#### Export
+- `GET /export` - Download Publer-compatible CSV with all 33 required columns
 
 ### Frontend Features
-- **Image Table**: Dynamic table displaying all uploaded artwork
-- **Content Editing**: In-place editing for titles and descriptions
-- **Content Generation**: AI-powered content creation with feedback system
-- **Export Functionality**: CSV export of artwork metadata
-- **Progress Tracking**: Upload progress indicators
+
+#### Content Tab
+- Image upload with progress tracking
+- Content table with inline editing (double-click cells)
+- Checkbox selection for batch operations
+- Quick actions: Edit details modal, Remove item
+- Visual indicators: Preview thumbnails, status badges, calendar assignments
+
+#### Calendars Tab
+- .ics file import interface
+- Calendar type selection (AB, YP, POF)
+- Display of loaded calendars with event counts
+- Automatic calendar selector population
+
+#### Batch Actions Tab
+- **Assign Times**: Automatically assign optimal posting times from selected calendar
+- **Batch Update**: Update platform, post type, or status for multiple items
+- **AI Content Generation**: Generate platform-specific content for selected items
 
 ## Data Flow
 
-1. **Image Upload**: User selects files → Validation → Unique filename generation → File storage → Database record creation
-2. **Content Generation**: User triggers generation → GPT service call → Content display → User feedback loop
-3. **Content Editing**: User modifies content → AJAX update → Database synchronization
-4. **Export**: User requests export → Database query → CSV generation → File download
+### Complete Workflow
+1. **Upload**: User uploads artwork images → Files saved to static/uploads → Database records created with default status
+2. **Metadata Entry**: User edits painting names, platforms, post types via double-click or detail modal
+3. **Calendar Import**: User uploads .ics files → Events parsed → Midpoints calculated → Stored in database
+4. **Time Assignment**: User selects content items → Chooses calendar → System assigns optimal times sequentially
+5. **Content Generation**: User triggers AI generation → Platform-specific content created → Stored in appropriate fields
+6. **Export**: User downloads CSV → Publer-compatible format with all fields → Ready for import to Publer
+
+### Legacy Data Migration Flow
+1. Detect old schema (8 fields)
+2. Backup all existing data
+3. Drop old table
+4. Create new schema (35+ fields)
+5. Restore data with field mapping
+6. Create Calendar tables
 
 ## External Dependencies
 
 ### Required APIs
-- **OpenAI API**: For GPT-based content generation (requires OPENAI_API_KEY)
+- **OpenAI API**: For GPT-based content generation (OPENAI_API_KEY environment variable)
 
 ### Python Packages
-- Flask & Flask-SQLAlchemy for web framework and ORM
-- OpenAI client library for AI integration
-- Standard libraries: os, uuid, datetime, csv, io
+- flask, flask-sqlalchemy: Web framework and ORM
+- openai: AI content generation
+- psycopg2-binary: PostgreSQL driver (unused, SQLite forced)
+- email-validator: Email validation utilities
 
 ### Frontend Dependencies
-- Bootstrap 5.3.2 (CDN)
-- Bootstrap Icons (CDN)
-- Custom CSS and JavaScript files
+- Bootstrap 5.3.2 (CDN): UI framework
+- Bootstrap Icons (CDN): Icon library
+- Custom CSS (style.css): Additional styling
+- Custom JavaScript (main.js): Interactive functionality
 
-### Database Requirements
-- PostgreSQL database accessible via DATABASE_URL
-- Automatic table creation on startup
-- Migration support for schema updates
+### Database
+- **Current**: SQLite (hardcoded in app.py)
+- **Design**: PostgreSQL-compatible schema
+- **Migration**: Automated with data preservation
 
-## Deployment Strategy
+## Security Features
 
-### Environment Configuration
-- **Database**: PostgreSQL connection via DATABASE_URL environment variable
-- **Security**: Flask secret key via FLASK_SECRET_KEY or default for development
-- **AI Service**: OpenAI API key via OPENAI_API_KEY environment variable
-- **File Storage**: Local filesystem with automatic directory creation
+- **Field Validation**: Batch updates restricted to safe fields only
+- **File Upload**: Type validation, size limits (16MB), secure filename generation
+- **SQL Injection**: Parameterized queries throughout
+- **Immutable Fields**: id, created_at, updated_at protected from user modification
 
-### Application Structure
+## Application Structure
+
 ```
-app.py           # Main application factory and configuration
-main.py          # Application entry point
-models.py        # Database models
-routes.py        # API endpoints and request handlers
-gpt_service.py   # OpenAI integration service
-utils.py         # Utility functions and file handling
-migrations.py    # Database migration scripts
-templates/       # Jinja2 templates
-static/          # CSS, JS, and uploaded files
+app.py              # Flask app configuration, forced SQLite database
+main.py             # Application entry point, database initialization
+models.py           # Image, Calendar, CalendarEvent models
+routes.py           # All API endpoints with field validation
+gpt_service.py      # OpenAI integration for content generation
+utils.py            # File handling, .ics parsing, unique filename generation
+migrations.py       # Schema migration with complete data preservation
+templates/
+  base.html         # Base template with navigation
+  index.html        # Main interface with three tabs
+static/
+  css/style.css     # Custom styling
+  js/main.js        # Frontend logic (upload, editing, batch actions)
+  uploads/          # Uploaded artwork images
 ```
 
-### Development Features
-- Automatic database table creation
-- Development-friendly configuration defaults
-- Error handling and user feedback
-- Placeholder content generation for testing
+## Development Features
 
-### Future Enhancements
-- Cloud storage integration (Google Drive/Dropbox) - placeholder code included
-- Enhanced content generation with image analysis
-- User authentication and authorization
-- Advanced categorization and tagging systems
-- Batch processing capabilities
+- Automatic database initialization on startup
+- Safe schema migration with data preservation
+- Inline editing with instant feedback
+- Progress indicators for uploads and batch operations
+- Error handling with user-friendly messages
+- Modal editing for detailed field access
 
-The application follows Flask best practices with clear separation of concerns, comprehensive error handling, and a modern, responsive user interface. The GPT integration provides intelligent content generation while maintaining user control through feedback mechanisms.
+## Future Enhancements
+
+- Direct Publer API integration (currently CSV export only)
+- Image analysis for automatic content generation
+- Multi-language content generation
+- Advanced scheduling algorithms (engagement optimization)
+- User authentication and multi-user support
+- Cloud storage integration (currently local only)
+- Analytics dashboard for content performance
+
+## Technical Notes
+
+- SQLite database forced in app.py (line 13) for development stability
+- Migration Runner workflow only needs to run once per schema change
+- Calendar events marked as "assigned" to prevent time slot conflicts
+- CSV export includes all 33 Publer-required columns in exact order
+- Batch operations support checkbox selection for user convenience
+
+The application now serves as a comprehensive content planning system for multi-platform artwork promotion, with calendar-based scheduling and AI-assisted content creation.

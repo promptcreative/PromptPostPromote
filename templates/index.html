@@ -1,74 +1,201 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="upload-section">
-    <h2 class="mb-4">Upload Artwork</h2>
-    <form id="uploadForm" class="mb-3">
-        <div class="mb-3">
-            <label for="file" class="form-label">Choose Image Files</label>
-            <input type="file" class="form-control" id="file" name="file" accept="image/*" multiple required>
+<ul class="nav nav-tabs mb-3" id="mainTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="content-tab" data-bs-toggle="tab" data-bs-target="#content-pane" type="button">
+            <i class="bi bi-images"></i> Content
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="calendar-tab" data-bs-toggle="tab" data-bs-target="#calendar-pane" type="button">
+            <i class="bi bi-calendar3"></i> Calendars
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="batch-tab" data-bs-toggle="tab" data-bs-target="#batch-pane" type="button">
+            <i class="bi bi-lightning"></i> Batch Actions
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content" id="mainTabContent">
+    <div class="tab-pane fade show active" id="content-pane" role="tabpanel">
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card upload-section">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="bi bi-upload"></i> Upload Images</h5>
+                        <form id="uploadForm">
+                            <div class="mb-3">
+                                <input class="form-control" type="file" id="file" name="file" accept="image/*" multiple required>
+                                <div class="form-text">PNG, JPG, JPEG, GIF (max 16MB)</div>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-cloud-upload"></i> Upload
+                            </button>
+                        </form>
+                        <div id="uploadProgress" class="progress mt-3 d-none">
+                            <div class="progress-bar" role="progressbar"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="bi bi-info-circle"></i> Quick Start</h5>
+                        <ol class="mb-0 small">
+                            <li>Upload artwork images</li>
+                            <li>Double-click table cells to edit content</li>
+                            <li>Import .ics calendars in the Calendars tab</li>
+                            <li>Use Batch Actions to assign times and platforms</li>
+                            <li>Export to Publer when ready</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="progress mb-3 d-none" id="uploadProgress">
-            <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+
+        <div class="table-responsive mt-3">
+            <table class="table table-dark table-hover table-sm" id="imageTable">
+                <thead>
+                    <tr>
+                        <th width="40"><input type="checkbox" id="selectAll"></th>
+                        <th width="80">Preview</th>
+                        <th>Painting</th>
+                        <th>Platform</th>
+                        <th>Type</th>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Status</th>
+                        <th>Calendar</th>
+                        <th width="150">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="imageTableBody">
+                </tbody>
+            </table>
         </div>
-        <button type="submit" class="btn btn-primary">Upload</button>
-        <button type="button" id="exportBtn" class="btn btn-secondary">Export to CSV</button>
-    </form>
+    </div>
+
+    <div class="tab-pane fade" id="calendar-pane" role="tabpanel">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="bi bi-calendar-plus"></i> Import Calendar</h5>
+                        <form id="calendarImportForm">
+                            <div class="mb-3">
+                                <label class="form-label">Calendar Type</label>
+                                <select class="form-select" id="calendarType" required>
+                                    <option value="AB">AB Calendar</option>
+                                    <option value="YP">YP Calendar</option>
+                                    <option value="POF">POF Calendar</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Upload .ics File</label>
+                                <input type="file" class="form-control" id="calendarFile" accept=".ics" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-upload"></i> Import Calendar
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="bi bi-calendar-check"></i> Loaded Calendars</h5>
+                        <div id="calendarList">
+                            <p class="text-muted">No calendars loaded</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-pane fade" id="batch-pane" role="tabpanel">
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="bi bi-clock"></i> Assign Times</h5>
+                        <p class="text-muted small">Select rows in Content tab</p>
+                        <div class="mb-3">
+                            <label class="form-label">Calendar</label>
+                            <select class="form-select" id="batchCalendarSelect">
+                                <option value="">Select calendar...</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-primary w-100" id="assignTimesBtn">
+                            <i class="bi bi-calendar-event"></i> Assign Times
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="bi bi-pencil-square"></i> Batch Update</h5>
+                        <p class="text-muted small">Update selected items</p>
+                        <div class="mb-3">
+                            <label class="form-label">Field</label>
+                            <select class="form-select" id="batchField">
+                                <option value="platform">Platform</option>
+                                <option value="post_subtype">Post Type</option>
+                                <option value="status">Status</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Value</label>
+                            <input type="text" class="form-control" id="batchValue" placeholder="e.g., Instagram">
+                        </div>
+                        <button class="btn btn-primary w-100" id="batchUpdateBtn">
+                            <i class="bi bi-save"></i> Update Selected
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="bi bi-robot"></i> AI Content</h5>
+                        <p class="text-muted small">Generate platform content</p>
+                        <div class="mb-3">
+                            <label class="form-label">Content Type</label>
+                            <select class="form-select" id="contentType">
+                                <option value="general">General</option>
+                                <option value="instagram">Instagram</option>
+                                <option value="pinterest">Pinterest</option>
+                                <option value="etsy">Etsy</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-primary w-100" id="generateContentBtn">
+                            <i class="bi bi-stars"></i> Generate
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
-<div class="table-responsive">
-    <table id="imageTable" class="table table-dark table-striped">
-        <thead>
-            <tr>
-                <th>Category</th>
-                <th>Preview</th>
-                <th>Original Filename</th>
-                <th>Post Title</th>
-                <th>Description</th>
-                <th>Key Details</th>
-                <th>Hashtags</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-        </tbody>
-    </table>
-</div>
-
-<!-- Feedback Modal -->
-<div class="modal fade" id="feedbackModal" tabindex="-1" aria-labelledby="feedbackModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
+<div class="modal fade" id="detailModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
         <div class="modal-content bg-dark">
             <div class="modal-header">
-                <h5 class="modal-title" id="feedbackModalLabel">Content Feedback</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <h5 class="modal-title">Content Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
-                <div class="mb-3">
-                    <label for="generatedTitle" class="form-label">Post Title:</label>
-                    <p id="generatedTitle" class="border p-2 rounded"></p>
-                </div>
-                <div class="mb-3">
-                    <label for="generatedDescription" class="form-label">Description:</label>
-                    <p id="generatedDescription" class="border p-2 rounded"></p>
-                </div>
-                <div class="mb-3">
-                    <label for="generatedKeyPoints" class="form-label">Key Details:</label>
-                    <p id="generatedKeyPoints" class="border p-2 rounded"></p>
-                </div>
-                <div class="mb-3">
-                    <label for="generatedHashtags" class="form-label">Hashtags:</label>
-                    <p id="generatedHashtags" class="border p-2 rounded"></p>
-                </div>
-                <div class="mb-3">
-                    <label for="feedbackText" class="form-label">Feedback:</label>
-                    <textarea id="feedbackText" class="form-control" rows="3" placeholder="Enter your feedback to improve the generated content..."></textarea>
-                </div>
+            <div class="modal-body" id="modalContent">
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-success" id="acceptContent">Accept</button>
-                <button type="button" class="btn btn-primary" id="refineContent">Refine</button>
-                <button type="button" class="btn btn-danger" id="restartContent">Delete & Restart</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="saveDetailsBtn">Save</button>
             </div>
         </div>
     </div>
