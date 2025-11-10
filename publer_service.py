@@ -133,21 +133,38 @@ class PublerAPI:
     def upload_media(self, file_path):
         """Upload media file to Publer"""
         try:
+            import os
+            filename = os.path.basename(file_path)
+            
             with open(file_path, 'rb') as f:
-                files = {'file': f}
+                files = {'file': (filename, f, 'image/png')}
+                data = {
+                    'direct_upload': 'false',
+                    'in_library': 'false'
+                }
                 response = requests.post(
                     f'{self.base_url}/media',
                     headers={'Authorization': f'Bearer-API {self.api_key}', 'Publer-Workspace-Id': self.workspace_id},
-                    files=files
+                    files=files,
+                    data=data
                 )
             
             print(f"DEBUG: Upload response status: {response.status_code}")
             print(f"DEBUG: Upload response: {response.text}")
             
             response.raise_for_status()
+            result = response.json()
+            
+            # Check if there's an error in the response
+            if 'error' in result:
+                return {
+                    'success': False,
+                    'error': result['error']
+                }
+            
             return {
                 'success': True,
-                'media': response.json()
+                'media': result
             }
         except requests.exceptions.RequestException as e:
             return {
