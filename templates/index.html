@@ -13,6 +13,11 @@
         </button>
     </li>
     <li class="nav-item" role="presentation">
+        <button class="nav-link" id="schedule-tab" data-bs-toggle="tab" data-bs-target="#schedule-pane" type="button">
+            <i class="bi bi-calendar-week"></i> Schedule Grid
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
         <button class="nav-link" id="batch-tab" data-bs-toggle="tab" data-bs-target="#batch-pane" type="button">
             <i class="bi bi-pencil-square"></i> Edit & Review
         </button>
@@ -155,6 +160,58 @@
                         <h5 class="card-title"><i class="bi bi-calendar-check"></i> Loaded Calendars</h5>
                         <div id="calendarList">
                             <p class="text-muted">No calendars loaded</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-pane fade" id="schedule-pane" role="tabpanel">
+        <div class="card mb-3">
+            <div class="card-body">
+                <div class="row align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label">Start Date</label>
+                        <input type="date" class="form-control" id="scheduleStartDate">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">End Date</label>
+                        <input type="date" class="form-control" id="scheduleEndDate">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Filter by Collection</label>
+                        <select class="form-select" id="scheduleCollectionFilter">
+                            <option value="">All Collections</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <button class="btn btn-primary w-100" id="loadScheduleBtn">
+                            <i class="bi bi-calendar-week"></i> Load Schedule
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="bi bi-images"></i> Unassigned Content</h5>
+                        <div id="unassignedContent" class="content-drawer" style="max-height: 600px; overflow-y: auto;">
+                            <p class="text-muted">No unassigned content</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="bi bi-calendar-week"></i> Calendar Grid</h5>
+                        <div id="scheduleGrid" style="max-height: 600px; overflow-y: auto;">
+                            <p class="text-muted">Select date range and click "Load Schedule"</p>
                         </div>
                     </div>
                 </div>

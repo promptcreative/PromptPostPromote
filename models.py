@@ -208,6 +208,26 @@ class CalendarEvent(db.Model):
         }
 
 
+class EventAssignment(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    calendar_event_id = db.Column(db.Integer, db.ForeignKey('calendar_event.id'), nullable=False)
+    image_id = db.Column(db.Integer, db.ForeignKey('image.id'), nullable=False)
+    platform = db.Column(db.String(50), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    calendar_event = db.relationship('CalendarEvent', backref='assignments', lazy=True)
+    image = db.relationship('Image', backref='event_assignments', lazy=True)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'calendar_event_id': self.calendar_event_id,
+            'image_id': self.image_id,
+            'platform': self.platform,
+            'created_at': self.created_at.isoformat() if self.created_at else ''
+        }
+
+
 class GeneratedAsset(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     image_id = db.Column(db.Integer, db.ForeignKey('image.id'), nullable=False)

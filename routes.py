@@ -2,7 +2,7 @@ import os
 from flask import render_template, request, jsonify, send_file
 from werkzeug.utils import secure_filename
 from app import app, db
-from models import Image, Calendar, CalendarEvent, Collection, GeneratedAsset
+from models import Image, Calendar, CalendarEvent, Collection, GeneratedAsset, EventAssignment
 from utils import allowed_file, generate_unique_filename, parse_ics_content
 from gpt_service import gpt_service
 from dynamic_mockups_service import DynamicMockupsService
@@ -1325,5 +1325,198 @@ def get_generated_assets(image_id):
     try:
         assets = GeneratedAsset.query.filter_by(image_id=image_id).all()
         return jsonify([asset.to_dict() for asset in assets]), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/schedule_grid', methods=['GET'])
+def get_schedule_grid():
+    """Get calendar events grouped by date with assignment information"""
+    try:
+        from datetime import datetime
+        from collections import defaultdict
+        
+        start_date_str = request.args.get('start_date')
+        end_date_str = request.args.get('end_date')
+        collection_id_str = request.args.get('collection_id')
+        
+        query = CalendarEvent.query
+        
+        if start_date_str:
+            start_date = datetime.fromisoformat(start_date_str)
+            query = query.filter(CalendarEvent.midpoint_time >= start_date)
+        
+        if end_date_str:
+            end_date = datetime.fromisoformat(end_date_str)
+            query = query.filter(CalendarEvent.midpoint_time <= end_date)
+        
+        events = query.order_by(CalendarEvent.midpoint_time).all()
+        
+        events_by_date = defaultdict(list)
+        
+        for event in events:
+            date_key = event.midpoint_time.strftime('%Y-%m-%d')
+            
+            calendar = Calendar.query.get(event.calendar_id)
+            
+            assignments = EventAssignment.query.filter_by(calendar_event_id=event.id).all()
+            total_assignment_count = len(assignments)
+            
+            assignment_data = []
+            for assignment in assignments:
+                image = Image.query.get(assignment.image_id)
+                if image:
+                    if collection_id_str and collection_id_str.isdigit():
+                        if image.collection_id != int(collection_id_str):
+                            continue
+                    
+                    assignment_data.append({
+                        'assignment_id': assignment.id,
+                        'image_id': image.id,
+                        'painting_name': image.painting_name or image.original_filename,
+                        'stored_filename': image.stored_filename,
+                        'platform': assignment.platform
+                    })
+            
+            event_data = {
+                'event_id': event.id,
+                'summary': event.summary,
+                'time': event.midpoint_time.strftime('%H:%M'),
+                'full_datetime': event.midpoint_time.isoformat(),
+                'calendar_type': calendar.calendar_type if calendar else '',
+                'assignments': assignment_data,
+                'total_assignments': total_assignment_count,
+                'available_slots': max(0, 3 - total_assignment_count)
+            }
+            
+            events_by_date[date_key].append(event_data)
+        
+        result = []
+        for date_key in sorted(events_by_date.keys()):
+            result.append({
+                'date': date_key,
+                'events': events_by_date[date_key]
+            })
+        
+        return jsonify(result), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/assign', methods=['POST'])
+def assign_content_to_event():
+    """Assign content to a calendar event slot"""
+    try:
+        data = request.get_json()
+        event_id = data.get('event_id')
+        image_id = data.get('image_id')
+        platform = data.get('platform')
+        
+        if not event_id or not image_id or not platform:
+            return jsonify({'error': 'Missing required fields'}), 400
+        
+        event = CalendarEvent.query.get(event_id)
+        if not event:
+            return jsonify({'error': 'Calendar event not found'}), 404
+        
+        image = Image.query.get(image_id)
+        if not image:
+            return jsonify({'error': 'Image not found'}), 404
+        
+        existing = EventAssignment.query.filter_by(
+            calendar_event_id=event_id, 
+            image_id=image_id, 
+            platform=platform
+        ).first()
+        if existing:
+            return jsonify({'error': 'This content is already assigned to this slot and platform'}), 400
+        
+        assignment = EventAssignment()
+        assignment.calendar_event_id = event_id
+        assignment.image_id = image_id
+        assignment.platform = platform
+        
+        db.session.add(assignment)
+        
+        image.platform = platform
+        image.date = event.midpoint_time.strftime('%Y-%m-%d')
+        image.time = event.midpoint_time.strftime('%H:%M')
+        calendar = Calendar.query.get(event.calendar_id)
+        if calendar:
+            image.calendar_source = calendar.calendar_type
+        
+        db.session.commit()
+        
+        return jsonify(assignment.to_dict()), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/assign/<int:assignment_id>', methods=['DELETE'])
+def delete_assignment(assignment_id):
+    """Unassign content from a calendar event"""
+    try:
+        assignment = EventAssignment.query.get(assignment_id)
+        if not assignment:
+            return jsonify({'error': 'Assignment not found'}), 404
+        
+        image = Image.query.get(assignment.image_id)
+        if image:
+            other_assignments = EventAssignment.query.filter(
+                EventAssignment.image_id == assignment.image_id,
+                EventAssignment.id != assignment_id
+            ).first()
+            
+            if not other_assignments:
+                image.platform = None
+                image.date = None
+                image.time = None
+                image.calendar_source = None
+        
+        db.session.delete(assignment)
+        db.session.commit()
+        
+        return jsonify({'success': True}), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/unassigned_images', methods=['GET'])
+def get_unassigned_images():
+    """Get images that haven't been assigned to any calendar slot"""
+    try:
+        collection_id = request.args.get('collection_id')
+        
+        query = Image.query
+        
+        if collection_id and collection_id.isdigit():
+            query = query.filter_by(collection_id=int(collection_id))
+        
+        all_images = query.order_by(Image.created_at.desc()).all()
+        
+        assigned_image_ids = set(
+            assignment.image_id 
+            for assignment in EventAssignment.query.all()
+        )
+        
+        unassigned_images = [
+            {
+                'id': img.id,
+                'painting_name': img.painting_name or img.original_filename,
+                'stored_filename': img.stored_filename,
+                'collection_id': img.collection_id,
+                'status': img.status
+            }
+            for img in all_images 
+            if img.id not in assigned_image_ids
+        ]
+        
+        return jsonify(unassigned_images), 200
+        
     except Exception as e:
         return jsonify({'error': str(e)}), 500

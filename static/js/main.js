@@ -1788,4 +1788,367 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+    
+    // Schedule Grid functionality
+    const loadScheduleBtn = document.getElementById('loadScheduleBtn');
+    if (loadScheduleBtn) {
+        loadScheduleBtn.addEventListener('click', loadScheduleGrid);
+    }
+    
+    async function loadScheduleGrid() {
+        try {
+            const startDate = document.getElementById('scheduleStartDate').value;
+            const endDate = document.getElementById('scheduleEndDate').value;
+            const collectionId = document.getElementById('scheduleCollectionFilter').value;
+            
+            if (!startDate || !endDate) {
+                showMessage('Please select start and end dates', 'warning');
+                return;
+            }
+            
+            const params = new URLSearchParams({
+                start_date: startDate,
+                end_date: endDate
+            });
+            
+            if (collectionId) {
+                params.append('collection_id', collectionId);
+            }
+            
+            const response = await fetch(`/api/schedule_grid?${params}`);
+            const data = await response.json();
+            
+            renderScheduleGrid(data);
+            await loadUnassignedContent();
+            
+        } catch (error) {
+            showMessage('Failed to load schedule: ' + error.message, 'danger');
+        }
+    }
+    
+    function renderScheduleGrid(scheduleData) {
+        const gridContainer = document.getElementById('scheduleGrid');
+        
+        if (!scheduleData || scheduleData.length === 0) {
+            gridContainer.innerHTML = '<p class="text-muted">No calendar events in this date range</p>';
+            return;
+        }
+        
+        let html = '<div class="schedule-calendar">';
+        
+        for (const day of scheduleData) {
+            const date = new Date(day.date);
+            const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
+            const dateFormatted = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            
+            html += `
+                <div class="schedule-day-card mb-3 border rounded p-3">
+                    <h6 class="mb-3">
+                        <i class="bi bi-calendar3"></i> ${dayName}, ${dateFormatted}
+                    </h6>
+                    <div class="row">
+            `;
+            
+            for (const event of day.events) {
+                const calendarBadge = getCalendarBadge(event.calendar_type);
+                
+                const hasAssignments = event.total_assignments > 0;
+                const hasFilteredAssignments = event.assignments.length > 0;
+                
+                html += `
+                    <div class="col-md-6 mb-3">
+                        <div class="event-slot border rounded p-2 ${hasAssignments ? 'bg-light' : ''}" 
+                             data-event-id="${event.event_id}">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <strong>${event.time}</strong>
+                                ${calendarBadge}
+                            </div>
+                            <div class="text-muted small mb-2">${event.summary || 'Calendar Event'}</div>
+                            <div class="assignments mb-2">
+                `;
+                
+                if (event.assignments.length > 0) {
+                    for (const assignment of event.assignments) {
+                        const platformEmoji = getPlatformEmoji(assignment.platform);
+                        html += `
+                            <div class="assignment-item d-flex align-items-center gap-2 p-1 bg-white rounded mb-1">
+                                <img src="/static/uploads/${assignment.stored_filename}" 
+                                     style="width: 30px; height: 30px; object-fit: cover; border-radius: 4px;">
+                                <span class="flex-grow-1 small">${platformEmoji} ${assignment.painting_name}</span>
+                                <button class="btn btn-sm btn-danger unassign-btn" 
+                                        data-assignment-id="${assignment.assignment_id}">
+                                    <i class="bi bi-x"></i>
+                                </button>
+                            </div>
+                        `;
+                    }
+                } else if (hasAssignments) {
+                    const hiddenCount = event.total_assignments;
+                    html += `<div class="text-muted small fst-italic">
+                        ${hiddenCount} assignment${hiddenCount > 1 ? 's' : ''} (filtered out by collection)
+                    </div>`;
+                } else {
+                    html += `<div class="text-muted small fst-italic">Click to assign content</div>`;
+                }
+                
+                html += `
+                            </div>
+                            <div class="small text-muted mb-2">
+                                <i class="bi bi-info-circle"></i> ${event.available_slots} slot${event.available_slots !== 1 ? 's' : ''} available
+                            </div>
+                            <button class="btn btn-sm btn-outline-primary w-100 assign-content-btn" 
+                                    data-event-id="${event.event_id}">
+                                <i class="bi bi-plus"></i> Assign Content
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            html += `
+                    </div>
+                </div>
+            `;
+        }
+        
+        html += '</div>';
+        gridContainer.innerHTML = html;
+        
+        // Add click handlers
+        document.querySelectorAll('.assign-content-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const eventId = e.target.closest('.assign-content-btn').dataset.eventId;
+                showAssignmentModal(eventId);
+            });
+        });
+        
+        document.querySelectorAll('.unassign-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const assignmentId = e.target.closest('.unassign-btn').dataset.assignmentId;
+                unassignContent(assignmentId);
+            });
+        });
+    }
+    
+    async function loadUnassignedContent() {
+        try {
+            const collectionId = document.getElementById('scheduleCollectionFilter').value;
+            const params = collectionId ? `?collection_id=${collectionId}` : '';
+            
+            const response = await fetch(`/api/unassigned_images${params}`);
+            const images = await response.json();
+            
+            const container = document.getElementById('unassignedContent');
+            
+            if (!images || images.length === 0) {
+                container.innerHTML = '<p class="text-muted">No unassigned content</p>';
+                return;
+            }
+            
+            let html = '<div class="row g-2">';
+            for (const img of images) {
+                html += `
+                    <div class="col-12">
+                        <div class="unassigned-item border rounded p-2 d-flex align-items-center gap-2" 
+                             data-image-id="${img.id}">
+                            <img src="/static/uploads/${img.stored_filename}" 
+                                 style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;">
+                            <div class="flex-grow-1 small">
+                                <div><strong>${img.painting_name}</strong></div>
+                                <div class="text-muted">${img.status || 'Draft'}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            html += '</div>';
+            
+            container.innerHTML = html;
+            
+        } catch (error) {
+            console.error('Failed to load unassigned content:', error);
+        }
+    }
+    
+    function showAssignmentModal(eventId) {
+        const platforms = ['Instagram', 'Pinterest', 'Facebook'];
+        
+        const modalHtml = `
+            <div class="modal fade" id="assignModal" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Assign Content to Time Slot</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label class="form-label">Select Content</label>
+                                <div id="assignModalImages" style="max-height: 300px; overflow-y: auto;">
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Platform</label>
+                                <select class="form-select" id="assignPlatform">
+                                    ${platforms.map(p => `<option value="${p}">${getPlatformEmoji(p)} ${p}</option>`).join('')}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="button" class="btn btn-primary" id="confirmAssignBtn">Assign</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        const existingModal = document.getElementById('assignModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+        
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        
+        const modal = new bootstrap.Modal(document.getElementById('assignModal'));
+        
+        loadUnassignedImagesForModal();
+        
+        document.getElementById('confirmAssignBtn').addEventListener('click', async () => {
+            const selectedImage = document.querySelector('input[name="assignImage"]:checked');
+            if (!selectedImage) {
+                showMessage('Please select an image', 'warning');
+                return;
+            }
+            
+            const imageId = selectedImage.value;
+            const platform = document.getElementById('assignPlatform').value;
+            
+            await assignContentToEvent(eventId, imageId, platform);
+            modal.hide();
+            loadScheduleGrid();
+        });
+        
+        modal.show();
+    }
+    
+    async function loadUnassignedImagesForModal() {
+        try {
+            const response = await fetch('/api/unassigned_images');
+            const images = await response.json();
+            
+            const container = document.getElementById('assignModalImages');
+            
+            if (!images || images.length === 0) {
+                container.innerHTML = '<p class="text-muted">No unassigned images available</p>';
+                return;
+            }
+            
+            let html = '<div class="list-group">';
+            for (const img of images) {
+                html += `
+                    <label class="list-group-item d-flex align-items-center gap-2">
+                        <input type="radio" name="assignImage" value="${img.id}" class="form-check-input me-2">
+                        <img src="/static/uploads/${img.stored_filename}" 
+                             style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;">
+                        <span>${img.painting_name}</span>
+                    </label>
+                `;
+            }
+            html += '</div>';
+            
+            container.innerHTML = html;
+            
+        } catch (error) {
+            console.error('Failed to load images for modal:', error);
+        }
+    }
+    
+    async function assignContentToEvent(eventId, imageId, platform) {
+        try {
+            const response = await fetch('/api/assign', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    event_id: eventId,
+                    image_id: imageId,
+                    platform: platform
+                })
+            });
+            
+            if (response.ok) {
+                showMessage('Content assigned successfully', 'success');
+            } else {
+                const error = await response.json();
+                throw new Error(error.error || 'Assignment failed');
+            }
+            
+        } catch (error) {
+            showMessage('Assignment failed: ' + error.message, 'danger');
+        }
+    }
+    
+    async function unassignContent(assignmentId) {
+        if (!confirm('Remove this assignment?')) {
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/api/assign/${assignmentId}`, {
+                method: 'DELETE'
+            });
+            
+            if (response.ok) {
+                showMessage('Assignment removed', 'success');
+                loadScheduleGrid();
+            } else {
+                const error = await response.json();
+                throw new Error(error.error || 'Unassign failed');
+            }
+            
+        } catch (error) {
+            showMessage('Unassign failed: ' + error.message, 'danger');
+        }
+    }
+    
+    function getCalendarBadge(calendarType) {
+        const badges = {
+            'AB': '<span class="badge bg-primary">AB</span>',
+            'YP': '<span class="badge bg-success">YP</span>',
+            'POF': '<span class="badge bg-warning text-dark">POF</span>'
+        };
+        return badges[calendarType] || '';
+    }
+    
+    function getPlatformEmoji(platform) {
+        const emojis = {
+            'Instagram': '📸',
+            'Pinterest': '📌',
+            'Facebook': '📘',
+            'Etsy': '🛍️'
+        };
+        return emojis[platform] || '📱';
+    }
+    
+    // Set default dates
+    const today = new Date();
+    const nextWeek = new Date(today);
+    nextWeek.setDate(today.getDate() + 7);
+    
+    const startDateInput = document.getElementById('scheduleStartDate');
+    const endDateInput = document.getElementById('scheduleEndDate');
+    
+    if (startDateInput && endDateInput) {
+        startDateInput.value = today.toISOString().split('T')[0];
+        endDateInput.value = nextWeek.toISOString().split('T')[0];
+    }
+    
+    // Populate collection filter
+    const scheduleCollectionFilter = document.getElementById('scheduleCollectionFilter');
+    if (scheduleCollectionFilter) {
+        loadCollections().then(collections => {
+            scheduleCollectionFilter.innerHTML = '<option value="">All Collections</option>' +
+                collections.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+        });
+    }
 });
