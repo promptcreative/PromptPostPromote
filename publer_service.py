@@ -141,6 +141,9 @@ class PublerAPI:
                     files=files
                 )
             
+            print(f"DEBUG: Upload response status: {response.status_code}")
+            print(f"DEBUG: Upload response: {response.text}")
+            
             response.raise_for_status()
             return {
                 'success': True,
