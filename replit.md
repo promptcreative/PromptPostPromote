@@ -6,6 +6,13 @@ This is a Flask-based content planning and scheduling system for artwork across 
 
 ## Recent Changes (November 2025)
 
+**Calendar Export Feature (November 10, 2025):**
+- Added calendar export functionality to download astrology events as CSV
+- Export includes: Calendar Type (AB/YP/POF), Event Summary, Date (YYYY-MM-DD), Time (HH:MM), Start/End Times, Status (Assigned/Available)
+- Download button next to each calendar in Calendars tab
+- Publer-compatible format for direct import of astrology time slots
+- User workflow: Import .ics calendar → Review events → Export CSV → Import to Publer
+
 **Calendar Priority Logic Fix (November 10, 2025):**
 - Fixed calendar generation to properly prioritize AB (Astro Batching) events over YP/POF events on each day
 - Per-day priority assignment: AB events get first slots, then YP and POF are mixed with equal priority
