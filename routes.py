@@ -497,8 +497,8 @@ def generate_calendar():
         'min_spacing': data.get('min_spacing', 180)
     }
     
-    # Optimal posting times when no astrology events exist
-    optimal_times = ['09:00', '12:00', '15:00', '18:00', '21:00']
+    # Optimal posting times when no astrology events exist (natural varied times)
+    optimal_times = ['09:17', '11:43', '14:28', '17:51', '20:14']
     
     try:
         # Get all unassigned events from AB, YP, POF calendars
