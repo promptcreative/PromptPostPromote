@@ -741,6 +741,119 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    const previewScheduleBtn = document.getElementById('previewScheduleBtn');
+    const assignTimesSmartBtn = document.getElementById('assignTimesSmartBtn');
+    const instagramLimit = document.getElementById('instagramLimit');
+    const pinterestLimit = document.getElementById('pinterestLimit');
+    const instagramLimitValue = document.getElementById('instagramLimitValue');
+    const pinterestLimitValue = document.getElementById('pinterestLimitValue');
+    
+    if (instagramLimit) {
+        instagramLimit.addEventListener('input', function() {
+            instagramLimitValue.textContent = this.value;
+        });
+    }
+    
+    if (pinterestLimit) {
+        pinterestLimit.addEventListener('input', function() {
+            pinterestLimitValue.textContent = this.value;
+        });
+    }
+    
+    if (previewScheduleBtn) {
+        previewScheduleBtn.addEventListener('click', async function() {
+            const selectedIds = getSelectedImageIds();
+            
+            if (selectedIds.length === 0) {
+                showMessage('Select items first', 'warning');
+                return;
+            }
+            
+            const config = {
+                instagram_limit: parseInt(document.getElementById('instagramLimit').value),
+                pinterest_limit: parseInt(document.getElementById('pinterestLimit').value),
+                strategy: document.getElementById('schedulingStrategy').value,
+                min_spacing: parseInt(document.getElementById('minSpacing').value),
+                preview: true
+            };
+            
+            try {
+                const response = await fetch('/assign_times_smart', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        image_ids: selectedIds,
+                        ...config
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const result = data.result;
+                    
+                    let message = `📅 Schedule Preview:\n\n`;
+                    message += `✅ ${result.summary.total_assigned} will be scheduled\n`;
+                    message += `❌ ${result.summary.total_unassigned} couldn't fit\n\n`;
+                    message += `📊 By Calendar:\n`;
+                    message += `  AB: ${result.summary.by_calendar.AB}\n`;
+                    message += `  YP: ${result.summary.by_calendar.YP}\n`;
+                    message += `  POF: ${result.summary.by_calendar.POF}\n\n`;
+                    message += `📱 By Platform:\n`;
+                    message += `  Instagram: ${result.summary.by_platform.Instagram}\n`;
+                    message += `  Pinterest: ${result.summary.by_platform.Pinterest}`;
+                    
+                    alert(message);
+                } else {
+                    throw new Error('Preview failed');
+                }
+            } catch (error) {
+                showMessage('Preview failed: ' + error.message, 'danger');
+            }
+        });
+    }
+    
+    if (assignTimesSmartBtn) {
+        assignTimesSmartBtn.addEventListener('click', async function() {
+            const selectedIds = getSelectedImageIds();
+            
+            if (selectedIds.length === 0) {
+                showMessage('Select items first', 'warning');
+                return;
+            }
+            
+            const config = {
+                instagram_limit: parseInt(document.getElementById('instagramLimit').value),
+                pinterest_limit: parseInt(document.getElementById('pinterestLimit').value),
+                strategy: document.getElementById('schedulingStrategy').value,
+                min_spacing: parseInt(document.getElementById('minSpacing').value),
+                preview: false
+            };
+            
+            try {
+                const response = await fetch('/assign_times_smart', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        image_ids: selectedIds,
+                        ...config
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const result = data.result;
+                    
+                    showMessage(`✅ Smart Schedule Complete! ${result.summary.total_assigned} items scheduled (AB:${result.summary.by_calendar.AB} YP:${result.summary.by_calendar.YP} POF:${result.summary.by_calendar.POF})`, 'success');
+                    loadImages();
+                } else {
+                    throw new Error('Smart scheduling failed');
+                }
+            } catch (error) {
+                showMessage('Smart scheduling failed: ' + error.message, 'danger');
+            }
+        });
+    }
+
     if (batchUpdateBtn) {
         batchUpdateBtn.addEventListener('click', async function() {
             const selectedIds = getSelectedImageIds();
