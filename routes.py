@@ -1596,11 +1596,30 @@ def push_days_to_publer():
                     if not image:
                         continue
                     
-                    # Upload image to Publer
+                    # Skip placeholder calendar slots
+                    if image.painting_name and '[Calendar Slot]' in image.painting_name:
+                        print(f"DEBUG: Skipping placeholder slot: {image.painting_name}")
+                        continue
+                    
+                    # Check if file exists
                     file_path = os.path.join(app.config['UPLOAD_FOLDER'], image.stored_filename)
+                    if not os.path.exists(file_path):
+                        print(f"DEBUG: File not found: {file_path}")
+                        results.append({
+                            'success': False,
+                            'painting_name': image.painting_name or image.original_filename,
+                            'platform': assignment.platform,
+                            'scheduled_time': event.midpoint_time.isoformat(),
+                            'error': 'Image file not found'
+                        })
+                        continue
+                    
+                    # Upload image to Publer
+                    print(f"DEBUG: Uploading {file_path} to Publer")
                     upload_result = publer.upload_media(file_path)
                     
                     if not upload_result['success']:
+                        print(f"DEBUG: Upload failed: {upload_result.get('error')}")
                         results.append({
                             'success': False,
                             'painting_name': image.painting_name or image.original_filename,
@@ -1611,6 +1630,7 @@ def push_days_to_publer():
                         continue
                     
                     media_id = upload_result['media'].get('id')
+                    print(f"DEBUG: Media uploaded with ID: {media_id}")
                     
                     # Determine account ID based on platform
                     account_id = INSTAGRAM_ACCOUNT_ID if assignment.platform == 'instagram' else PINTEREST_ACCOUNT_ID
