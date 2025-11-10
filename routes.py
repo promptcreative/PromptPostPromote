@@ -203,6 +203,7 @@ def remove_image(image_id):
         db.session.rollback()
         return jsonify({'error': f'Failed to remove image: {str(e)}'}), 500
 
+@app.route('/delete_empty_slots', methods=['POST'])
 @app.route('/delete_all_empty_slots', methods=['POST'])
 def delete_all_empty_slots():
     """Delete all calendar slot placeholders (To Be Assigned items)"""
