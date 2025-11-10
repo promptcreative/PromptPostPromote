@@ -19,6 +19,31 @@ document.addEventListener('DOMContentLoaded', function() {
         await loadCollections();
         await loadImages();
         loadCalendars();
+        
+        // Restore scheduler settings from localStorage
+        const savedConfig = localStorage.getItem('schedulerConfig');
+        if (savedConfig) {
+            try {
+                const config = JSON.parse(savedConfig);
+                const startDateInput = document.getElementById('startDate');
+                const endDateInput = document.getElementById('endDate');
+                const excludeDatesInput = document.getElementById('excludeDates');
+                const instagramLimitInput = document.getElementById('instagramLimit');
+                const pinterestLimitInput = document.getElementById('pinterestLimit');
+                const strategyInput = document.getElementById('schedulingStrategy');
+                const minSpacingInput = document.getElementById('minSpacing');
+                
+                if (config.start_date && startDateInput) startDateInput.value = config.start_date;
+                if (config.end_date && endDateInput) endDateInput.value = config.end_date;
+                if (config.exclude_dates && excludeDatesInput) excludeDatesInput.value = config.exclude_dates.join(', ');
+                if (config.instagram_limit && instagramLimitInput) instagramLimitInput.value = config.instagram_limit;
+                if (config.pinterest_limit && pinterestLimitInput) pinterestLimitInput.value = config.pinterest_limit;
+                if (config.strategy && strategyInput) strategyInput.value = config.strategy;
+                if (config.min_spacing && minSpacingInput) minSpacingInput.value = config.min_spacing;
+            } catch (e) {
+                console.error('Failed to restore scheduler config:', e);
+            }
+        }
     }
     
     initializeApp();
@@ -764,16 +789,29 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (generateCalendarBtn) {
         generateCalendarBtn.addEventListener('click', async function() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            
+            if (!startDate || !endDate) {
+                showMessage('Please select start and end dates', 'warning');
+                return;
+            }
+            
             const excludeDatesInput = document.getElementById('excludeDates').value.trim();
             const excludedDates = excludeDatesInput ? excludeDatesInput.split(',').map(d => d.trim()) : [];
             
             const config = {
+                start_date: startDate,
+                end_date: endDate,
                 exclude_dates: excludedDates,
                 instagram_limit: parseInt(document.getElementById('instagramLimit').value),
                 pinterest_limit: parseInt(document.getElementById('pinterestLimit').value),
                 strategy: document.getElementById('schedulingStrategy').value,
                 min_spacing: parseInt(document.getElementById('minSpacing').value)
             };
+            
+            // Save to localStorage
+            localStorage.setItem('schedulerConfig', JSON.stringify(config));
             
             const btn = generateCalendarBtn;
             const originalHtml = btn.innerHTML;

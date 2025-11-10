@@ -459,12 +459,26 @@ def delete_calendar(calendar_id):
 @app.route('/generate_calendar', methods=['POST'])
 def generate_calendar():
     """Generate empty calendar schedule for ALL available days with optional exclusions"""
-    from datetime import datetime
+    from datetime import datetime, timedelta
     from services.smart_scheduler import SmartScheduler
+    import random
     
     data = request.get_json()
     if not data:
         return jsonify({'error': 'Invalid request data'}), 400
+    
+    # Get date range
+    start_date_str = data.get('start_date')
+    end_date_str = data.get('end_date')
+    
+    if not start_date_str or not end_date_str:
+        return jsonify({'error': 'start_date and end_date are required'}), 400
+    
+    try:
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
+        end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
+    except ValueError:
+        return jsonify({'error': 'Invalid date format. Use YYYY-MM-DD'}), 400
     
     # Parse and validate excluded dates
     excluded_dates = set()
@@ -478,15 +492,18 @@ def generate_calendar():
     
     config = {
         'instagram_limit': data.get('instagram_limit', 2),
-        'pinterest_limit': data.get('pinterest_limit', 7),
+        'pinterest_limit': data.get('pinterest_limit', 2),
         'strategy': data.get('strategy', 'fill_all'),
-        'min_spacing': data.get('min_spacing', 30)
+        'min_spacing': data.get('min_spacing', 180)
     }
     
+    # Optimal posting times when no astrology events exist
+    optimal_times = ['09:00', '12:00', '15:00', '18:00', '21:00']
+    
     try:
-        # Get all unassigned events from AB, YP, POF calendars chronologically
+        # Get all unassigned events from AB, YP, POF calendars
         calendar_types = ['AB', 'YP', 'POF']
-        all_events = []
+        events_by_date = {}
         
         for cal_type in calendar_types:
             calendar = Calendar.query.filter_by(calendar_type=cal_type).first()
@@ -497,69 +514,114 @@ def generate_calendar():
                 ).order_by(CalendarEvent.midpoint_time).all()
                 for event in events:
                     event._calendar_type = cal_type
-                all_events.extend(events)
+                    event_date = event.midpoint_time.strftime('%Y-%m-%d')
+                    if event_date not in events_by_date:
+                        events_by_date[event_date] = []
+                    events_by_date[event_date].append(event)
         
-        # Sort all events chronologically
-        all_events.sort(key=lambda e: e.midpoint_time)
-        
-        # Filter out excluded dates
-        filtered_events = []
-        for event in all_events:
-            event_date = event.midpoint_time.strftime('%Y-%m-%d')
-            if event_date not in excluded_dates:
-                filtered_events.append(event)
-        
-        if not filtered_events:
-            return jsonify({'error': 'No available events after applying exclusions'}), 400
-        
-        # Create dummy IDs for scheduling
-        dummy_ids = list(range(1, len(filtered_events) + 1))
-        
-        # Use scheduler to assign times
-        scheduler = SmartScheduler(config)
-        # Temporarily use filtered events
-        scheduler.events_by_calendar = {
-            cal_type: [e for e in filtered_events if hasattr(e, '_calendar_type') and e._calendar_type == cal_type]
-            for cal_type in calendar_types
-        }
-        
-        result = scheduler.assign_times(dummy_ids, preview=True, use_provided_events=True)
-        
-        # Create placeholder Image records
         created_slots = []
         import uuid
-        for assignment in result['assignments']:
-            # Generate unique stored_filename to avoid UNIQUE constraint errors
-            unique_id = str(uuid.uuid4())[:8]
-            placeholder = Image(
-                original_filename='[Calendar Slot]',
-                stored_filename=f'calendar_slot_{unique_id}',
-                title='[Empty Slot]',
-                painting_name='To Be Assigned',
-                platform=assignment['platform'],
-                date=assignment['date'],
-                time=assignment['time'],
-                calendar_source=assignment['calendar_source'],
-                calendar_event_id=assignment['event_id'],
-                status='Draft'
-            )
-            db.session.add(placeholder)
-            db.session.flush()
+        
+        # Validate date range
+        if start_date > end_date:
+            return jsonify({'error': 'Start date must be before or equal to end date'}), 400
+        
+        days_in_range = (end_date - start_date).days + 1
+        if days_in_range > 365:
+            return jsonify({'error': 'Date range too large (max 365 days)'}), 400
+        
+        # Iterate through each day in the range
+        current_date = start_date
+        while current_date <= end_date:
+            date_str = current_date.strftime('%Y-%m-%d')
             
-            # Mark event as assigned
-            event = CalendarEvent.query.get(assignment['event_id'])
-            if event:
-                event.is_assigned = True
-                event.assigned_image_id = placeholder.id
-                event.assigned_platform = assignment['platform']
+            # Skip excluded dates
+            if date_str in excluded_dates:
+                current_date += timedelta(days=1)
+                continue
             
-            created_slots.append({
-                'id': placeholder.id,
-                'platform': assignment['platform'],
-                'date': assignment['date'],
-                'time': assignment['time'],
-                'calendar_source': assignment['calendar_source']
-            })
+            day_events = events_by_date.get(date_str, [])
+            day_slots = []  # Track slots for spacing
+            platform_counts = {'Instagram': 0, 'Pinterest': 0}  # Track per-platform counts
+            
+            # Try to create slots for this day
+            for platform, limit in [('Instagram', config['instagram_limit']), ('Pinterest', config['pinterest_limit'])]:
+                slots_created = 0
+                
+                while slots_created < limit:
+                    event = None
+                    calendar_source = 'Optimal'
+                    time_str = None
+                    event_id = None
+                    
+                    # Try to use astrology event first
+                    if day_events:
+                        event = day_events.pop(0)
+                        calendar_source = event._calendar_type
+                        time_str = event.midpoint_time.strftime('%H:%M')
+                        event_id = event.id
+                    
+                    # If no astrology event and strategy is 'fill_all', use synthetic time
+                    elif config['strategy'] == 'fill_all':
+                        # Pick random optimal time that doesn't conflict with spacing
+                        available_times = optimal_times.copy()
+                        random.shuffle(available_times)
+                        
+                        for test_time in available_times:
+                            # Check spacing against existing day slots
+                            conflict = False
+                            test_mins = int(test_time.split(':')[0]) * 60 + int(test_time.split(':')[1])
+                            
+                            for slot in day_slots:
+                                slot_mins = int(slot['time'].split(':')[0]) * 60 + int(slot['time'].split(':')[1])
+                                if abs(test_mins - slot_mins) < config['min_spacing']:
+                                    conflict = True
+                                    break
+                            
+                            if not conflict:
+                                time_str = test_time
+                                break
+                    
+                    # Stop if we couldn't find a valid time
+                    if not time_str:
+                        break
+                    
+                    # Create slot
+                    unique_id = str(uuid.uuid4())[:8]
+                    placeholder = Image(
+                        original_filename='[Calendar Slot]',
+                        stored_filename=f'calendar_slot_{unique_id}',
+                        title='[Empty Slot]',
+                        painting_name='To Be Assigned',
+                        platform=platform,
+                        date=date_str,
+                        time=time_str,
+                        calendar_selection=calendar_source,
+                        calendar_event_id=event_id,
+                        status='Draft'
+                    )
+                    db.session.add(placeholder)
+                    db.session.flush()
+                    
+                    # Mark astrology event as assigned if used
+                    if event:
+                        event.is_assigned = True
+                        event.assigned_image_id = placeholder.id
+                        event.assigned_platform = platform
+                    
+                    day_slots.append({'time': time_str, 'platform': platform, 'source': calendar_source})
+                    created_slots.append({
+                        'id': placeholder.id,
+                        'platform': platform,
+                        'date': date_str,
+                        'time': time_str,
+                        'calendar_source': calendar_source
+                    })
+                    
+                    platform_counts[platform] += 1
+                    slots_created += 1
+            
+            current_date += timedelta(days=1)
         
         db.session.commit()
         
