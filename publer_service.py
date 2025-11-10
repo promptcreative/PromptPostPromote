@@ -154,36 +154,66 @@ class PublerAPI:
                 'response_text': getattr(e.response, 'text', None) if hasattr(e, 'response') else None
             }
     
-    def create_scheduled_draft(self, account_id, scheduled_time, text='', media_ids=None, board_id=None):
+    def create_scheduled_draft(self, account_id, scheduled_time, text='', media_ids=None, network='instagram', is_public=False):
         """
-        Create a scheduled draft post
+        Create a scheduled draft post using Publer's bulk API
         
         Args:
             account_id: Social media account ID
             scheduled_time: ISO format datetime string (e.g., "2025-11-15T14:30:00Z")
             text: Post caption/description
             media_ids: List of media IDs from upload_media
-            board_id: Pinterest board ID (optional, for Pinterest posts)
+            network: 'instagram' or 'pinterest'
+            is_public: True for draft_public, False for draft_private
         """
         try:
-            payload = {
-                'accounts': [account_id],
-                'scheduled_time': scheduled_time,
-                'text': text or '',
-                'is_public': False
+            # Build media array
+            media_array = []
+            if media_ids:
+                for media_id in media_ids:
+                    media_array.append({
+                        'id': media_id,
+                        'type': 'image'
+                    })
+            
+            # Build network content
+            network_content = {
+                'type': 'photo' if media_array else 'status',
+                'text': text or ''
             }
             
-            if media_ids:
-                payload['media'] = media_ids
+            if media_array:
+                network_content['media'] = media_array
             
-            if board_id:
-                payload['board'] = board_id
+            payload = {
+                'bulk': {
+                    'state': 'draft_public' if is_public else 'draft_private',
+                    'posts': [
+                        {
+                            'networks': {
+                                'default': network_content
+                            },
+                            'accounts': [
+                                {
+                                    'id': account_id,
+                                    'scheduled_at': scheduled_time
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }
+            
+            print(f"DEBUG: Creating draft with payload: {payload}")
             
             response = requests.post(
-                f'{self.base_url}/posts/drafts',
+                f'{self.base_url}/posts/schedule',
                 headers=self._get_headers(),
                 json=payload
             )
+            
+            print(f"DEBUG: Response status: {response.status_code}")
+            print(f"DEBUG: Response: {response.text[:500]}")
             
             response.raise_for_status()
             return {
@@ -191,9 +221,11 @@ class PublerAPI:
                 'draft': response.json()
             }
         except requests.exceptions.RequestException as e:
-            return {
+            error_result = {
                 'success': False,
                 'error': str(e),
                 'status_code': getattr(e.response, 'status_code', None),
                 'response_text': getattr(e.response, 'text', None) if hasattr(e, 'response') else None
             }
+            print(f"DEBUG: Draft creation error: {error_result}")
+            return error_result

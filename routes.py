@@ -1627,7 +1627,9 @@ def push_days_to_publer():
                         account_id=account_id,
                         scheduled_time=event.midpoint_time.isoformat(),
                         text=text,
-                        media_ids=[media_id] if media_id else None
+                        media_ids=[media_id] if media_id else None,
+                        network=assignment.platform,
+                        is_public=False
                     )
                     
                     if draft_result['success']:
