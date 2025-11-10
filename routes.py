@@ -543,6 +543,17 @@ def generate_calendar():
     if not data:
         return jsonify({'error': 'Invalid request data'}), 400
     
+    # Check for existing unassigned "To Be Assigned" posts
+    force_regenerate = data.get('force_regenerate', False)
+    existing_placeholders = Image.query.filter_by(painting_name='To Be Assigned').count()
+    
+    if existing_placeholders > 0 and not force_regenerate:
+        return jsonify({
+            'error': 'calendar_exists',
+            'message': f'Found {existing_placeholders} unassigned calendar slots. Delete them first or confirm to overwrite.',
+            'count': existing_placeholders
+        }), 409
+    
     # Get date range
     start_date_str = data.get('start_date')
     end_date_str = data.get('end_date')
@@ -573,8 +584,12 @@ def generate_calendar():
         'min_spacing': data.get('min_spacing', 180)
     }
     
-    # Optimal posting times when no astrology events exist (natural varied times)
-    optimal_times = ['09:17', '11:43', '14:28', '17:51', '20:14']
+    # Optimal posting times when no astrology events exist (5am-10pm range, natural varied times)
+    optimal_times = [
+        '05:30', '06:45', '07:20', '08:15', '09:30', '10:45',
+        '11:20', '12:30', '13:45', '14:20', '15:30', '16:45',
+        '17:20', '18:30', '19:45', '20:15', '21:30', '21:45'
+    ]
     
     try:
         # Get all unassigned events from AB, YP, POF calendars

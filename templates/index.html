@@ -276,9 +276,8 @@
                                 <select class="form-select form-select-sm" id="schedulingStrategy">
                                     <option value="astrology_only">Astrology Days Only</option>
                                     <option value="fill_all" selected>Fill All Days</option>
-                                    <option value="split_test">Split Test Mode</option>
                                 </select>
-                                <small class="text-muted d-block mt-1">Fill gaps with random times</small>
+                                <small class="text-muted d-block mt-1">Astrology: uses AB/YP/POF only<br>Fill All: uses astrology + optimal times</small>
                             </div>
                             
                             <div class="col-md-3">
@@ -337,6 +336,20 @@
                                             </button>
                                         </div>
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- On-Page Calendar Display -->
+                        <div id="generatedCalendarDisplay" class="mt-4" style="display: none;">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        <i class="bi bi-calendar-week"></i> Generated Schedule
+                                        <span class="badge bg-info ms-2" id="calendarStatsTotal">0 slots</span>
+                                    </h5>
+                                    <div id="calendarStats" class="mb-3"></div>
+                                    <div id="calendarDaysList" class="mt-3"></div>
                                 </div>
                             </div>
                         </div>

@@ -831,6 +831,30 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Display schedule preview modal
                     showSchedulePreview(data);
                     loadImages();
+                } else if (response.status === 409) {
+                    // Calendar exists - ask for confirmation
+                    const error = await response.json();
+                    const confirmed = confirm(`${error.message}\n\nClick OK to delete existing slots and generate new calendar, or Cancel to keep existing slots.`);
+                    
+                    if (confirmed) {
+                        // Delete existing slots and regenerate
+                        await fetch('/delete_empty_slots', { method: 'POST' });
+                        
+                        // Retry generation
+                        const retryResponse = await fetch('/generate_calendar', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify(config)
+                        });
+                        
+                        if (retryResponse.ok) {
+                            const data = await retryResponse.json();
+                            showSchedulePreview(data);
+                            loadImages();
+                        } else {
+                            throw new Error('Generation failed after deleting slots');
+                        }
+                    }
                 } else {
                     const error = await response.json();
                     throw new Error(error.error || 'Generation failed');
@@ -1535,7 +1559,8 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Update stats
         const summary = data.summary;
-        stats.innerHTML = `<strong>${data.created_count} slots created</strong> - Instagram: ${summary.Instagram || 0}, Pinterest: ${summary.Pinterest || 0} | AB: ${summary.AB || 0}, YP: ${summary.YP || 0}, POF: ${summary.POF || 0}, Optimal: ${summary.Optimal || 0}`;
+        const statsHTML = `<strong>${data.created_count} slots created</strong> - Instagram: ${summary.Instagram || 0}, Pinterest: ${summary.Pinterest || 0} | AB: ${summary.AB || 0}, YP: ${summary.YP || 0}, POF: ${summary.POF || 0}, Optimal: ${summary.Optimal || 0}`;
+        stats.innerHTML = statsHTML;
         
         // Build day-by-day schedule
         let html = '';
@@ -1556,7 +1581,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             day.slots.forEach(slot => {
                 const platformEmoji = slot.platform === 'Instagram' ? '📸' : slot.platform === 'Pinterest' ? '📌' : '📱';
-                const calendarBadge = `<span class="badge bg-${slot.calendar_source === 'AB' ? 'primary' : slot.calendar_source === 'YP' ? 'info' : 'secondary'}">${slot.calendar_source}</span>`;
+                const calendarBadge = `<span class="badge bg-${slot.calendar_source === 'AB' ? 'primary' : slot.calendar_source === 'YP' ? 'info' : slot.calendar_source === 'POF' ? 'warning' : 'secondary'}">${slot.calendar_source}</span>`;
                 
                 // Convert 24hr to 12hr format
                 const [hours, minutes] = slot.time.split(':');
@@ -1581,6 +1606,29 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         content.innerHTML = html;
+        
+        // Also populate the on-page calendar display
+        const onPageDisplay = document.getElementById('generatedCalendarDisplay');
+        const onPageStats = document.getElementById('calendarStats');
+        const onPageList = document.getElementById('calendarDaysList');
+        const onPageTotal = document.getElementById('calendarStatsTotal');
+        
+        if (onPageDisplay && onPageStats && onPageList && onPageTotal) {
+            onPageTotal.textContent = `${data.created_count} slots`;
+            onPageStats.innerHTML = `
+                <div class="d-flex gap-3 flex-wrap">
+                    <span><strong>Instagram:</strong> ${summary.Instagram || 0}</span>
+                    <span><strong>Pinterest:</strong> ${summary.Pinterest || 0}</span>
+                    <span class="text-muted">|</span>
+                    <span class="badge bg-primary">AB: ${summary.AB || 0}</span>
+                    <span class="badge bg-info">YP: ${summary.YP || 0}</span>
+                    <span class="badge bg-warning">POF: ${summary.POF || 0}</span>
+                    <span class="badge bg-secondary">Optimal: ${summary.Optimal || 0}</span>
+                </div>
+            `;
+            onPageList.innerHTML = html;
+            onPageDisplay.style.display = 'block';
+        }
         
         // Store data for CSV export
         window.currentScheduleData = data;
