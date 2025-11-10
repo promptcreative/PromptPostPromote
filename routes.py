@@ -558,8 +558,21 @@ def generate_calendar():
                     if day_events:
                         event = day_events.pop(0)
                         calendar_source = event._calendar_type
-                        time_str = event.midpoint_time.strftime('%H:%M')
-                        event_id = event.id
+                        candidate_time = event.midpoint_time.strftime('%H:%M')
+                        
+                        # Check spacing for astrology events too
+                        time_valid = True
+                        candidate_mins = int(candidate_time.split(':')[0]) * 60 + int(candidate_time.split(':')[1])
+                        for slot in day_slots:
+                            slot_mins = int(slot['time'].split(':')[0]) * 60 + int(slot['time'].split(':')[1])
+                            if abs(candidate_mins - slot_mins) < config['min_spacing']:
+                                time_valid = False
+                                break
+                        
+                        if time_valid:
+                            time_str = candidate_time
+                            event_id = event.id
+                        # If astrology time conflicts, skip this event and try next
                     
                     # If no astrology event and strategy is 'fill_all', use synthetic time
                     elif config['strategy'] == 'fill_all':
@@ -655,14 +668,23 @@ def generate_calendar():
                 'slots': day_slots
             })
         
+        # Compute summary
+        summary = {
+            'Instagram': sum(1 for s in created_slots if s['platform'] == 'Instagram'),
+            'Pinterest': sum(1 for s in created_slots if s['platform'] == 'Pinterest'),
+            'AB': sum(1 for s in created_slots if s['calendar_source'] == 'AB'),
+            'YP': sum(1 for s in created_slots if s['calendar_source'] == 'YP'),
+            'POF': sum(1 for s in created_slots if s['calendar_source'] == 'POF'),
+            'Optimal': sum(1 for s in created_slots if s['calendar_source'] == 'Optimal')
+        }
+        
         return jsonify({
             'success': True,
             'created_count': len(created_slots),
-            'total_events': len(filtered_events),
             'excluded_dates': list(excluded_dates),
             'slots': created_slots,
             'schedule_by_day': schedule_by_day,
-            'summary': result['summary']
+            'summary': summary
         }), 200
         
     except Exception as e:
