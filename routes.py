@@ -554,13 +554,14 @@ def generate_calendar():
                     time_str = None
                     event_id = None
                     
-                    # Try to use astrology event first
-                    if day_events:
-                        event = day_events.pop(0)
-                        calendar_source = event._calendar_type
-                        candidate_time = event.midpoint_time.strftime('%H:%M')
+                    # Try to use astrology event first (without permanently removing it yet)
+                    if day_events and not time_str:
+                        # Peek at first event without popping
+                        candidate_event = day_events[0]
+                        calendar_source = candidate_event._calendar_type
+                        candidate_time = candidate_event.midpoint_time.strftime('%H:%M')
                         
-                        # Check spacing for astrology events too
+                        # Check spacing for astrology events
                         time_valid = True
                         candidate_mins = int(candidate_time.split(':')[0]) * 60 + int(candidate_time.split(':')[1])
                         for slot in day_slots:
@@ -570,12 +571,16 @@ def generate_calendar():
                                 break
                         
                         if time_valid:
+                            # Accept this astrology event - now pop it permanently
+                            event = day_events.pop(0)
                             time_str = candidate_time
                             event_id = event.id
-                        # If astrology time conflicts, skip this event and try next
+                        else:
+                            # Conflict - remove from day_events to avoid retrying
+                            day_events.pop(0)
                     
-                    # If no astrology event and strategy is 'fill_all', use synthetic time
-                    elif config['strategy'] == 'fill_all':
+                    # If no valid astrology event and strategy is 'fill_all', use synthetic time
+                    if not time_str and config['strategy'] == 'fill_all':
                         # Pick random optimal time that doesn't conflict with spacing
                         available_times = optimal_times.copy()
                         random.shuffle(available_times)
@@ -593,6 +598,7 @@ def generate_calendar():
                             
                             if not conflict:
                                 time_str = test_time
+                                calendar_source = 'Optimal'
                                 break
                     
                     # Stop if we couldn't find a valid time

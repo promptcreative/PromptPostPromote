@@ -1535,7 +1535,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Update stats
         const summary = data.summary;
-        stats.innerHTML = `<strong>${data.created_count} slots created</strong> - Instagram: ${summary.by_platform.Instagram || 0}, Pinterest: ${summary.by_platform.Pinterest || 0} | AB: ${summary.by_calendar.AB}, YP: ${summary.by_calendar.YP}, POF: ${summary.by_calendar.POF}`;
+        stats.innerHTML = `<strong>${data.created_count} slots created</strong> - Instagram: ${summary.Instagram || 0}, Pinterest: ${summary.Pinterest || 0} | AB: ${summary.AB || 0}, YP: ${summary.YP || 0}, POF: ${summary.POF || 0}, Optimal: ${summary.Optimal || 0}`;
         
         // Build day-by-day schedule
         let html = '';
