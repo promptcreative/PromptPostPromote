@@ -4,6 +4,23 @@
 
 This project is a Flask-based content planning and scheduling system designed for artists to manage their artwork promotion across various social media platforms. Its primary purpose is to streamline content creation and scheduling by integrating with Publer for automated posting, leveraging .ics calendar imports for optimal time slot allocation, and utilizing AI-powered content generation tailored for platforms like Instagram, Pinterest, and Etsy. The system aims to provide an AI-first workflow, from artwork upload and content generation to organized export for social media management.
 
+## Recent Changes (November 2025)
+
+**Schedule Grid CSV Export - November 11, 2025:**
+- ✅ **CSV Export Working Perfectly** - Select individual time slots and export Publer-compatible CSV
+- ✅ **Media URLs Included** - Publer automatically pulls images during CSV import (no API needed!)
+- Event-level checkboxes for granular time slot selection
+- Day-level checkboxes toggle all child events with indeterminate state
+- Live selection counter badge (e.g., "3 selected")
+- Backend endpoint `/schedule/export_csv` generates 12-column Publer format
+- Chronological ordering, placeholder content for empty slots
+- File download as `publer_schedule.csv` via Blob API
+- **Publer API Research Documented** - See `docs/publer-api-integration.md` for full API attempt history
+- **Auto-naming for uploads** - Images without collection now get auto-named from filename (title case)
+- User workflow: Load Schedule → Check slots → Export CSV → Import to Publer ✨
+
+**Key Discovery:** CSV export is more reliable than Publer API. Media hosting on Replit works perfectly - Publer pulls images directly from our URLs during import. No need for complex API integration!
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.

@@ -45,6 +45,10 @@ def upload_file():
             if collection:
                 image.painting_name = collection.name
         
+        if not image.painting_name:
+            name_without_ext = os.path.splitext(original_filename)[0]
+            image.painting_name = name_without_ext.replace('_', ' ').replace('-', ' ').title()
+        
         db.session.add(image)
         db.session.commit()
         
