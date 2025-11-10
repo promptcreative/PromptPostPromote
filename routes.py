@@ -240,6 +240,82 @@ def delete_all_empty_slots():
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
+@app.route('/bulk_delete', methods=['POST'])
+def bulk_delete():
+    """Delete multiple selected items by their IDs"""
+    data = request.get_json()
+    if not data or 'ids' not in data:
+        return jsonify({'error': 'No IDs provided'}), 400
+    
+    ids = data['ids']
+    if not isinstance(ids, list) or len(ids) == 0:
+        return jsonify({'error': 'Invalid IDs list'}), 400
+    
+    try:
+        # Get all images to be deleted
+        images = Image.query.filter(Image.id.in_(ids)).all()
+        count = len(images)
+        
+        # Reset calendar events if assigned
+        for image in images:
+            if image.calendar_event_id:
+                event = CalendarEvent.query.get(image.calendar_event_id)
+                if event:
+                    event.is_assigned = False
+                    event.assigned_image_id = None
+                    event.assigned_platform = None
+        
+        # Delete physical files (skip calendar slot placeholders)
+        if app.static_folder:
+            for image in images:
+                if image.stored_filename and image.original_filename != '[Calendar Slot]':
+                    file_path = os.path.join(app.static_folder, 'uploads', image.stored_filename)
+                    if os.path.exists(file_path):
+                        os.remove(file_path)
+        
+        # Delete from database
+        for image in images:
+            db.session.delete(image)
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'deleted_count': count,
+            'message': f'Deleted {count} items'
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/reset_calendar_events', methods=['POST'])
+def reset_calendar_events():
+    """Reset all calendar events to unassigned state so they can be reused"""
+    try:
+        # Reset all calendar events
+        events = CalendarEvent.query.all()
+        reset_count = 0
+        
+        for event in events:
+            if event.is_assigned:
+                event.is_assigned = False
+                event.assigned_image_id = None
+                event.assigned_platform = None
+                reset_count += 1
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'reset_count': reset_count,
+            'message': f'Reset {reset_count} calendar events to unassigned state'
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/collections', methods=['GET'])
 def get_collections():
     """Get all collections"""

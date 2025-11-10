@@ -1621,10 +1621,54 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
+    // Bulk delete selected items button handler
+    const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+    if (bulkDeleteBtn) {
+        bulkDeleteBtn.addEventListener('click', async function() {
+            const selectedIds = getSelectedImageIds();
+            
+            if (selectedIds.length === 0) {
+                showMessage('No items selected', 'warning');
+                return;
+            }
+            
+            if (!confirm(`Delete ${selectedIds.length} selected items?`)) {
+                return;
+            }
+            
+            const btn = this;
+            const originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Deleting...';
+            
+            try {
+                const response = await fetch('/bulk_delete', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ ids: selectedIds })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    showMessage(`✅ ${data.message}`, 'success');
+                    loadImages();
+                } else {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Delete failed');
+                }
+            } catch (error) {
+                showMessage('Delete failed: ' + error.message, 'danger');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            }
+        });
+    }
+    
     // Delete all empty slots button handler
-    const deleteAllSlotsBtn = document.getElementById('deleteAllSlotsBtn');
-    if (deleteAllSlotsBtn) {
-        deleteAllSlotsBtn.addEventListener('click', async function() {
+    const deleteEmptySlotsBtn = document.getElementById('deleteEmptySlotsBtn');
+    if (deleteEmptySlotsBtn) {
+        deleteEmptySlotsBtn.addEventListener('click', async function() {
             if (!confirm('Delete all empty calendar slots? This will also reset your calendar events so you can regenerate.')) {
                 return;
             }
@@ -1650,6 +1694,41 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             } catch (error) {
                 showMessage('Delete failed: ' + error.message, 'danger');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            }
+        });
+    }
+    
+    // Reset calendar events button handler
+    const resetCalendarEventsBtn = document.getElementById('resetCalendarEventsBtn');
+    if (resetCalendarEventsBtn) {
+        resetCalendarEventsBtn.addEventListener('click', async function() {
+            if (!confirm('Reset all calendar events to unassigned state? This allows you to reuse them in new calendar generations.')) {
+                return;
+            }
+            
+            const btn = this;
+            const originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Resetting...';
+            
+            try {
+                const response = await fetch('/reset_calendar_events', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'}
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    showMessage(`✅ ${data.message}`, 'success');
+                } else {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Reset failed');
+                }
+            } catch (error) {
+                showMessage('Reset failed: ' + error.message, 'danger');
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = originalHtml;

@@ -86,7 +86,24 @@
             </div>
         </div>
 
-        <div class="table-responsive mt-3">
+        <div class="d-flex justify-content-between align-items-center mt-3 mb-2">
+            <div>
+                <span id="totalItemsCount" class="text-muted small">Loading...</span>
+            </div>
+            <div class="btn-group">
+                <button class="btn btn-sm btn-danger" id="bulkDeleteBtn" title="Delete selected items">
+                    <i class="bi bi-trash"></i> Delete Selected
+                </button>
+                <button class="btn btn-sm btn-warning" id="deleteEmptySlotsBtn" title="Delete all empty calendar slots">
+                    <i class="bi bi-calendar-x"></i> Delete Empty Slots
+                </button>
+                <button class="btn btn-sm btn-info" id="resetCalendarEventsBtn" title="Reset calendar events to allow reuse">
+                    <i class="bi bi-arrow-counterclockwise"></i> Reset Calendar Events
+                </button>
+            </div>
+        </div>
+
+        <div class="table-responsive">
             <table class="table table-dark table-hover table-sm" id="imageTable">
                 <thead>
                     <tr>
