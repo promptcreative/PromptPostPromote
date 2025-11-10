@@ -362,6 +362,23 @@ def get_calendar_events(calendar_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/calendar/<int:calendar_id>', methods=['DELETE'])
+def delete_calendar(calendar_id):
+    """Delete a calendar and all its events"""
+    try:
+        calendar = Calendar.query.get(calendar_id)
+        if not calendar:
+            return jsonify({'error': 'Calendar not found'}), 404
+        
+        CalendarEvent.query.filter_by(calendar_id=calendar_id).delete()
+        db.session.delete(calendar)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Calendar deleted'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/assign_times', methods=['POST'])
 def assign_times():
     """Assign calendar times to selected images"""

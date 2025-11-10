@@ -653,9 +653,14 @@ document.addEventListener('DOMContentLoaded', function() {
             if (calendarList) {
                 calendarList.innerHTML = calendars.map(cal => `
                     <div class="card mb-2">
-                        <div class="card-body py-2">
-                            <strong>${cal.calendar_name}</strong>
-                            <br><small class="text-muted">${cal.event_count} events</small>
+                        <div class="card-body py-2 d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>${cal.calendar_name}</strong>
+                                <br><small class="text-muted">${cal.event_count} events</small>
+                            </div>
+                            <button class="btn btn-sm btn-danger delete-calendar-btn" data-calendar-id="${cal.id}" title="Delete Calendar">
+                                <i class="bi bi-trash"></i>
+                            </button>
                         </div>
                     </div>
                 `).join('');
@@ -670,6 +675,33 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Error loading calendars:', error);
         }
     }
+
+    document.addEventListener('click', async function(e) {
+        if (e.target.closest('.delete-calendar-btn')) {
+            const btn = e.target.closest('.delete-calendar-btn');
+            const calendarId = btn.dataset.calendarId;
+            
+            if (!confirm('Delete this calendar and all its events? This cannot be undone.')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/calendar/${calendarId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    showMessage('Calendar deleted successfully');
+                    loadCalendars();
+                } else {
+                    const data = await response.json();
+                    throw new Error(data.error || 'Delete failed');
+                }
+            } catch (error) {
+                showMessage('Failed to delete calendar: ' + error.message, 'danger');
+            }
+        }
+    });
 
     if (assignTimesBtn) {
         assignTimesBtn.addEventListener('click', async function() {
