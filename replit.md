@@ -6,6 +6,15 @@ This is a Flask-based content planning and scheduling system for artwork across 
 
 ## Recent Changes (November 2025)
 
+**Day-by-Day Schedule Preview (November 2025):**
+- Simple calendar generation with defaults: 2 Instagram, 2 Pinterest, 3-hour spacing
+- Interactive schedule preview modal showing day-by-day format with formatted dates
+- Platform emojis (📸 Instagram, 📌 Pinterest) and calendar source badges (AB/YP/POF)
+- Print-friendly layout for hard copy review of scheduling logic
+- CSV export of generated schedule (Date, Time, Platform, Calendar Source)
+- Backend chronological sorting by actual time (not string) prevents 10am-after-3pm bugs
+- User workflow: Set sliders → Generate → Preview modal → Print/Export → Refresh to see in Content tab
+
 **Collection/Series Management System:**
 - Added Collection model for grouping artwork into series (e.g., "Accidental Iris", "Ocean Dreams")
 - Grouped table view with expand/collapse per collection
