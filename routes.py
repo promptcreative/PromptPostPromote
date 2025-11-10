@@ -490,10 +490,13 @@ def generate_calendar():
         
         # Create placeholder Image records
         created_slots = []
+        import uuid
         for assignment in result['assignments']:
+            # Generate unique stored_filename to avoid UNIQUE constraint errors
+            unique_id = str(uuid.uuid4())[:8]
             placeholder = Image(
                 original_filename='[Calendar Slot]',
-                stored_filename='calendar_slot',
+                stored_filename=f'calendar_slot_{unique_id}',
                 title='[Empty Slot]',
                 painting_name='To Be Assigned',
                 platform=assignment['platform'],
@@ -587,10 +590,13 @@ def generate_from_selected():
         
         # Create placeholder records
         created_slots = []
+        import uuid
         for assignment in result['assignments']:
+            # Generate unique stored_filename to avoid UNIQUE constraint errors
+            unique_id = str(uuid.uuid4())[:8]
             placeholder = Image(
                 original_filename='[Calendar Slot]',
-                stored_filename='calendar_slot',
+                stored_filename=f'calendar_slot_{unique_id}',
                 title='[Empty Slot]',
                 painting_name='To Be Assigned',
                 platform=assignment['platform'],
