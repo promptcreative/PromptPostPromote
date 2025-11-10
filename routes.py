@@ -1487,6 +1487,85 @@ def delete_assignment(assignment_id):
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/schedule/export_csv', methods=['POST'])
+def export_schedule_csv():
+    """Export selected calendar events to Publer-compatible CSV"""
+    try:
+        data = request.get_json() or {}
+        event_ids = data.get('event_ids')
+        
+        if not event_ids or not isinstance(event_ids, list):
+            return jsonify({'error': 'event_ids list required'}), 400
+        
+        events = CalendarEvent.query.filter(CalendarEvent.id.in_(event_ids)).order_by(CalendarEvent.midpoint_time).all()
+        
+        if not events:
+            return jsonify({'error': 'No events found'}), 404
+        
+        output = StringIO()
+        writer = csv.writer(output)
+        
+        writer.writerow([
+            'Date', 'Text', 'Link', 'Media URLs', 'Title', 'Labels', 
+            'Alt text', 'Comments', 'Pin Board/Facebook Album/Google Category', 
+            'Subtype', 'CTA', 'Reminder'
+        ])
+        
+        for event in events:
+            assignments = EventAssignment.query.filter_by(calendar_event_id=event.id).all()
+            
+            if assignments:
+                for assignment in assignments:
+                    image = Image.query.get(assignment.image_id)
+                    if image:
+                        text = image.text or image.instagram_first_comment or image.pinterest_description or ''
+                        title = image.painting_name or image.title or ''
+                        media_url = f"{request.url_root.rstrip('/')}/static/uploads/{image.stored_filename}"
+                        calendar_label = event.calendar.calendar_type if event.calendar else 'Calendar'
+                        
+                        writer.writerow([
+                            event.midpoint_time.strftime('%Y-%m-%d %H:%M'),
+                            text,
+                            '',
+                            media_url,
+                            title,
+                            calendar_label,
+                            image.alt_text or '',
+                            image.comments or '',
+                            image.pin_board_fb_album_google_category or '',
+                            image.post_subtype or '',
+                            image.cta or '',
+                            'FALSE'
+                        ])
+            else:
+                calendar_label = event.calendar.calendar_type if event.calendar else 'Calendar'
+                writer.writerow([
+                    event.midpoint_time.strftime('%Y-%m-%d %H:%M'),
+                    '[Content placeholder] Add your artwork and description here',
+                    '',
+                    '',
+                    '',
+                    calendar_label,
+                    '',
+                    'Engage with this post!||What do you think?',
+                    '',
+                    '',
+                    '',
+                    'FALSE'
+                ])
+        
+        output.seek(0)
+        return send_file(
+            BytesIO(output.getvalue().encode('utf-8')), 
+            mimetype='text/csv', 
+            as_attachment=True, 
+            download_name='publer_schedule.csv'
+        )
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/unassigned_images', methods=['GET'])
 def get_unassigned_images():
     """Get images that haven't been assigned to any calendar slot"""

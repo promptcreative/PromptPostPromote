@@ -1790,9 +1790,14 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Schedule Grid functionality
+    let selectedEventIds = new Set();
+    
     const loadScheduleBtn = document.getElementById('loadScheduleBtn');
     if (loadScheduleBtn) {
-        loadScheduleBtn.addEventListener('click', loadScheduleGrid);
+        loadScheduleBtn.addEventListener('click', () => {
+            selectedEventIds.clear();
+            loadScheduleGrid();
+        });
     }
     
     // Publer API Test
@@ -1805,6 +1810,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const pushToPublerBtn = document.getElementById('pushToPublerBtn');
     if (pushToPublerBtn) {
         pushToPublerBtn.addEventListener('click', pushSelectedDaysToPubler);
+    }
+    
+    // Export Selected to CSV
+    const exportScheduleBtn = document.getElementById('exportScheduleBtn');
+    if (exportScheduleBtn) {
+        exportScheduleBtn.addEventListener('click', exportSelectedSlotsToCSV);
     }
     
     async function testPublerAPI() {
@@ -2036,12 +2047,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 const hasAssignments = event.total_assignments > 0;
                 const hasFilteredAssignments = event.assignments.length > 0;
                 
+                const isChecked = selectedEventIds.has(event.event_id);
+                
                 html += `
                     <div class="col-md-6 mb-3">
                         <div class="event-slot border rounded p-2 ${hasAssignments ? 'bg-light' : ''}" 
                              data-event-id="${event.event_id}">
                             <div class="d-flex justify-content-between align-items-center mb-2">
-                                <strong>${event.time}</strong>
+                                <div class="form-check form-check-inline mb-0">
+                                    <input class="form-check-input event-checkbox" type="checkbox" 
+                                           ${isChecked ? 'checked' : ''}
+                                           data-event-id="${event.event_id}" 
+                                           data-day="${day.date}"
+                                           id="event-${event.event_id}">
+                                    <label class="form-check-label" for="event-${event.event_id}">
+                                        <strong>${event.time}</strong>
+                                    </label>
+                                </div>
                                 ${calendarBadge}
                             </div>
                             <div class="text-muted small mb-2">${event.summary || 'Calendar Event'}</div>
@@ -2110,12 +2132,99 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
         
-        // Handle day checkbox changes
+        // Handle day checkbox changes for Publer push
         document.querySelectorAll('.day-checkbox').forEach(checkbox => {
             checkbox.addEventListener('change', updatePushButtonState);
         });
         
         updatePushButtonState();
+        attachScheduleCheckboxHandlers();
+        updateScheduleActions();
+    }
+    
+    function attachScheduleCheckboxHandlers() {
+        document.querySelectorAll('.event-checkbox').forEach(cb => {
+            cb.addEventListener('change', () => {
+                const eventId = Number(cb.dataset.eventId);
+                const day = cb.dataset.day;
+                if (cb.checked) {
+                    selectedEventIds.add(eventId);
+                } else {
+                    selectedEventIds.delete(eventId);
+                }
+                syncDayCheckbox(day);
+                updateScheduleActions();
+            });
+        });
+
+        document.querySelectorAll('.day-checkbox').forEach(cb => {
+            cb.addEventListener('change', () => {
+                const day = cb.value;
+                const childCbs = document.querySelectorAll(`.event-checkbox[data-day="${day}"]`);
+                childCbs.forEach(child => {
+                    child.checked = cb.checked;
+                    const eventId = Number(child.dataset.eventId);
+                    if (cb.checked) {
+                        selectedEventIds.add(eventId);
+                    } else {
+                        selectedEventIds.delete(eventId);
+                    }
+                });
+                updateScheduleActions();
+            });
+        });
+    }
+
+    function syncDayCheckbox(day) {
+        const dayCb = document.querySelector(`.day-checkbox[value="${day}"]`);
+        if (!dayCb) return;
+        const children = Array.from(document.querySelectorAll(`.event-checkbox[data-day="${day}"]`));
+        const checked = children.filter(cb => cb.checked).length;
+        dayCb.checked = checked === children.length && checked > 0;
+        dayCb.indeterminate = checked > 0 && checked < children.length;
+    }
+    
+    function updateScheduleActions() {
+        const exportBtn = document.getElementById('exportScheduleBtn');
+        if (exportBtn) {
+            const count = selectedEventIds.size;
+            exportBtn.disabled = count === 0;
+            const badge = document.getElementById('selectedSlotCount');
+            if (badge) {
+                badge.textContent = `${count} selected`;
+            }
+        }
+    }
+    
+    async function exportSelectedSlotsToCSV() {
+        if (selectedEventIds.size === 0) return;
+        const btn = document.getElementById('exportScheduleBtn');
+        const originalHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Exporting...';
+        try {
+            const response = await fetch('/schedule/export_csv', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ event_ids: Array.from(selectedEventIds) })
+            });
+            if (!response.ok) throw new Error('Export failed');
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'publer_schedule.csv';
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+            showMessage('CSV exported successfully!', 'success');
+        } catch (error) {
+            showMessage('Export failed: ' + error.message, 'danger');
+        } finally {
+            btn.disabled = selectedEventIds.size === 0;
+            btn.innerHTML = originalHtml;
+        }
     }
     
     function updatePushButtonState() {

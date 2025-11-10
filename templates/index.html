@@ -192,13 +192,17 @@
                     </div>
                 </div>
                 <div class="row mt-3">
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <button class="btn btn-outline-info" id="testPublerBtn">
                             <i class="bi bi-cloud-check"></i> Test Publer API Connection
                         </button>
                     </div>
-                    <div class="col-md-6 text-end">
-                        <button class="btn btn-success" id="pushToPublerBtn" disabled>
+                    <div class="col-md-8 text-end">
+                        <button class="btn btn-primary" id="exportScheduleBtn" disabled>
+                            <i class="bi bi-download"></i> Export Selected to CSV
+                        </button>
+                        <span id="selectedSlotCount" class="badge bg-light text-dark ms-2">0 selected</span>
+                        <button class="btn btn-success ms-2" id="pushToPublerBtn" disabled>
                             <i class="bi bi-cloud-upload"></i> Push Selected Days to Publer
                         </button>
                     </div>
