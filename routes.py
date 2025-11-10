@@ -1083,6 +1083,53 @@ def export_csv():
         download_name='publer_content.csv'
     )
 
+@app.route('/export_calendar/<int:calendar_id>', methods=['GET'])
+def export_calendar(calendar_id):
+    """Export calendar events to CSV with midpoint times"""
+    calendar = Calendar.query.get(calendar_id)
+    if not calendar:
+        return jsonify({'error': 'Calendar not found'}), 404
+    
+    events = CalendarEvent.query.filter_by(calendar_id=calendar_id).order_by(CalendarEvent.midpoint_time).all()
+    
+    output = StringIO()
+    writer = csv.writer(output)
+    
+    writer.writerow([
+        'Calendar Type',
+        'Event Summary',
+        'Date',
+        'Time',
+        'Start Time',
+        'End Time',
+        'Status'
+    ])
+    
+    for event in events:
+        status = 'Assigned' if event.is_assigned else 'Available'
+        
+        writer.writerow([
+            calendar.calendar_type,
+            event.summary or '',
+            event.midpoint_time.strftime('%Y-%m-%d'),
+            event.midpoint_time.strftime('%H:%M'),
+            event.start_time.strftime('%Y-%m-%d %H:%M'),
+            event.end_time.strftime('%Y-%m-%d %H:%M'),
+            status
+        ])
+    
+    output_string = output.getvalue()
+    output.close()
+    
+    filename = f'{calendar.calendar_type}_calendar_events.csv'
+    
+    return send_file(
+        BytesIO(output_string.encode()),
+        mimetype='text/csv',
+        as_attachment=True,
+        download_name=filename
+    )
+
 
 @app.route('/mockup-templates', methods=['GET'])
 def get_mockup_templates():
