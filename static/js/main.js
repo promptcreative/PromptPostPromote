@@ -1795,6 +1795,88 @@ document.addEventListener('DOMContentLoaded', function() {
         loadScheduleBtn.addEventListener('click', loadScheduleGrid);
     }
     
+    // Publer API Test
+    const testPublerBtn = document.getElementById('testPublerBtn');
+    if (testPublerBtn) {
+        testPublerBtn.addEventListener('click', testPublerAPI);
+    }
+    
+    async function testPublerAPI() {
+        const btn = testPublerBtn;
+        const originalHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Testing...';
+        
+        try {
+            const response = await fetch('/api/publer/test');
+            const data = await response.json();
+            
+            let resultHtml = '<div class="modal-body">';
+            
+            resultHtml += '<h5>Connection Test</h5>';
+            if (data.connection.success) {
+                resultHtml += '<div class="alert alert-success">✅ Connected successfully!</div>';
+                resultHtml += '<pre class="bg-dark text-light p-2 rounded">' + JSON.stringify(data.connection.workspaces, null, 2) + '</pre>';
+            } else {
+                resultHtml += '<div class="alert alert-danger">❌ Connection failed: ' + data.connection.error + '</div>';
+            }
+            
+            resultHtml += '<h5 class="mt-3">Social Media Accounts</h5>';
+            if (data.accounts.success) {
+                resultHtml += '<div class="alert alert-success">✅ Found ' + data.accounts.accounts.length + ' connected account(s)</div>';
+                resultHtml += '<pre class="bg-dark text-light p-2 rounded" style="max-height: 300px; overflow-y: auto;">' + JSON.stringify(data.accounts.accounts, null, 2) + '</pre>';
+            } else {
+                resultHtml += '<div class="alert alert-danger">❌ Failed to fetch accounts: ' + data.accounts.error + '</div>';
+            }
+            
+            resultHtml += '<h5 class="mt-3">Existing Drafts</h5>';
+            if (data.drafts.success) {
+                resultHtml += '<div class="alert alert-info">📄 Found ' + data.drafts.drafts.length + ' draft(s)</div>';
+                resultHtml += '<pre class="bg-dark text-light p-2 rounded" style="max-height: 300px; overflow-y: auto;">' + JSON.stringify(data.drafts.drafts, null, 2) + '</pre>';
+            } else {
+                resultHtml += '<div class="alert alert-danger">❌ Failed to fetch drafts: ' + data.drafts.error + '</div>';
+            }
+            
+            resultHtml += '</div>';
+            
+            const existingModal = document.getElementById('publerTestModal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+            
+            const modalHtml = `
+                <div class="modal fade" id="publerTestModal" tabindex="-1">
+                    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title"><i class="bi bi-cloud-check"></i> Publer API Test Results</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            ${resultHtml}
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            const modal = new bootstrap.Modal(document.getElementById('publerTestModal'));
+            modal.show();
+            
+            document.getElementById('publerTestModal').addEventListener('hidden.bs.modal', function () {
+                this.remove();
+            });
+            
+        } catch (error) {
+            showMessage('API test failed: ' + error.message, 'danger');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+        }
+    }
+    
     async function loadScheduleGrid() {
         try {
             const startDate = document.getElementById('scheduleStartDate').value;

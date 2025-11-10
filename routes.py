@@ -7,6 +7,7 @@ from utils import allowed_file, generate_unique_filename, parse_ics_content
 from gpt_service import gpt_service
 from dynamic_mockups_service import DynamicMockupsService
 from fal_service import FalService
+from publer_service import PublerAPI
 from io import StringIO, BytesIO
 import csv
 import json
@@ -1517,6 +1518,46 @@ def get_unassigned_images():
         ]
         
         return jsonify(unassigned_images), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/publer/test', methods=['GET'])
+def test_publer_api():
+    """Test Publer API connection and list available resources"""
+    try:
+        publer = PublerAPI()
+        
+        connection_test = publer.test_connection()
+        accounts_result = publer.get_accounts()
+        drafts_result = publer.get_drafts()
+        
+        return jsonify({
+            'connection': connection_test,
+            'accounts': accounts_result,
+            'drafts': drafts_result
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/publer/create_test_draft', methods=['POST'])
+def create_test_draft():
+    """Create a test draft in Publer"""
+    try:
+        data = request.get_json()
+        publer = PublerAPI()
+        
+        result = publer.create_draft(
+            text=data.get('text', 'Test draft from Painting Content Planner'),
+            account_ids=data.get('account_ids'),
+            scheduled_time=data.get('scheduled_time'),
+            is_public=data.get('is_public', False)
+        )
+        
+        return jsonify(result), 200
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
