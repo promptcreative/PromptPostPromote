@@ -1582,4 +1582,40 @@ document.addEventListener('DOMContentLoaded', function() {
             window.URL.revokeObjectURL(url);
         });
     }
+    
+    // Delete all empty slots button handler
+    const deleteAllSlotsBtn = document.getElementById('deleteAllSlotsBtn');
+    if (deleteAllSlotsBtn) {
+        deleteAllSlotsBtn.addEventListener('click', async function() {
+            if (!confirm('Delete all empty calendar slots? This will also reset your calendar events so you can regenerate.')) {
+                return;
+            }
+            
+            const btn = this;
+            const originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Deleting...';
+            
+            try {
+                const response = await fetch('/delete_all_empty_slots', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'}
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    showMessage(`✅ ${data.message}`, 'success');
+                    loadImages();
+                } else {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Delete failed');
+                }
+            } catch (error) {
+                showMessage('Delete failed: ' + error.message, 'danger');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            }
+        });
+    }
 });

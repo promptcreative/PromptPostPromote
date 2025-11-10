@@ -203,6 +203,43 @@ def remove_image(image_id):
         db.session.rollback()
         return jsonify({'error': f'Failed to remove image: {str(e)}'}), 500
 
+@app.route('/delete_all_empty_slots', methods=['POST'])
+def delete_all_empty_slots():
+    """Delete all calendar slot placeholders (To Be Assigned items)"""
+    try:
+        # Find all placeholder slots
+        empty_slots = Image.query.filter(
+            Image.painting_name == 'To Be Assigned',
+            Image.original_filename == '[Calendar Slot]'
+        ).all()
+        
+        count = len(empty_slots)
+        
+        # Also reset calendar events
+        for slot in empty_slots:
+            if slot.calendar_event_id:
+                event = CalendarEvent.query.get(slot.calendar_event_id)
+                if event:
+                    event.is_assigned = False
+                    event.assigned_image_id = None
+                    event.assigned_platform = None
+        
+        # Delete the placeholder images
+        for slot in empty_slots:
+            db.session.delete(slot)
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'deleted_count': count,
+            'message': f'Deleted {count} empty calendar slots and reset calendar events'
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/collections', methods=['GET'])
 def get_collections():
     """Get all collections"""
