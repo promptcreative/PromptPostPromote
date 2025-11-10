@@ -526,12 +526,43 @@ def generate_calendar():
         
         db.session.commit()
         
+        # Group slots by date for day-by-day view
+        from collections import defaultdict
+        from datetime import datetime, time as time_obj
+        slots_by_day = defaultdict(list)
+        
+        for slot in created_slots:
+            date_key = slot['date']
+            # Parse time for proper sorting (HH:MM format)
+            time_parts = slot['time'].split(':')
+            time_sort_key = int(time_parts[0]) * 60 + int(time_parts[1])
+            
+            slots_by_day[date_key].append({
+                'time': slot['time'],
+                'time_sort_key': time_sort_key,
+                'platform': slot['platform'],
+                'calendar_source': slot['calendar_source']
+            })
+        
+        # Sort each day's slots by time and sort days chronologically
+        schedule_by_day = []
+        for date_str in sorted(slots_by_day.keys()):
+            day_slots = sorted(slots_by_day[date_str], key=lambda x: x['time_sort_key'])
+            # Remove sort key from final output
+            for slot in day_slots:
+                del slot['time_sort_key']
+            schedule_by_day.append({
+                'date': date_str,
+                'slots': day_slots
+            })
+        
         return jsonify({
             'success': True,
             'created_count': len(created_slots),
             'total_events': len(filtered_events),
             'excluded_dates': list(excluded_dates),
             'slots': created_slots,
+            'schedule_by_day': schedule_by_day,
             'summary': result['summary']
         }), 200
         

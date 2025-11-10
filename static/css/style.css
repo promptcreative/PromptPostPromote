@@ -323,3 +323,57 @@ body {
     max-height: 60vh;
     overflow-y: auto;
 }
+
+/* Print styles for schedule preview */
+@media print {
+    /* Hide everything except schedule content */
+    body * {
+        visibility: hidden;
+    }
+    
+    #schedulePreviewModal,
+    #schedulePreviewModal * {
+        visibility: visible;
+    }
+    
+    #schedulePreviewModal {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+    }
+    
+    /* Hide modal controls */
+    .modal-header,
+    .modal-footer,
+    #printScheduleBtn,
+    #exportScheduleCSVBtn {
+        display: none !important;
+    }
+    
+    /* Clean print layout */
+    .day-block {
+        page-break-inside: avoid;
+        border: 1px solid #000 !important;
+        padding: 15px !important;
+        margin-bottom: 20px !important;
+    }
+    
+    .day-block h5 {
+        font-size: 16pt;
+        margin-bottom: 10px;
+    }
+    
+    .day-block ul li {
+        font-size: 12pt;
+        line-height: 1.6;
+    }
+    
+    /* Print-friendly badges */
+    .badge {
+        border: 1px solid #000;
+        padding: 2px 6px;
+        background-color: transparent !important;
+        color: #000 !important;
+    }
+}

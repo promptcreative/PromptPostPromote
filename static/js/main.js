@@ -789,9 +789,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 if (response.ok) {
                     const data = await response.json();
-                    const summary = data.summary;
                     
-                    showMessage(`✅ Generated ${data.created_count} empty calendar slots! (AB:${summary.by_calendar.AB} YP:${summary.by_calendar.YP} POF:${summary.by_calendar.POF}) - Go to Content tab to see them`, 'success');
+                    // Display schedule preview modal
+                    showSchedulePreview(data);
                     loadImages();
                 } else {
                     const error = await response.json();
@@ -1488,5 +1488,98 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         
         poll();
+    }
+    
+    function showSchedulePreview(data) {
+        const modal = new bootstrap.Modal(document.getElementById('schedulePreviewModal'));
+        const content = document.getElementById('schedulePreviewContent');
+        const stats = document.getElementById('scheduleStats');
+        
+        // Update stats
+        const summary = data.summary;
+        stats.innerHTML = `<strong>${data.created_count} slots created</strong> - Instagram: ${summary.by_platform.Instagram || 0}, Pinterest: ${summary.by_platform.Pinterest || 0} | AB: ${summary.by_calendar.AB}, YP: ${summary.by_calendar.YP}, POF: ${summary.by_calendar.POF}`;
+        
+        // Build day-by-day schedule
+        let html = '';
+        data.schedule_by_day.forEach(day => {
+            const dateObj = new Date(day.date + 'T00:00:00');
+            const formattedDate = dateObj.toLocaleDateString('en-US', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+            
+            html += `
+                <div class="day-block mb-4 p-3 border rounded">
+                    <h5 class="mb-3">${formattedDate}</h5>
+                    <ul class="list-unstyled mb-0">
+            `;
+            
+            day.slots.forEach(slot => {
+                const platformEmoji = slot.platform === 'Instagram' ? '📸' : slot.platform === 'Pinterest' ? '📌' : '📱';
+                const calendarBadge = `<span class="badge bg-${slot.calendar_source === 'AB' ? 'primary' : slot.calendar_source === 'YP' ? 'info' : 'secondary'}">${slot.calendar_source}</span>`;
+                
+                // Convert 24hr to 12hr format
+                const [hours, minutes] = slot.time.split(':');
+                const hour = parseInt(hours);
+                const ampm = hour >= 12 ? 'PM' : 'AM';
+                const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+                const timeFormatted = `${displayHour}:${minutes} ${ampm}`;
+                
+                html += `
+                    <li class="mb-2">
+                        <span class="text-muted">${timeFormatted}</span> - 
+                        ${platformEmoji} <strong>${slot.platform}</strong> 
+                        ${calendarBadge}
+                    </li>
+                `;
+            });
+            
+            html += `
+                    </ul>
+                </div>
+            `;
+        });
+        
+        content.innerHTML = html;
+        
+        // Store data for CSV export
+        window.currentScheduleData = data;
+        
+        modal.show();
+    }
+    
+    // Print button handler
+    const printScheduleBtn = document.getElementById('printScheduleBtn');
+    if (printScheduleBtn) {
+        printScheduleBtn.addEventListener('click', function() {
+            window.print();
+        });
+    }
+    
+    // CSV export button handler
+    const exportScheduleCSVBtn = document.getElementById('exportScheduleCSVBtn');
+    if (exportScheduleCSVBtn) {
+        exportScheduleCSVBtn.addEventListener('click', function() {
+            if (!window.currentScheduleData) return;
+            
+            const data = window.currentScheduleData;
+            let csv = 'Date,Time,Platform,Calendar Source\n';
+            
+            data.schedule_by_day.forEach(day => {
+                day.slots.forEach(slot => {
+                    csv += `${day.date},${slot.time},${slot.platform},${slot.calendar_source}\n`;
+                });
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `schedule_${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        });
     }
 });
