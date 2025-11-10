@@ -1629,7 +1629,7 @@ def push_days_to_publer():
                         text=text,
                         media_ids=[media_id] if media_id else None,
                         network=assignment.platform,
-                        is_public=False
+                        is_public=True
                     )
                     
                     if draft_result['success']:
