@@ -1801,6 +1801,12 @@ document.addEventListener('DOMContentLoaded', function() {
         testPublerBtn.addEventListener('click', testPublerAPI);
     }
     
+    // Push to Publer
+    const pushToPublerBtn = document.getElementById('pushToPublerBtn');
+    if (pushToPublerBtn) {
+        pushToPublerBtn.addEventListener('click', pushSelectedDaysToPubler);
+    }
+    
     async function testPublerAPI() {
         const btn = testPublerBtn;
         const originalHtml = btn.innerHTML;
@@ -1877,6 +1883,94 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
+    async function pushSelectedDaysToPubler() {
+        const btn = pushToPublerBtn;
+        const originalHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Pushing to Publer...';
+        
+        try {
+            const selectedDates = Array.from(document.querySelectorAll('.day-checkbox:checked'))
+                .map(cb => cb.value);
+            
+            if (selectedDates.length === 0) {
+                showMessage('Please select at least one day', 'warning');
+                return;
+            }
+            
+            const response = await fetch('/api/publer/push_days', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({dates: selectedDates})
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok && result.success) {
+                showMessage(`✅ Successfully created ${result.draft_count} draft${result.draft_count !== 1 ? 's' : ''} in Publer!`, 'success');
+                
+                // Show details modal
+                let detailsHtml = '<div class="modal-body">';
+                detailsHtml += `<div class="alert alert-success">
+                    <i class="bi bi-check-circle"></i> Created ${result.draft_count} draft${result.draft_count !== 1 ? 's' : ''} in Publer
+                </div>`;
+                
+                if (result.results && result.results.length > 0) {
+                    detailsHtml += '<h6>Details:</h6><ul class="list-group">';
+                    for (const r of result.results) {
+                        const icon = r.success ? '✅' : '❌';
+                        const styleClass = r.success ? 'list-group-item-success' : 'list-group-item-danger';
+                        detailsHtml += `<li class="list-group-item ${styleClass}">
+                            ${icon} ${r.painting_name} - ${r.platform} (${r.scheduled_time})
+                            ${r.error ? `<br><small class="text-danger">${r.error}</small>` : ''}
+                        </li>`;
+                    }
+                    detailsHtml += '</ul>';
+                }
+                
+                detailsHtml += '</div>';
+                
+                const modalHtml = `
+                    <div class="modal fade" id="pushResultModal" tabindex="-1">
+                        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title"><i class="bi bi-cloud-upload"></i> Push to Publer Results</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                ${detailsHtml}
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                const existingModal = document.getElementById('pushResultModal');
+                if (existingModal) existingModal.remove();
+                
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+                const modal = new bootstrap.Modal(document.getElementById('pushResultModal'));
+                modal.show();
+                
+                document.getElementById('pushResultModal').addEventListener('hidden.bs.modal', function () {
+                    this.remove();
+                });
+                
+            } else {
+                showMessage('Failed to push to Publer: ' + (result.error || 'Unknown error'), 'danger');
+            }
+            
+        } catch (error) {
+            showMessage('Push failed: ' + error.message, 'danger');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+            updatePushButtonState();
+        }
+    }
+    
     async function loadScheduleGrid() {
         try {
             const startDate = document.getElementById('scheduleStartDate').value;
@@ -1926,7 +2020,12 @@ document.addEventListener('DOMContentLoaded', function() {
             html += `
                 <div class="schedule-day-card mb-3 border rounded p-3">
                     <h6 class="mb-3">
-                        <i class="bi bi-calendar3"></i> ${dayName}, ${dateFormatted}
+                        <div class="form-check">
+                            <input class="form-check-input day-checkbox" type="checkbox" value="${day.date}" id="day-${day.date}">
+                            <label class="form-check-label" for="day-${day.date}">
+                                <i class="bi bi-calendar3"></i> ${dayName}, ${dateFormatted}
+                            </label>
+                        </div>
                     </h6>
                     <div class="row">
             `;
@@ -2010,6 +2109,24 @@ document.addEventListener('DOMContentLoaded', function() {
                 unassignContent(assignmentId);
             });
         });
+        
+        // Handle day checkbox changes
+        document.querySelectorAll('.day-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', updatePushButtonState);
+        });
+        
+        updatePushButtonState();
+    }
+    
+    function updatePushButtonState() {
+        const checkboxes = document.querySelectorAll('.day-checkbox');
+        const checkedCount = document.querySelectorAll('.day-checkbox:checked').length;
+        const pushBtn = document.getElementById('pushToPublerBtn');
+        
+        if (pushBtn) {
+            pushBtn.disabled = checkedCount === 0;
+            pushBtn.innerHTML = `<i class="bi bi-cloud-upload"></i> Push ${checkedCount} Day${checkedCount !== 1 ? 's' : ''} to Publer`;
+        }
     }
     
     async function loadUnassignedContent() {

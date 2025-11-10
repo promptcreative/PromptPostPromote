@@ -129,3 +129,71 @@ class PublerAPI:
                 'status_code': getattr(e.response, 'status_code', None),
                 'response_text': getattr(e.response, 'text', None)
             }
+    
+    def upload_media(self, file_path):
+        """Upload media file to Publer"""
+        try:
+            with open(file_path, 'rb') as f:
+                files = {'file': f}
+                response = requests.post(
+                    f'{self.base_url}/media',
+                    headers={'Authorization': f'Bearer-API {self.api_key}', 'Publer-Workspace-Id': self.workspace_id},
+                    files=files
+                )
+            
+            response.raise_for_status()
+            return {
+                'success': True,
+                'media': response.json()
+            }
+        except requests.exceptions.RequestException as e:
+            return {
+                'success': False,
+                'error': str(e),
+                'status_code': getattr(e.response, 'status_code', None),
+                'response_text': getattr(e.response, 'text', None) if hasattr(e, 'response') else None
+            }
+    
+    def create_scheduled_draft(self, account_id, scheduled_time, text='', media_ids=None, board_id=None):
+        """
+        Create a scheduled draft post
+        
+        Args:
+            account_id: Social media account ID
+            scheduled_time: ISO format datetime string (e.g., "2025-11-15T14:30:00Z")
+            text: Post caption/description
+            media_ids: List of media IDs from upload_media
+            board_id: Pinterest board ID (optional, for Pinterest posts)
+        """
+        try:
+            payload = {
+                'accounts': [account_id],
+                'scheduled_time': scheduled_time,
+                'text': text or '',
+                'is_public': False
+            }
+            
+            if media_ids:
+                payload['media'] = media_ids
+            
+            if board_id:
+                payload['board'] = board_id
+            
+            response = requests.post(
+                f'{self.base_url}/posts/drafts',
+                headers=self._get_headers(),
+                json=payload
+            )
+            
+            response.raise_for_status()
+            return {
+                'success': True,
+                'draft': response.json()
+            }
+        except requests.exceptions.RequestException as e:
+            return {
+                'success': False,
+                'error': str(e),
+                'status_code': getattr(e.response, 'status_code', None),
+                'response_text': getattr(e.response, 'text', None) if hasattr(e, 'response') else None
+            }

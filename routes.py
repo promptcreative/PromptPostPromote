@@ -1561,3 +1561,97 @@ def create_test_draft():
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/publer/push_days', methods=['POST'])
+def push_days_to_publer():
+    """Push selected days with their assignments to Publer as drafts"""
+    try:
+        from datetime import datetime
+        data = request.get_json()
+        selected_dates = data.get('dates', [])
+        
+        if not selected_dates:
+            return jsonify({'error': 'No dates selected'}), 400
+        
+        publer = PublerAPI()
+        results = []
+        draft_count = 0
+        
+        # Account IDs from the test results
+        INSTAGRAM_ACCOUNT_ID = '690d1b4ebe32d2156db74a85'
+        PINTEREST_ACCOUNT_ID = '690d29b4f0c7ea9a5833a3bb'
+        
+        # Get all assignments for the selected dates
+        for date_str in selected_dates:
+            events = CalendarEvent.query.filter(
+                db.func.date(CalendarEvent.midpoint_time) == date_str
+            ).all()
+            
+            for event in events:
+                assignments = EventAssignment.query.filter_by(calendar_event_id=event.id).all()
+                
+                for assignment in assignments:
+                    image = Image.query.get(assignment.image_id)
+                    if not image:
+                        continue
+                    
+                    # Upload image to Publer
+                    file_path = os.path.join(app.config['UPLOAD_FOLDER'], image.stored_filename)
+                    upload_result = publer.upload_media(file_path)
+                    
+                    if not upload_result['success']:
+                        results.append({
+                            'success': False,
+                            'painting_name': image.painting_name or image.original_filename,
+                            'platform': assignment.platform,
+                            'scheduled_time': event.midpoint_time.isoformat(),
+                            'error': upload_result['error']
+                        })
+                        continue
+                    
+                    media_id = upload_result['media'].get('id')
+                    
+                    # Determine account ID based on platform
+                    account_id = INSTAGRAM_ACCOUNT_ID if assignment.platform == 'instagram' else PINTEREST_ACCOUNT_ID
+                    
+                    # Get text content
+                    text = ''
+                    if assignment.platform == 'instagram':
+                        text = image.text or image.instagram_first_comment or ''
+                    elif assignment.platform == 'pinterest':
+                        text = image.pinterest_description or image.text or ''
+                    
+                    # Create draft
+                    draft_result = publer.create_scheduled_draft(
+                        account_id=account_id,
+                        scheduled_time=event.midpoint_time.isoformat(),
+                        text=text,
+                        media_ids=[media_id] if media_id else None
+                    )
+                    
+                    if draft_result['success']:
+                        draft_count += 1
+                        results.append({
+                            'success': True,
+                            'painting_name': image.painting_name or image.original_filename,
+                            'platform': assignment.platform,
+                            'scheduled_time': event.midpoint_time.strftime('%Y-%m-%d %H:%M')
+                        })
+                    else:
+                        results.append({
+                            'success': False,
+                            'painting_name': image.painting_name or image.original_filename,
+                            'platform': assignment.platform,
+                            'scheduled_time': event.midpoint_time.strftime('%Y-%m-%d %H:%M'),
+                            'error': draft_result['error']
+                        })
+        
+        return jsonify({
+            'success': True,
+            'draft_count': draft_count,
+            'results': results
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
