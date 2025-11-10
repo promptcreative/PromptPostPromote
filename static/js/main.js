@@ -741,6 +741,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    const viewCalendarBtn = document.getElementById('viewCalendarBtn');
     const previewScheduleBtn = document.getElementById('previewScheduleBtn');
     const assignTimesSmartBtn = document.getElementById('assignTimesSmartBtn');
     const instagramLimit = document.getElementById('instagramLimit');
@@ -757,6 +758,86 @@ document.addEventListener('DOMContentLoaded', function() {
     if (pinterestLimit) {
         pinterestLimit.addEventListener('input', function() {
             pinterestLimitValue.textContent = this.value;
+        });
+    }
+    
+    if (viewCalendarBtn) {
+        viewCalendarBtn.addEventListener('click', async function() {
+            try {
+                const response = await fetch('/calendar_events_all');
+                if (!response.ok) throw new Error('Failed to load calendar');
+                
+                const data = await response.json();
+                
+                const modal = new bootstrap.Modal(document.getElementById('calendarViewModal'));
+                const content = document.getElementById('calendarViewContent');
+                
+                let html = '';
+                
+                ['AB', 'YP', 'POF'].forEach(calType => {
+                    const cal = data[calType];
+                    if (!cal.calendar_name) {
+                        html += `
+                            <div class="alert alert-warning">
+                                <strong>${calType}</strong> calendar not imported yet
+                            </div>
+                        `;
+                        return;
+                    }
+                    
+                    html += `
+                        <div class="mb-4">
+                            <h5 class="border-bottom pb-2">
+                                <span class="badge bg-${calType === 'AB' ? 'primary' : calType === 'YP' ? 'info' : 'secondary'}">${calType}</span>
+                                ${cal.calendar_name}
+                                <small class="text-muted">
+                                    (${cal.total_events} total, 
+                                    <span class="text-success">${cal.available} available</span>, 
+                                    <span class="text-warning">${cal.assigned} assigned</span>)
+                                </small>
+                            </h5>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Time</th>
+                                            <th>Event</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                    `;
+                    
+                    cal.events.forEach(event => {
+                        const statusBadge = event.is_assigned 
+                            ? `<span class="badge bg-warning">Assigned (${event.assigned_platform})</span>`
+                            : `<span class="badge bg-success">Available</span>`;
+                        
+                        html += `
+                            <tr class="${event.is_assigned ? 'table-secondary' : ''}">
+                                <td>${event.date}</td>
+                                <td><strong>${event.time}</strong></td>
+                                <td>${event.summary || 'Event'}</td>
+                                <td>${statusBadge}</td>
+                            </tr>
+                        `;
+                    });
+                    
+                    html += `
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                content.innerHTML = html;
+                modal.show();
+                
+            } catch (error) {
+                showMessage('Failed to load calendar: ' + error.message, 'danger');
+            }
         });
     }
     

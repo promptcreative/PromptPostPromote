@@ -283,6 +283,9 @@
                                 <div class="small text-muted mb-2">AB (strongest) → YP → POF</div>
                             </div>
                             <div class="col-md-6 text-end">
+                                <button class="btn btn-outline-info btn-sm me-2" id="viewCalendarBtn">
+                                    <i class="bi bi-calendar3"></i> View Calendar
+                                </button>
                                 <button class="btn btn-outline-primary btn-sm me-2" id="previewScheduleBtn">
                                     <i class="bi bi-eye"></i> Preview Schedule
                                 </button>
@@ -337,6 +340,31 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-primary" id="saveTemplatesBtn">Save Templates</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="calendarViewModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-calendar3"></i> Astrology Calendar Events
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+                <div id="calendarViewContent">
+                    <div class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading calendar...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>

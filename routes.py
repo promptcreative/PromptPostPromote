@@ -302,6 +302,46 @@ def get_calendars():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/calendar_events_all', methods=['GET'])
+def get_all_calendar_events():
+    """Get all calendar events grouped by calendar type"""
+    try:
+        calendar_types = ['AB', 'YP', 'POF']
+        result = {}
+        
+        for cal_type in calendar_types:
+            calendar = Calendar.query.filter_by(calendar_type=cal_type).first()
+            if calendar:
+                events = CalendarEvent.query.filter_by(calendar_id=calendar.id).order_by(CalendarEvent.midpoint_time).all()
+                result[cal_type] = {
+                    'calendar_name': calendar.calendar_name,
+                    'total_events': len(events),
+                    'available': sum(1 for e in events if not e.is_assigned),
+                    'assigned': sum(1 for e in events if e.is_assigned),
+                    'events': [{
+                        'id': e.id,
+                        'summary': e.summary,
+                        'date': e.midpoint_time.strftime('%Y-%m-%d'),
+                        'time': e.midpoint_time.strftime('%H:%M'),
+                        'datetime': e.midpoint_time.isoformat(),
+                        'is_assigned': e.is_assigned,
+                        'assigned_platform': e.assigned_platform,
+                        'assigned_image_id': e.assigned_image_id
+                    } for e in events]
+                }
+            else:
+                result[cal_type] = {
+                    'calendar_name': None,
+                    'total_events': 0,
+                    'available': 0,
+                    'assigned': 0,
+                    'events': []
+                }
+        
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/calendar/import', methods=['POST'])
 def import_calendar():
     """Import .ics calendar file"""
