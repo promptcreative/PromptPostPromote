@@ -419,6 +419,77 @@ def delete_calendar(calendar_id):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
+@app.route('/generate_calendar', methods=['POST'])
+def generate_calendar():
+    """Generate empty calendar schedule without content"""
+    from services.smart_scheduler import SmartScheduler
+    
+    data = request.get_json()
+    if not data or 'count' not in data:
+        return jsonify({'error': 'Invalid request data'}), 400
+    
+    count = data.get('count', 20)
+    config = {
+        'instagram_limit': data.get('instagram_limit', 2),
+        'pinterest_limit': data.get('pinterest_limit', 7),
+        'strategy': data.get('strategy', 'fill_all'),
+        'min_spacing': data.get('min_spacing', 30)
+    }
+    
+    try:
+        scheduler = SmartScheduler(config)
+        
+        # Create dummy image IDs to get schedule slots
+        dummy_ids = list(range(1, count + 1))
+        result = scheduler.assign_times(dummy_ids, preview=True)
+        
+        # Now create empty Image records for each assignment
+        created_slots = []
+        for assignment in result['assignments']:
+            # Create placeholder image
+            placeholder = Image(
+                original_filename='[Calendar Slot]',
+                stored_filename='calendar_slot',
+                title='[Empty Slot]',
+                painting_name='To Be Assigned',
+                platform=assignment['platform'],
+                date=assignment['date'],
+                time=assignment['time'],
+                calendar_source=assignment['calendar_source'],
+                calendar_event_id=assignment['event_id'],
+                status='Draft'
+            )
+            db.session.add(placeholder)
+            db.session.flush()
+            
+            # Mark the calendar event as assigned
+            event = CalendarEvent.query.get(assignment['event_id'])
+            if event:
+                event.is_assigned = True
+                event.assigned_image_id = placeholder.id
+                event.assigned_platform = assignment['platform']
+            
+            created_slots.append({
+                'id': placeholder.id,
+                'platform': assignment['platform'],
+                'date': assignment['date'],
+                'time': assignment['time'],
+                'calendar_source': assignment['calendar_source']
+            })
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'created_count': len(created_slots),
+            'slots': created_slots,
+            'summary': result['summary']
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/assign_times_smart', methods=['POST'])
 def assign_times_smart():
     """Smart scheduler - assign times with platform limits and calendar priority"""

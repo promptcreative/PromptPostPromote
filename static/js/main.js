@@ -742,6 +742,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     const viewCalendarBtn = document.getElementById('viewCalendarBtn');
+    const generateCalendarBtn = document.getElementById('generateCalendarBtn');
     const previewScheduleBtn = document.getElementById('previewScheduleBtn');
     const assignTimesSmartBtn = document.getElementById('assignTimesSmartBtn');
     const instagramLimit = document.getElementById('instagramLimit');
@@ -758,6 +759,54 @@ document.addEventListener('DOMContentLoaded', function() {
     if (pinterestLimit) {
         pinterestLimit.addEventListener('input', function() {
             pinterestLimitValue.textContent = this.value;
+        });
+    }
+    
+    if (generateCalendarBtn) {
+        generateCalendarBtn.addEventListener('click', async function() {
+            const count = parseInt(document.getElementById('generateCount').value) || 20;
+            
+            if (count < 1 || count > 100) {
+                showMessage('Please enter a count between 1 and 100', 'warning');
+                return;
+            }
+            
+            const config = {
+                count: count,
+                instagram_limit: parseInt(document.getElementById('instagramLimit').value),
+                pinterest_limit: parseInt(document.getElementById('pinterestLimit').value),
+                strategy: document.getElementById('schedulingStrategy').value,
+                min_spacing: parseInt(document.getElementById('minSpacing').value)
+            };
+            
+            const btn = generateCalendarBtn;
+            const originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Generating...';
+            
+            try {
+                const response = await fetch('/generate_calendar', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(config)
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const summary = data.summary;
+                    
+                    showMessage(`✅ Generated ${data.created_count} empty calendar slots! (AB:${summary.by_calendar.AB} YP:${summary.by_calendar.YP} POF:${summary.by_calendar.POF}) - Go to Content tab to see them`, 'success');
+                    loadImages();
+                } else {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Generation failed');
+                }
+            } catch (error) {
+                showMessage('Calendar generation failed: ' + error.message, 'danger');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            }
         });
     }
     

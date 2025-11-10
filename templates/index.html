@@ -278,20 +278,35 @@
                         </div>
                         
                         <div class="row mt-3">
-                            <div class="col-md-6">
-                                <label class="form-label small fw-bold">🎯 Calendar Priority</label>
-                                <div class="small text-muted mb-2">AB (strongest) → YP → POF</div>
-                            </div>
-                            <div class="col-md-6 text-end">
-                                <button class="btn btn-outline-info btn-sm me-2" id="viewCalendarBtn">
-                                    <i class="bi bi-calendar3"></i> View Calendar
-                                </button>
-                                <button class="btn btn-outline-primary btn-sm me-2" id="previewScheduleBtn">
-                                    <i class="bi bi-eye"></i> Preview Schedule
-                                </button>
-                                <button class="btn btn-success" id="assignTimesSmartBtn">
-                                    <i class="bi bi-calendar-check"></i> Assign Times
-                                </button>
+                            <div class="col-md-12">
+                                <label class="form-label small fw-bold">📋 Two Ways to Schedule</label>
+                                <div class="row g-2">
+                                    <div class="col-md-6">
+                                        <div class="border rounded p-3 bg-dark">
+                                            <h6 class="small mb-2">📅 Step 1: Generate Empty Calendar</h6>
+                                            <p class="small text-muted mb-2">Create posting schedule first, add content later</p>
+                                            <div class="mb-2">
+                                                <label class="form-label small">How many posts?</label>
+                                                <input type="number" class="form-control form-control-sm" id="generateCount" min="1" max="100" value="20" placeholder="20">
+                                            </div>
+                                            <button class="btn btn-info btn-sm w-100" id="generateCalendarBtn">
+                                                <i class="bi bi-calendar-plus"></i> Generate Calendar
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="border rounded p-3 bg-dark">
+                                            <h6 class="small mb-2">🎨 Step 2: Assign Content to Calendar</h6>
+                                            <p class="small text-muted mb-2">Select artworks in Content tab, then assign to times</p>
+                                            <button class="btn btn-outline-info btn-sm w-100 mb-2" id="viewCalendarBtn">
+                                                <i class="bi bi-calendar3"></i> View Calendar
+                                            </button>
+                                            <button class="btn btn-success btn-sm w-100" id="assignTimesSmartBtn">
+                                                <i class="bi bi-calendar-check"></i> Assign Content
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
