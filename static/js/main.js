@@ -683,9 +683,14 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <strong>${cal.calendar_name}</strong>
                                 <br><small class="text-muted">${cal.event_count} events</small>
                             </div>
-                            <button class="btn btn-sm btn-danger delete-calendar-btn" data-calendar-id="${cal.id}" title="Delete Calendar">
-                                <i class="bi bi-trash"></i>
-                            </button>
+                            <div class="btn-group">
+                                <a href="/export_calendar/${cal.id}" class="btn btn-sm btn-success" title="Export Calendar" download>
+                                    <i class="bi bi-download"></i>
+                                </a>
+                                <button class="btn btn-sm btn-danger delete-calendar-btn" data-calendar-id="${cal.id}" title="Delete Calendar">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 `).join('');
