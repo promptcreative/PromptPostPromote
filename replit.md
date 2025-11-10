@@ -6,6 +6,15 @@ This is a Flask-based content planning and scheduling system for artwork across 
 
 ## Recent Changes (November 2025)
 
+**Calendar Cleanup & Natural Synthetic Times (November 10, 2025):**
+- Natural synthetic times: Changed from round hours (9:00, 12:00, 3:00) to varied times (9:17, 11:43, 14:28, 17:51, 20:14)
+- Bulk Delete button: Select multiple items in Content tab and delete them all at once
+- Delete Empty Slots button: Removes all calendar slot placeholders (`[Calendar Slot]`) with one click
+- Reset Calendar Events button: Marks all astrology events as unassigned so they can be reused in new calendar generations
+- Fixed placeholder overflow issue: 2,415+ placeholder slots were flooding the Content tab from repeated generations
+- Automatic calendar event cleanup: Deleting items also resets their associated calendar events
+- User workflow: Delete Empty Slots → Reset Calendar Events → Generate fresh schedule with astrology times
+
 **Day-by-Day Schedule Preview (November 2025):**
 - Simple calendar generation with defaults: 2 Instagram, 2 Pinterest, 3-hour spacing
 - Interactive schedule preview modal showing day-by-day format with formatted dates
