@@ -1,0 +1,183 @@
+ "id": "690d1b4ebe32d2156db74a85",
+    "instagram_api": true,
+    "last_analytics_sync": "2025-11-10T11:13:32.346+00:00",
+    "last_posts_sync": "2025-11-10T17:56:22.082+00:00",
+    "link_in_bio": null,
+    "location": null,
+    "locked": false,
+    "name": "Archer Smith",
+    "permissions": {
+      "approval_needed": false,
+      "can_access": true
+    },
+    "picture": "https://cdn.publer.com/instagram-profile-avatar.jpeg",
+    "post_approval": null,
+    "posts_sync_in_queue": false,
+    "provider": "instagram",
+    "share": null,
+    "shortcodes": [],
+    "shortener": null,
+    "social_id": "17841457914197634",
+    "sync_media": null,
+    "sync_non_admin_posts": null,
+    "type": "ig_business",
+    "username": "promptcreative.co",
+    "variables": []
+  },
+  {
+    "ad_accounts": null,
+    "added_by": "690d1ab31187b6566da47ccb",
+    "albums": [
+      {
+        "id": "886435207846267381",
+        "name": "2025 Board",
+        "owner": "promptcreativeco"
+      },
+      {
+        "id": "886435207846148151",
+        "name": "AES-Writing Brand Board",
+        "owner": "promptcreativeco"
+      },
+      {
+        "id": "886435207846051699",
+        "name": "Branding Trends",
+        "owner": "promptcreativeco"
+      },
+      {
+        "id": "886435207846268033",
+        "name": "Color Combos",
+        "owner": "promptcreativeco"
+      },
+      {
+        "id": "886435207846050688",
+        "name": "Constellations Creative",
+        "owner": "promptcreativeco"
+      },
+      {
+        "id": "886435207846383355",
+        "name": "hair",
+        "owner": "promptcreativeco"
+      },
+      {
+        "id": "886435207846177875",
+        "name": "IP",
+        "owner": "promptcreativeco"
+      },
+      {
+        "id": "886435207845948303",
+        "name": "Leah Brand Board",
+        "owner": "promptcreativeco"
+      },
+      {
+        "id": "886435207846386642",
+        "name": "Pattern Sprint 2025",
+        "owner": "promptcreativeco"
+      },
+      {
+        "id": "886435207846268032",
+        "name": "PPL",
+        "owner": "promptcreativeco"
+      },
+      {
+        "id": "886435207846146955",
+        "name": "PPL- Concept Test",
+        "owner": "promptcreativeco"
+      },
+      {
+        "id": "886435207846259547",
+        "name": "Prompt Aplique Pants",
+        "owner": "promptcreativeco"
+      },
+      {
+        "id": "886435207845999799",
+        "name": "Prompt Creative Image Search-6/8/24",
+        "owner": "promptcreativeco"
+      },
+      {
+        "id": "886435207846253939",
+        "name": "Prompt Pants",
+        "owner": "promptcreativeco"
+      },
+      {
+        "id": "886435207846343823",
+        "name": "Prompt Shoes",
+        "owner": "promptcreativeco"
+      },
+      {
+        "id": "886435207846259542",
+        "name": "Prompt Solid/Cotton Pants",
+        "owner": "promptcreativeco"
+      },
+      {
+        "id": "886435207846259549",
+        "name": "Prompt Sweatshirt/Jacket",
+        "owner": "promptcreativeco"
+      },
+      {
+        "id": "886435207846259540",
+        "name": "Prompt Tops",
+        "owner": "promptcreativeco"
+      },
+      {
+        "id": "886435207845948256",
+        "name": "Quick Saves",
+        "owner": "promptcreativeco"
+      },
+      {
+        "id": "886435207846344864",
+        "name": "Rebrand 2025",
+        "owner": "promptcreativeco"
+      },
+      {
+        "id": "886435207846136082",
+        "name": "RP-Typology",
+        "owner": "promptcreativeco"
+      },
+      {
+        "id": "886435207846662994",
+        "name": "Social",
+        "owner": "promptcreativeco"
+      },
+      {
+        "id": "886435207846146961",
+        "name": "Style Stuff",
+        "owner": "promptcreativeco"
+      },
+      {
+        "id": "886435207846170447",
+        "name": "Tapestry",
+        "owner": "promptcreativeco"
+      }
+    ],
+    "analytics_sync_in_queue": false,
+    "auto_sync_posts": false,
+    "board": null,
+    "default_board": null,
+    "delete": null,
+    "google_analytics": false,
+    "id": "690d29b4f0c7ea9a5833a3bb",
+    "last_analytics_sync": "2025-11-10T11:15:02.497+00:00",
+    "last_posts_sync": null,
+    "link_in_bio": null,
+    "locked": false,
+    "name": "promptcreativeco",
+    "permissions": {
+      "approval_needed": false,
+      "can_access": true
+    },
+    "picture": "https://cdn.publer.com/uploads/picture/pinterest/promptcreativeco.jpg?v=ea0db022fe9d0c6fa9ee",
+    "post_approval": null,
+    "posts_sync_in_queue": false,
+    "provider": "pinterest",
+    "share": null,
+    "shortcodes": [],
+    "shortener": null,
+    "social_id": "promptcreativeco",
+    "sync_media": null,
+    "sync_non_admin_posts": null,
+    "type": "pin_business",
+    "variables": []
+  }
+]
+Existing Drafts
+❌ Failed to fetch drafts: 403 Client Error: For
