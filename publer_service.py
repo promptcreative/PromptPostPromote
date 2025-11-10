@@ -45,22 +45,32 @@ class PublerAPI:
     def get_accounts(self):
         """Get connected social media accounts"""
         try:
+            headers = self._get_headers()
+            print(f"DEBUG: Requesting accounts with workspace_id: {self.workspace_id}")
+            print(f"DEBUG: Headers: {headers}")
+            
             response = requests.get(
                 f'{self.base_url}/accounts',
-                headers=self._get_headers()
+                headers=headers
             )
+            
+            print(f"DEBUG: Response status: {response.status_code}")
+            print(f"DEBUG: Response text: {response.text[:500]}")
+            
             response.raise_for_status()
             return {
                 'success': True,
                 'accounts': response.json()
             }
         except requests.exceptions.RequestException as e:
-            return {
+            error_details = {
                 'success': False,
                 'error': str(e),
                 'status_code': getattr(e.response, 'status_code', None),
-                'response_text': getattr(e.response, 'text', None)
+                'response_text': getattr(e.response, 'text', None) if hasattr(e, 'response') else None
             }
+            print(f"DEBUG: Error getting accounts: {error_details}")
+            return error_details
     
     def create_draft(self, text, account_ids=None, scheduled_time=None, is_public=False):
         """
