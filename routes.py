@@ -421,14 +421,24 @@ def delete_calendar(calendar_id):
 
 @app.route('/generate_calendar', methods=['POST'])
 def generate_calendar():
-    """Generate empty calendar schedule without content"""
+    """Generate empty calendar schedule for ALL available days with optional exclusions"""
+    from datetime import datetime
     from services.smart_scheduler import SmartScheduler
     
     data = request.get_json()
-    if not data or 'count' not in data:
+    if not data:
         return jsonify({'error': 'Invalid request data'}), 400
     
-    count = data.get('count', 20)
+    # Parse and validate excluded dates
+    excluded_dates = set()
+    if 'exclude_dates' in data and data['exclude_dates']:
+        for date_str in data['exclude_dates']:
+            try:
+                parsed = datetime.strptime(date_str.strip(), '%Y-%m-%d')
+                excluded_dates.add(parsed.strftime('%Y-%m-%d'))
+            except ValueError:
+                return jsonify({'error': f'Invalid date format: {date_str}. Use YYYY-MM-DD'}), 400
+    
     config = {
         'instagram_limit': data.get('instagram_limit', 2),
         'pinterest_limit': data.get('pinterest_limit', 7),
@@ -437,16 +447,50 @@ def generate_calendar():
     }
     
     try:
+        # Get all unassigned events from AB, YP, POF calendars chronologically
+        calendar_types = ['AB', 'YP', 'POF']
+        all_events = []
+        
+        for cal_type in calendar_types:
+            calendar = Calendar.query.filter_by(calendar_type=cal_type).first()
+            if calendar:
+                events = CalendarEvent.query.filter_by(
+                    calendar_id=calendar.id,
+                    is_assigned=False
+                ).order_by(CalendarEvent.midpoint_time).all()
+                for event in events:
+                    event._calendar_type = cal_type
+                all_events.extend(events)
+        
+        # Sort all events chronologically
+        all_events.sort(key=lambda e: e.midpoint_time)
+        
+        # Filter out excluded dates
+        filtered_events = []
+        for event in all_events:
+            event_date = event.midpoint_time.strftime('%Y-%m-%d')
+            if event_date not in excluded_dates:
+                filtered_events.append(event)
+        
+        if not filtered_events:
+            return jsonify({'error': 'No available events after applying exclusions'}), 400
+        
+        # Create dummy IDs for scheduling
+        dummy_ids = list(range(1, len(filtered_events) + 1))
+        
+        # Use scheduler to assign times
         scheduler = SmartScheduler(config)
+        # Temporarily use filtered events
+        scheduler.events_by_calendar = {
+            cal_type: [e for e in filtered_events if hasattr(e, '_calendar_type') and e._calendar_type == cal_type]
+            for cal_type in calendar_types
+        }
         
-        # Create dummy image IDs to get schedule slots
-        dummy_ids = list(range(1, count + 1))
-        result = scheduler.assign_times(dummy_ids, preview=True)
+        result = scheduler.assign_times(dummy_ids, preview=True, use_provided_events=True)
         
-        # Now create empty Image records for each assignment
+        # Create placeholder Image records
         created_slots = []
         for assignment in result['assignments']:
-            # Create placeholder image
             placeholder = Image(
                 original_filename='[Calendar Slot]',
                 stored_filename='calendar_slot',
@@ -462,7 +506,7 @@ def generate_calendar():
             db.session.add(placeholder)
             db.session.flush()
             
-            # Mark the calendar event as assigned
+            # Mark event as assigned
             event = CalendarEvent.query.get(assignment['event_id'])
             if event:
                 event.is_assigned = True
@@ -482,6 +526,104 @@ def generate_calendar():
         return jsonify({
             'success': True,
             'created_count': len(created_slots),
+            'total_events': len(filtered_events),
+            'excluded_dates': list(excluded_dates),
+            'slots': created_slots,
+            'summary': result['summary']
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/generate_from_selected', methods=['POST'])
+def generate_from_selected():
+    """Generate slots from specific cherry-picked calendar events"""
+    from services.smart_scheduler import SmartScheduler
+    
+    data = request.get_json()
+    if not data or 'event_ids' not in data:
+        return jsonify({'error': 'Invalid request data'}), 400
+    
+    event_ids = data.get('event_ids', [])
+    if not event_ids:
+        return jsonify({'error': 'No events selected'}), 400
+    
+    config = {
+        'instagram_limit': data.get('instagram_limit', 2),
+        'pinterest_limit': data.get('pinterest_limit', 7),
+        'strategy': data.get('strategy', 'fill_all'),
+        'min_spacing': data.get('min_spacing', 30)
+    }
+    
+    try:
+        # Get selected events
+        selected_events = CalendarEvent.query.filter(
+            CalendarEvent.id.in_(event_ids),
+            CalendarEvent.is_assigned == False
+        ).order_by(CalendarEvent.midpoint_time).all()
+        
+        if not selected_events:
+            return jsonify({'error': 'No valid unassigned events found'}), 400
+        
+        # Determine calendar type for each event
+        for event in selected_events:
+            calendar = Calendar.query.get(event.calendar_id)
+            if calendar:
+                event._calendar_type = calendar.calendar_type
+        
+        # Create dummy IDs
+        dummy_ids = list(range(1, len(selected_events) + 1))
+        
+        # Use scheduler
+        scheduler = SmartScheduler(config)
+        scheduler.events_by_calendar = {
+            'AB': [e for e in selected_events if hasattr(e, '_calendar_type') and e._calendar_type == 'AB'],
+            'YP': [e for e in selected_events if hasattr(e, '_calendar_type') and e._calendar_type == 'YP'],
+            'POF': [e for e in selected_events if hasattr(e, '_calendar_type') and e._calendar_type == 'POF']
+        }
+        
+        result = scheduler.assign_times(dummy_ids, preview=True, use_provided_events=True)
+        
+        # Create placeholder records
+        created_slots = []
+        for assignment in result['assignments']:
+            placeholder = Image(
+                original_filename='[Calendar Slot]',
+                stored_filename='calendar_slot',
+                title='[Empty Slot]',
+                painting_name='To Be Assigned',
+                platform=assignment['platform'],
+                date=assignment['date'],
+                time=assignment['time'],
+                calendar_source=assignment['calendar_source'],
+                calendar_event_id=assignment['event_id'],
+                status='Draft'
+            )
+            db.session.add(placeholder)
+            db.session.flush()
+            
+            # Mark event as assigned
+            event = CalendarEvent.query.get(assignment['event_id'])
+            if event:
+                event.is_assigned = True
+                event.assigned_image_id = placeholder.id
+                event.assigned_platform = assignment['platform']
+            
+            created_slots.append({
+                'id': placeholder.id,
+                'platform': assignment['platform'],
+                'date': assignment['date'],
+                'time': assignment['time'],
+                'calendar_source': assignment['calendar_source']
+            })
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'created_count': len(created_slots),
+            'selected_count': len(selected_events),
             'slots': created_slots,
             'summary': result['summary']
         }), 200

@@ -32,6 +32,18 @@ class SmartScheduler:
         # Available events by calendar type
         self.events_by_calendar = {}
         
+    def load_existing_usage(self):
+        """Load usage tracking from existing assigned events"""
+        assigned_events = CalendarEvent.query.filter_by(is_assigned=True).all()
+        for event in assigned_events:
+            if event.assigned_platform and event.midpoint_time:
+                date_str = self.get_date_str(event.midpoint_time)
+                self.usage[(date_str, event.assigned_platform)] += 1
+                key = (date_str, event.assigned_platform)
+                # Track the latest post time for spacing
+                if key not in self.last_post_time or event.midpoint_time > self.last_post_time[key]:
+                    self.last_post_time[key] = event.midpoint_time
+    
     def load_events(self):
         """Load all available calendar events from AB, YP, POF calendars"""
         calendar_types = ['AB', 'YP', 'POF']
@@ -46,17 +58,6 @@ class SmartScheduler:
                 self.events_by_calendar[cal_type] = events
             else:
                 self.events_by_calendar[cal_type] = []
-        
-        # Seed usage tracking from existing assigned events
-        assigned_events = CalendarEvent.query.filter_by(is_assigned=True).all()
-        for event in assigned_events:
-            if event.assigned_platform and event.midpoint_time:
-                date_str = self.get_date_str(event.midpoint_time)
-                self.usage[(date_str, event.assigned_platform)] += 1
-                key = (date_str, event.assigned_platform)
-                # Track the latest post time for spacing
-                if key not in self.last_post_time or event.midpoint_time > self.last_post_time[key]:
-                    self.last_post_time[key] = event.midpoint_time
     
     def get_date_str(self, dt):
         """Get date string from datetime"""
@@ -126,13 +127,14 @@ class SmartScheduler:
         self.usage[(date_str, platform)] += 1
         self.last_post_time[(date_str, platform)] = event.midpoint_time
     
-    def assign_times(self, image_ids, preview=False):
+    def assign_times(self, image_ids, preview=False, use_provided_events=False):
         """
         Assign times to selected images
         
         Args:
             image_ids: list of image IDs to schedule
             preview: bool - if True, don't commit to database
+            use_provided_events: bool - if True, use pre-set events_by_calendar instead of loading
             
         Returns:
             dict with:
@@ -140,7 +142,12 @@ class SmartScheduler:
                 - unassigned: list of image_ids that couldn't be scheduled
                 - summary: dict with stats
         """
-        self.load_events()
+        # Always load existing usage for limits/spacing tracking
+        self.load_existing_usage()
+        
+        # Load events only if not using pre-provided filtered events
+        if not use_provided_events:
+            self.load_events()
         
         assignments = []
         unassigned = []

@@ -764,15 +764,11 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (generateCalendarBtn) {
         generateCalendarBtn.addEventListener('click', async function() {
-            const count = parseInt(document.getElementById('generateCount').value) || 20;
-            
-            if (count < 1 || count > 100) {
-                showMessage('Please enter a count between 1 and 100', 'warning');
-                return;
-            }
+            const excludeDatesInput = document.getElementById('excludeDates').value.trim();
+            const excludedDates = excludeDatesInput ? excludeDatesInput.split(',').map(d => d.trim()) : [];
             
             const config = {
-                count: count,
+                exclude_dates: excludedDates,
                 instagram_limit: parseInt(document.getElementById('instagramLimit').value),
                 pinterest_limit: parseInt(document.getElementById('pinterestLimit').value),
                 strategy: document.getElementById('schedulingStrategy').value,
@@ -849,6 +845,9 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <table class="table table-sm table-hover">
                                     <thead>
                                         <tr>
+                                            <th width="30">
+                                                <input type="checkbox" class="form-check-input" id="selectAllEvents${calType}">
+                                            </th>
                                             <th>Date</th>
                                             <th>Time</th>
                                             <th>Event</th>
@@ -863,8 +862,13 @@ document.addEventListener('DOMContentLoaded', function() {
                             ? `<span class="badge bg-warning">Assigned (${event.assigned_platform})</span>`
                             : `<span class="badge bg-success">Available</span>`;
                         
+                        const checkbox = !event.is_assigned 
+                            ? `<input type="checkbox" class="form-check-input event-checkbox" data-event-id="${event.id}" data-event-date="${event.date}">`
+                            : `<input type="checkbox" class="form-check-input" disabled>`;
+                        
                         html += `
                             <tr class="${event.is_assigned ? 'table-secondary' : ''}">
+                                <td>${checkbox}</td>
                                 <td>${event.date}</td>
                                 <td><strong>${event.time}</strong></td>
                                 <td>${event.summary || 'Event'}</td>
@@ -882,10 +886,100 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
                 
                 content.innerHTML = html;
+                
+                // Add event listeners for checkboxes
+                content.querySelectorAll('.event-checkbox').forEach(checkbox => {
+                    checkbox.addEventListener('change', updateSelectedEventsCount);
+                });
+                
+                // Add select all functionality for each calendar
+                ['AB', 'YP', 'POF'].forEach(calType => {
+                    const selectAll = document.getElementById(`selectAllEvents${calType}`);
+                    if (selectAll) {
+                        selectAll.addEventListener('change', function() {
+                            // Find the table containing this checkbox
+                            const table = this.closest('table');
+                            if (table) {
+                                // Only toggle checkboxes within this specific table
+                                const checkboxes = table.querySelectorAll('.event-checkbox');
+                                checkboxes.forEach(cb => {
+                                    cb.checked = this.checked;
+                                });
+                            }
+                            updateSelectedEventsCount();
+                        });
+                    }
+                });
+                
+                updateSelectedEventsCount();
                 modal.show();
                 
             } catch (error) {
                 showMessage('Failed to load calendar: ' + error.message, 'danger');
+            }
+        });
+    }
+    
+    function updateSelectedEventsCount() {
+        const checkboxes = document.querySelectorAll('.event-checkbox:checked');
+        const count = checkboxes.length;
+        const badge = document.getElementById('selectedEventsCount');
+        if (badge) {
+            badge.textContent = `${count} selected`;
+            badge.className = count > 0 ? 'badge bg-success' : 'badge bg-primary';
+        }
+    }
+    
+    const createFromSelectedBtn = document.getElementById('createFromSelectedBtn');
+    if (createFromSelectedBtn) {
+        createFromSelectedBtn.addEventListener('click', async function() {
+            const checkboxes = document.querySelectorAll('.event-checkbox:checked');
+            const eventIds = Array.from(checkboxes).map(cb => parseInt(cb.dataset.eventId));
+            
+            if (eventIds.length === 0) {
+                showMessage('Select at least one event', 'warning');
+                return;
+            }
+            
+            const config = {
+                event_ids: eventIds,
+                instagram_limit: parseInt(document.getElementById('instagramLimit').value),
+                pinterest_limit: parseInt(document.getElementById('pinterestLimit').value),
+                strategy: document.getElementById('schedulingStrategy').value,
+                min_spacing: parseInt(document.getElementById('minSpacing').value)
+            };
+            
+            const btn = createFromSelectedBtn;
+            const originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Creating...';
+            
+            try {
+                const response = await fetch('/generate_from_selected', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(config)
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const summary = data.summary;
+                    
+                    showMessage(`✅ Created ${data.created_count} slots from selected events! (AB:${summary.by_calendar.AB} YP:${summary.by_calendar.YP} POF:${summary.by_calendar.POF})`, 'success');
+                    
+                    // Close modal and reload
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('calendarViewModal'));
+                    if (modal) modal.hide();
+                    loadImages();
+                } else {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Generation failed');
+                }
+            } catch (error) {
+                showMessage('Failed to create slots: ' + error.message, 'danger');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
             }
         });
     }

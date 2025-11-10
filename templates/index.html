@@ -284,13 +284,14 @@
                                     <div class="col-md-6">
                                         <div class="border rounded p-3 bg-dark">
                                             <h6 class="small mb-2">📅 Step 1: Generate Empty Calendar</h6>
-                                            <p class="small text-muted mb-2">Create posting schedule first, add content later</p>
+                                            <p class="small text-muted mb-2">Fills ALL calendar days based on limits below</p>
                                             <div class="mb-2">
-                                                <label class="form-label small">How many posts?</label>
-                                                <input type="number" class="form-control form-control-sm" id="generateCount" min="1" max="100" value="20" placeholder="20">
+                                                <label class="form-label small">🚫 Exclude Dates (optional)</label>
+                                                <input type="text" class="form-control form-control-sm" id="excludeDates" placeholder="2025-12-25, 2025-01-01">
+                                                <small class="text-muted">Comma-separated: YYYY-MM-DD</small>
                                             </div>
                                             <button class="btn btn-info btn-sm w-100" id="generateCalendarBtn">
-                                                <i class="bi bi-calendar-plus"></i> Generate Calendar
+                                                <i class="bi bi-calendar-plus"></i> Generate Full Calendar
                                             </button>
                                         </div>
                                     </div>
@@ -379,7 +380,13 @@
                 </div>
             </div>
             <div class="modal-footer">
+                <div class="me-auto">
+                    <span id="selectedEventsCount" class="badge bg-primary">0 selected</span>
+                </div>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-success" id="createFromSelectedBtn">
+                    <i class="bi bi-calendar-check"></i> Create from Selected
+                </button>
             </div>
         </div>
     </div>
