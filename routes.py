@@ -379,6 +379,36 @@ def delete_calendar(calendar_id):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
+@app.route('/assign_times_smart', methods=['POST'])
+def assign_times_smart():
+    """Smart scheduler - assign times with platform limits and calendar priority"""
+    from services.smart_scheduler import SmartScheduler
+    
+    data = request.get_json()
+    if not data or 'image_ids' not in data:
+        return jsonify({'error': 'Invalid request data'}), 400
+    
+    config = {
+        'instagram_limit': data.get('instagram_limit', 2),
+        'pinterest_limit': data.get('pinterest_limit', 7),
+        'strategy': data.get('strategy', 'fill_all'),
+        'min_spacing': data.get('min_spacing', 30)
+    }
+    
+    preview = data.get('preview', False)
+    
+    try:
+        scheduler = SmartScheduler(config)
+        result = scheduler.assign_times(data['image_ids'], preview=preview)
+        
+        return jsonify({
+            'success': True,
+            'result': result
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/assign_times', methods=['POST'])
 def assign_times():
     """Assign calendar times to selected images"""

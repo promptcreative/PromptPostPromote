@@ -105,6 +105,35 @@ def migrate_schema():
                 db.session.commit()
                 print("artist_note column added to Collection successfully!")
             
+            # Add smart scheduler columns to Image table
+            image_columns_fresh = [col['name'] for col in inspector.get_columns('image')]
+            if 'calendar_source' not in image_columns_fresh:
+                print("Adding calendar_source column to Image table...")
+                db.session.execute(text('ALTER TABLE image ADD COLUMN calendar_source VARCHAR(50)'))
+                db.session.commit()
+                print("calendar_source column added successfully!")
+            
+            if 'calendar_event_id' not in image_columns_fresh:
+                print("Adding calendar_event_id column to Image table...")
+                db.session.execute(text('ALTER TABLE image ADD COLUMN calendar_event_id INTEGER'))
+                db.session.commit()
+                print("calendar_event_id column added successfully!")
+            
+            # Add smart scheduler columns to CalendarEvent table
+            if 'calendar_event' in inspector.get_table_names():
+                event_columns = [col['name'] for col in inspector.get_columns('calendar_event')]
+                if 'assigned_image_id' not in event_columns:
+                    print("Adding assigned_image_id column to CalendarEvent table...")
+                    db.session.execute(text('ALTER TABLE calendar_event ADD COLUMN assigned_image_id INTEGER'))
+                    db.session.commit()
+                    print("assigned_image_id column added successfully!")
+                
+                if 'assigned_platform' not in event_columns:
+                    print("Adding assigned_platform column to CalendarEvent table...")
+                    db.session.execute(text('ALTER TABLE calendar_event ADD COLUMN assigned_platform VARCHAR(50)'))
+                    db.session.commit()
+                    print("assigned_platform column added successfully!")
+            
             print("Migration complete!")
             return
         

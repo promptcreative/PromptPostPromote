@@ -53,6 +53,8 @@ class Image(db.Model):
     video_pin_pdf_title = db.Column(db.String(500))
     
     calendar_selection = db.Column(db.String(100))
+    calendar_source = db.Column(db.String(50))
+    calendar_event_id = db.Column(db.Integer, db.ForeignKey('calendar_event.id'), nullable=True)
     
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -99,6 +101,7 @@ class Image(db.Model):
             'text': self.text or '',
             'video_pin_pdf_title': self.video_pin_pdf_title or '',
             'calendar_selection': self.calendar_selection or '',
+            'calendar_source': self.calendar_source or '',
             'created_at': self.created_at.isoformat() if self.created_at else '',
             'updated_at': self.updated_at.isoformat() if self.updated_at else ''
         }
@@ -186,6 +189,8 @@ class CalendarEvent(db.Model):
     
     event_type = db.Column(db.String(100))
     is_assigned = db.Column(db.Boolean, default=False)
+    assigned_image_id = db.Column(db.Integer, db.ForeignKey('image.id'), nullable=True)
+    assigned_platform = db.Column(db.String(50))
     
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     

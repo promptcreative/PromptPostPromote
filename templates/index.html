@@ -229,6 +229,72 @@
                 </div>
             </div>
         </div>
+        
+        <div class="row mt-3">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="bi bi-calendar-event"></i> Smart Scheduler</h5>
+                        <p class="text-muted small">Assign optimal posting times using astrology calendars with platform limits</p>
+                        
+                        <div class="row">
+                            <div class="col-md-3">
+                                <h6 class="small fw-bold mb-2">📱 Instagram</h6>
+                                <label class="form-label small">Daily Post Limit</label>
+                                <input type="range" class="form-range" id="instagramLimit" min="1" max="5" value="2">
+                                <div class="text-center small"><span id="instagramLimitValue">2</span> posts/day</div>
+                                <small class="text-muted">💡 Recommended: 1-2 posts/day</small>
+                            </div>
+                            
+                            <div class="col-md-3">
+                                <h6 class="small fw-bold mb-2">📌 Pinterest</h6>
+                                <label class="form-label small">Daily Post Limit</label>
+                                <input type="range" class="form-range" id="pinterestLimit" min="1" max="20" value="7">
+                                <div class="text-center small"><span id="pinterestLimitValue">7</span> pins/day</div>
+                                <small class="text-muted">💡 Recommended: 5-10 pins/day</small>
+                            </div>
+                            
+                            <div class="col-md-3">
+                                <h6 class="small fw-bold mb-2">📅 Strategy</h6>
+                                <select class="form-select form-select-sm" id="schedulingStrategy">
+                                    <option value="astrology_only">Astrology Days Only</option>
+                                    <option value="fill_all" selected>Fill All Days</option>
+                                    <option value="split_test">Split Test Mode</option>
+                                </select>
+                                <small class="text-muted d-block mt-1">Fill gaps with random times</small>
+                            </div>
+                            
+                            <div class="col-md-3">
+                                <h6 class="small fw-bold mb-2">⏰ Spacing</h6>
+                                <select class="form-select form-select-sm" id="minSpacing">
+                                    <option value="30" selected>30 minutes</option>
+                                    <option value="60">1 hour</option>
+                                    <option value="90">1.5 hours</option>
+                                    <option value="120">2 hours</option>
+                                    <option value="180">3 hours</option>
+                                </select>
+                                <small class="text-muted d-block mt-1">Minimum gap between posts</small>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">🎯 Calendar Priority</label>
+                                <div class="small text-muted mb-2">AB (strongest) → YP → POF</div>
+                            </div>
+                            <div class="col-md-6 text-end">
+                                <button class="btn btn-outline-primary btn-sm me-2" id="previewScheduleBtn">
+                                    <i class="bi bi-eye"></i> Preview Schedule
+                                </button>
+                                <button class="btn btn-success" id="assignTimesSmartBtn">
+                                    <i class="bi bi-calendar-check"></i> Assign Times
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
