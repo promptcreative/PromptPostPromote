@@ -6,6 +6,12 @@ This is a Flask-based content planning and scheduling system for artwork across 
 
 ## Recent Changes (November 2025)
 
+**Calendar Priority Logic Fix (November 10, 2025):**
+- Fixed calendar generation to properly prioritize AB (Astro Batching) events over YP/POF events on each day
+- Per-day priority assignment: AB events get first slots, then YP and POF are mixed with equal priority
+- Random optimal times now only used for days with ZERO astrology events (Fill All Days strategy)
+- Example: Nov 10 with 2 AB + 1 YP assigns as [AB, AB, YP] not random mix
+
 **Calendar Cleanup & Natural Synthetic Times (November 10, 2025):**
 - Natural synthetic times: Changed from round hours (9:00, 12:00, 3:00) to varied times (9:17, 11:43, 14:28, 17:51, 20:14)
 - Bulk Delete button: Select multiple items in Content tab and delete them all at once

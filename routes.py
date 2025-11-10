@@ -592,9 +592,9 @@ def generate_calendar():
     ]
     
     try:
-        # Get all unassigned events from AB, YP, POF calendars
+        # Get all unassigned events from AB, YP, POF calendars grouped by date and type
         calendar_types = ['AB', 'YP', 'POF']
-        events_by_date = {}
+        events_by_date_and_type = {}
         
         for cal_type in calendar_types:
             calendar = Calendar.query.filter_by(calendar_type=cal_type).first()
@@ -606,9 +606,9 @@ def generate_calendar():
                 for event in events:
                     event._calendar_type = cal_type
                     event_date = event.midpoint_time.strftime('%Y-%m-%d')
-                    if event_date not in events_by_date:
-                        events_by_date[event_date] = []
-                    events_by_date[event_date].append(event)
+                    if event_date not in events_by_date_and_type:
+                        events_by_date_and_type[event_date] = {'AB': [], 'YP': [], 'POF': []}
+                    events_by_date_and_type[event_date][cal_type].append(event)
         
         created_slots = []
         import uuid
@@ -631,9 +631,22 @@ def generate_calendar():
                 current_date += timedelta(days=1)
                 continue
             
-            day_events = events_by_date.get(date_str, [])
+            # Get events for this day grouped by type with priority: AB first, then YP/POF
+            day_events_by_type = events_by_date_and_type.get(date_str, {'AB': [], 'YP': [], 'POF': []})
+            
+            # Create prioritized event pool: AB events first, then mix YP and POF
+            import random as rand
+            prioritized_events = []
+            prioritized_events.extend(day_events_by_type['AB'])  # AB events first
+            
+            # Mix YP and POF events with equal priority
+            yp_pof_mixed = day_events_by_type['YP'] + day_events_by_type['POF']
+            rand.shuffle(yp_pof_mixed)
+            prioritized_events.extend(yp_pof_mixed)
+            
             day_slots = []  # Track slots for spacing
             platform_counts = {'Instagram': 0, 'Pinterest': 0}  # Track per-platform counts
+            has_any_astrology_events = len(prioritized_events) > 0
             
             # Try to create slots for this day
             for platform, limit in [('Instagram', config['instagram_limit']), ('Pinterest', config['pinterest_limit'])]:
@@ -645,10 +658,10 @@ def generate_calendar():
                     time_str = None
                     event_id = None
                     
-                    # Try to use astrology event first (without permanently removing it yet)
-                    if day_events and not time_str:
+                    # Try to use astrology event first (prioritized: AB, then YP/POF)
+                    if prioritized_events and not time_str:
                         # Peek at first event without popping
-                        candidate_event = day_events[0]
+                        candidate_event = prioritized_events[0]
                         calendar_source = candidate_event._calendar_type
                         candidate_time = candidate_event.midpoint_time.strftime('%H:%M')
                         
@@ -663,15 +676,15 @@ def generate_calendar():
                         
                         if time_valid:
                             # Accept this astrology event - now pop it permanently
-                            event = day_events.pop(0)
+                            event = prioritized_events.pop(0)
                             time_str = candidate_time
                             event_id = event.id
                         else:
-                            # Conflict - remove from day_events to avoid retrying
-                            day_events.pop(0)
+                            # Conflict - remove from prioritized_events to avoid retrying
+                            prioritized_events.pop(0)
                     
-                    # If no valid astrology event and strategy is 'fill_all', use synthetic time
-                    if not time_str and config['strategy'] == 'fill_all':
+                    # If no astrology events at all for this day and strategy is 'fill_all', use synthetic time
+                    if not time_str and config['strategy'] == 'fill_all' and not has_any_astrology_events:
                         # Pick random optimal time that doesn't conflict with spacing
                         available_times = optimal_times.copy()
                         random.shuffle(available_times)
