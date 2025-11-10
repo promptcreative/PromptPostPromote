@@ -207,7 +207,7 @@ class PublerAPI:
             
             payload = {
                 'bulk': {
-                    'state': 'draft_public' if is_public else 'draft_private',
+                    'state': 'draft',
                     'posts': [
                         {
                             'networks': {
