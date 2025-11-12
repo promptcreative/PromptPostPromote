@@ -1788,6 +1788,61 @@ def export_scheduled_csv():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/debug/images', methods=['GET'])
+def debug_images():
+    """Debug endpoint to check image records"""
+    try:
+        images = Image.query.order_by(Image.id.desc()).limit(20).all()
+        
+        result = []
+        for img in images:
+            result.append({
+                'id': img.id,
+                'painting_name': img.painting_name,
+                'original_filename': img.original_filename,
+                'stored_filename': img.stored_filename,
+                'status': img.status,
+                'has_file': bool(img.stored_filename)
+            })
+        
+        empty_count = Image.query.filter(
+            (Image.stored_filename == None) | (Image.stored_filename == '')
+        ).count()
+        
+        return jsonify({
+            'recent_images': result,
+            'empty_records_count': empty_count
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/cleanup/empty_images', methods=['DELETE'])
+def cleanup_empty_images():
+    """Delete image records that have no actual file"""
+    try:
+        empty_images = Image.query.filter(
+            (Image.stored_filename == None) | (Image.stored_filename == '')
+        ).all()
+        
+        deleted_count = len(empty_images)
+        
+        for img in empty_images:
+            db.session.delete(img)
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'deleted_count': deleted_count
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/publer/test', methods=['GET'])
 def test_publer_api():
     """Test Publer API connection and list available resources"""
