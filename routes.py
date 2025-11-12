@@ -1669,43 +1669,18 @@ def export_scheduled_csv():
         writer = csv.writer(output)
         
         writer.writerow([
-            'Collection',
-            'Title',
-            'Painting Name',
-            'Materials',
-            'Size',
-            'Artist Note',
-            'Post subtype',
-            'Platform',
             'Date',
-            'Time',
-            'Status',
-            'Label(s)',
-            'Post URL',
-            'Alt text(s)',
-            'CTA',
-            'Comment(s)',
-            'Cover Image URL',
-            'Etsy Description',
-            'Etsy Listing Title',
-            'Etsy Price',
-            'Etsy Quantity',
-            'Etsy SKU',
-            'Instagram First Comment',
-            'Link(s)',
-            'Media',
-            'Media Source',
-            'Media URL(s)',
-            'Pin board, FB album, or Google category',
-            'Pinterest Description',
-            'Pinterest Link URL',
-            'Reminder',
-            'SEO Description',
-            'SEO Tags',
-            'SEO Title',
             'Text',
-            'Title - For the video, pin, PDF',
-            'Calendar Selection'
+            'Link',
+            'Media URL',
+            'Title',
+            'Label',
+            'Alt text(s)',
+            'Comment(s)',
+            'Pin board, FB album, or Google category',
+            'Post subtype',
+            'CTA',
+            'Reminder'
         ])
         
         replit_domain = os.environ.get('REPLIT_DEV_DOMAIN', '')
@@ -1733,46 +1708,29 @@ def export_scheduled_csv():
             
             media_url = f"{base_url}/static/uploads/{image.stored_filename}"
             
+            datetime_str = f"{event.midpoint_time.strftime('%Y-%m-%d')} {event.midpoint_time.strftime('%H:%M')}"
+            
+            text_content = image.text or ''
+            if assignment.platform == 'Instagram' and image.instagram_first_comment:
+                text_content = image.text or ''
+            elif assignment.platform == 'Pinterest' and image.pinterest_description:
+                text_content = image.pinterest_description
+            
             rows.append({
                 'datetime': event.midpoint_time,
                 'row': [
-                    collection_name,
-                    image.title or '',
-                    image.painting_name or '',
-                    image.materials or '',
-                    image.size or '',
-                    image.artist_note or '',
-                    image.post_subtype or '',
-                    assignment.platform,
-                    event.midpoint_time.strftime('%Y-%m-%d'),
-                    event.midpoint_time.strftime('%H:%M'),
-                    image.status or '',
-                    image.labels or '',
-                    image.post_url or '',
-                    image.alt_text or '',
-                    image.cta or '',
-                    image.comments or '',
-                    image.cover_image_url or '',
-                    image.etsy_description or '',
-                    image.etsy_listing_title or '',
-                    image.etsy_price or '',
-                    image.etsy_quantity or '',
-                    image.etsy_sku or '',
-                    image.instagram_first_comment or '',
+                    datetime_str,
+                    text_content,
                     image.links or '',
-                    image.media or '',
-                    image.media_source or '',
                     media_url,
+                    image.painting_name or image.video_pin_pdf_title or '',
+                    image.labels or '',
+                    image.alt_text or '',
+                    image.instagram_first_comment or image.comments or '',
                     image.pin_board_fb_album_google_category or '',
-                    image.pinterest_description or '',
-                    image.pinterest_link_url or '',
-                    image.reminder or '',
-                    image.seo_description or '',
-                    image.seo_tags or '',
-                    image.seo_title or '',
-                    image.text or '',
-                    image.video_pin_pdf_title or '',
-                    calendar_type
+                    image.post_subtype or '',
+                    image.cta or '',
+                    image.reminder or ''
                 ]
             })
         
