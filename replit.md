@@ -6,6 +6,17 @@ This project is a Flask-based content planning and scheduling system designed fo
 
 ## Recent Changes (November 2025)
 
+**Multi-Platform Assignment & Status Workflow - November 12, 2025:**
+- ✅ **Status Tracking System** - Images now track workflow status (Draft → Ready → Scheduled)
+- ✅ **Multi-Platform Assignments** - Assign one artwork to multiple platforms (Instagram, Pinterest, Facebook) in single action
+- ✅ **Content Tab Filter** - Filter by All/Unscheduled/Scheduled status with live item count
+- ✅ **Approve & Mark Ready Button** - Batch approve Draft items for scheduling (Edit & Review tab)
+- ✅ **Checkbox Platform Selection** - Assignment modal now uses checkboxes with "All" toggle instead of dropdown
+- ✅ **Smart Status Transitions** - Automatic Draft → Ready → Scheduled progression prevents downgrades
+- ✅ **EventAssignment as Source of Truth** - Multi-platform data stored as separate records (one per platform)
+- Backend: `/api/assign` endpoint handles multiple platforms in single transaction, skips duplicates gracefully
+- User workflow: Upload → Generate AI Content → Approve → Assign to Calendar Slots → Export CSV ✨
+
 **Schedule Grid CSV Export - November 11, 2025:**
 - ✅ **CSV Export Working Perfectly** - Select individual time slots and export Publer-compatible CSV
 - ✅ **Media URLs Included** - Publer automatically pulls images during CSV import (no API needed!)
