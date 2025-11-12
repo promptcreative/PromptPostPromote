@@ -52,6 +52,8 @@ document.addEventListener('DOMContentLoaded', function() {
         button.addEventListener('shown.bs.tab', function(e) {
             if (e.target.id === 'batch-tab') {
                 updateSelectedPreview();
+            } else if (e.target.id === 'scheduled-tab') {
+                loadScheduledContent();
             }
         });
     });
@@ -2541,6 +2543,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (response.ok) {
                 showMessage('Assignment removed', 'success');
                 loadScheduleGrid();
+                loadScheduledContent();
             } else {
                 const error = await response.json();
                 throw new Error(error.error || 'Unassign failed');
@@ -2550,6 +2553,8 @@ document.addEventListener('DOMContentLoaded', function() {
             showMessage('Unassign failed: ' + error.message, 'danger');
         }
     }
+    
+    window.unassignContent = unassignContent;
     
     function getCalendarBadge(calendarType) {
         const badges = {
@@ -2568,6 +2573,97 @@ document.addEventListener('DOMContentLoaded', function() {
             'Etsy': '🛍️'
         };
         return emojis[platform] || '📱';
+    }
+    
+    async function loadScheduledContent() {
+        try {
+            const response = await fetch('/api/scheduled');
+            const data = await response.json();
+            
+            const container = document.getElementById('scheduledContent');
+            if (!container) return;
+            
+            if (!data.assignments || data.assignments.length === 0) {
+                container.innerHTML = '<p class="text-muted">No scheduled content yet. Assign artwork to calendar slots in Schedule Grid.</p>';
+                return;
+            }
+            
+            const groupedByDate = {};
+            data.assignments.forEach(item => {
+                const date = item.event_date;
+                if (!groupedByDate[date]) {
+                    groupedByDate[date] = [];
+                }
+                groupedByDate[date].push(item);
+            });
+            
+            let html = '';
+            Object.keys(groupedByDate).sort().forEach(date => {
+                const dateObj = new Date(date + 'T00:00:00');
+                const formattedDate = dateObj.toLocaleDateString('en-US', { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                });
+                
+                html += `
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <h6 class="mb-0">${formattedDate}</h6>
+                        </div>
+                        <div class="card-body">
+                `;
+                
+                groupedByDate[date].forEach(item => {
+                    const platformEmoji = getPlatformEmoji(item.platform);
+                    const calendarBadge = getCalendarBadge(item.calendar_type);
+                    
+                    html += `
+                        <div class="d-flex align-items-center gap-3 mb-3 p-2 border rounded">
+                            <img src="/static/uploads/${item.image_filename}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 4px;">
+                            <div class="flex-grow-1">
+                                <div><strong>${item.image_name}</strong></div>
+                                <div class="text-muted small">${item.event_time} - ${platformEmoji} ${item.platform} ${calendarBadge}</div>
+                                <div class="text-muted small">${item.event_summary || ''}</div>
+                            </div>
+                            <button class="btn btn-sm btn-danger" onclick="window.unassignContent(${item.assignment_id})" title="Remove assignment">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    `;
+                });
+                
+                html += `
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+            
+        } catch (error) {
+            console.error('Failed to load scheduled content:', error);
+        }
+    }
+    
+    const exportScheduledBtn = document.getElementById('exportScheduledBtn');
+    if (exportScheduledBtn) {
+        exportScheduledBtn.addEventListener('click', async function() {
+            try {
+                const response = await fetch('/api/scheduled');
+                const data = await response.json();
+                
+                if (!data.assignments || data.assignments.length === 0) {
+                    showMessage('No scheduled content to export', 'warning');
+                    return;
+                }
+                
+                window.location.href = '/schedule/export_scheduled_csv';
+            } catch (error) {
+                showMessage('Export failed: ' + error.message, 'danger');
+            }
+        });
     }
     
     // Set default dates

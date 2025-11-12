@@ -1622,6 +1622,105 @@ def get_unassigned_images():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/scheduled', methods=['GET'])
+def get_scheduled_content():
+    """Get all scheduled assignments with full details"""
+    try:
+        assignments = EventAssignment.query.all()
+        
+        result = []
+        for assignment in assignments:
+            image = Image.query.get(assignment.image_id)
+            event = CalendarEvent.query.get(assignment.calendar_event_id)
+            
+            if not image or not event:
+                continue
+            
+            calendar = Calendar.query.get(event.calendar_id) if event.calendar_id else None
+            
+            result.append({
+                'assignment_id': assignment.id,
+                'image_id': image.id,
+                'image_name': image.painting_name or image.original_filename,
+                'image_filename': image.stored_filename,
+                'platform': assignment.platform,
+                'event_date': event.midpoint_time.strftime('%Y-%m-%d'),
+                'event_time': event.midpoint_time.strftime('%H:%M'),
+                'event_summary': event.summary,
+                'calendar_type': calendar.calendar_type if calendar else 'General'
+            })
+        
+        result.sort(key=lambda x: (x['event_date'], x['event_time']))
+        
+        return jsonify({'assignments': result}), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/schedule/export_scheduled_csv', methods=['GET'])
+def export_scheduled_csv():
+    """Export all scheduled content as Publer-compatible CSV"""
+    try:
+        assignments = EventAssignment.query.all()
+        
+        output = io.StringIO()
+        writer = csv.writer(output)
+        
+        writer.writerow([
+            'Text', 'Painting Name', 'Pinterest Description', 'SEO Title', 'SEO Tags', 
+            'Date', 'Time', 'Platform', 'Media URLs', 'Labels', 
+            'First Comment', 'Calendar Source'
+        ])
+        
+        rows = []
+        for assignment in assignments:
+            image = Image.query.get(assignment.image_id)
+            event = CalendarEvent.query.get(assignment.calendar_event_id)
+            
+            if not image or not event:
+                continue
+            
+            calendar = Calendar.query.get(event.calendar_id) if event.calendar_id else None
+            calendar_type = calendar.calendar_type if calendar else 'General'
+            
+            media_url = f"{request.host_url}static/uploads/{image.stored_filename}"
+            
+            rows.append({
+                'datetime': event.midpoint_time,
+                'row': [
+                    image.text or '',
+                    image.painting_name or '',
+                    image.pinterest_description or '',
+                    image.seo_title or '',
+                    image.seo_tags or '',
+                    event.midpoint_time.strftime('%Y-%m-%d'),
+                    event.midpoint_time.strftime('%H:%M'),
+                    assignment.platform,
+                    media_url,
+                    image.labels or '',
+                    image.instagram_first_comment or '',
+                    calendar_type
+                ]
+            })
+        
+        rows.sort(key=lambda x: x['datetime'])
+        
+        for row in rows:
+            writer.writerow(row['row'])
+        
+        output.seek(0)
+        return send_file(
+            BytesIO(output.getvalue().encode('utf-8')), 
+            mimetype='text/csv', 
+            as_attachment=True, 
+            download_name='scheduled_content.csv'
+        )
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/publer/test', methods=['GET'])
 def test_publer_api():
     """Test Publer API connection and list available resources"""
