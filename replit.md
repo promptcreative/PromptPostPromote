@@ -6,6 +6,15 @@ This project is a Flask-based content planning and scheduling system designed fo
 
 ## Recent Changes (November 2025)
 
+**Scheduled Tab CSV Export Fix - November 12, 2025:**
+- ✅ **Fixed Publer CSV Import** - Scheduled tab export now matches exact Publer format
+- ✅ **Correct Column Names** - Updated to use "Media URLs" (plural), "Labels", "Alt text", "Comments", "Subtype"
+- ✅ **HTTP Protocol for Media** - Changed URLs from https:// to http:// to match working format
+- ✅ **12-Column Format** - Streamlined export with only essential Publer columns
+- Backend: `/schedule/export_scheduled_csv` endpoint generates Publer-compatible CSV from EventAssignment records
+- Images and content now import successfully into Publer without "Invalid URL" errors
+- User workflow: Schedule Grid → Assign Content → Scheduled Tab → Export CSV → Import to Publer ✨
+
 **Multi-Platform Assignment & Status Workflow - November 12, 2025:**
 - ✅ **Status Tracking System** - Images now track workflow status (Draft → Ready → Scheduled)
 - ✅ **Multi-Platform Assignments** - Assign one artwork to multiple platforms (Instagram, Pinterest, Facebook) in single action
