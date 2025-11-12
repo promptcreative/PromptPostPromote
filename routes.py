@@ -1724,7 +1724,7 @@ def export_scheduled_csv():
                     image.links or '',
                     media_url,
                     image.painting_name or image.video_pin_pdf_title or '',
-                    image.labels or '',
+                    calendar_type,
                     image.alt_text or '',
                     image.instagram_first_comment or image.comments or '',
                     image.pin_board_fb_album_google_category or '',
