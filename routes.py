@@ -1672,22 +1672,22 @@ def export_scheduled_csv():
             'Date',
             'Text',
             'Link',
-            'Media URL',
+            'Media URLs',
             'Title',
-            'Label',
-            'Alt text(s)',
-            'Comment(s)',
-            'Pin board, FB album, or Google category',
-            'Post subtype',
+            'Labels',
+            'Alt text',
+            'Comments',
+            'Pin Board/Facebook Album/Google Category',
+            'Subtype',
             'CTA',
             'Reminder'
         ])
         
         replit_domain = os.environ.get('REPLIT_DEV_DOMAIN', '')
         if replit_domain:
-            base_url = f"https://{replit_domain}"
+            base_url = f"http://{replit_domain}"
         else:
-            base_url = request.host_url.rstrip('/')
+            base_url = request.host_url.rstrip('/').replace('https://', 'http://')
         
         rows = []
         for assignment in assignments:
