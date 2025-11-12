@@ -8,8 +8,8 @@
         </button>
     </li>
     <li class="nav-item" role="presentation">
-        <button class="nav-link" id="calendar-tab" data-bs-toggle="tab" data-bs-target="#calendar-pane" type="button">
-            <i class="bi bi-calendar3"></i> Calendars
+        <button class="nav-link" id="batch-tab" data-bs-toggle="tab" data-bs-target="#batch-pane" type="button">
+            <i class="bi bi-pencil-square"></i> Edit & Review
         </button>
     </li>
     <li class="nav-item" role="presentation">
@@ -18,8 +18,13 @@
         </button>
     </li>
     <li class="nav-item" role="presentation">
-        <button class="nav-link" id="batch-tab" data-bs-toggle="tab" data-bs-target="#batch-pane" type="button">
-            <i class="bi bi-pencil-square"></i> Edit & Review
+        <button class="nav-link" id="scheduled-tab" data-bs-toggle="tab" data-bs-target="#scheduled-pane" type="button">
+            <i class="bi bi-check2-square"></i> Scheduled
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="calendar-tab" data-bs-toggle="tab" data-bs-target="#calendar-pane" type="button">
+            <i class="bi bi-calendar3"></i> Calendars
         </button>
     </li>
 </ul>
@@ -92,8 +97,16 @@
         </div>
 
         <div class="d-flex justify-content-between align-items-center mt-3 mb-2">
-            <div>
+            <div class="d-flex align-items-center gap-3">
                 <span id="totalItemsCount" class="text-muted small">Loading...</span>
+                <div>
+                    <label class="form-label small mb-0 me-2">Show:</label>
+                    <select class="form-select form-select-sm d-inline-block" id="statusFilter" style="width: auto;">
+                        <option value="all">All</option>
+                        <option value="unscheduled">Unscheduled</option>
+                        <option value="scheduled">Scheduled</option>
+                    </select>
+                </div>
             </div>
             <div class="btn-group">
                 <button class="btn btn-sm btn-danger" id="bulkDeleteBtn" title="Delete selected items">
@@ -235,10 +248,31 @@
         </div>
     </div>
 
+    <div class="tab-pane fade" id="scheduled-pane" role="tabpanel">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="card-title mb-0"><i class="bi bi-check2-square"></i> Scheduled Content</h5>
+                    <button class="btn btn-primary" id="exportScheduledBtn">
+                        <i class="bi bi-download"></i> Export to CSV
+                    </button>
+                </div>
+                <div id="scheduledContent" style="max-height: 700px; overflow-y: auto;">
+                    <p class="text-muted">No scheduled content yet. Assign artwork to calendar slots in Schedule Grid.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="tab-pane fade" id="batch-pane" role="tabpanel">
         <div class="card mb-3">
             <div class="card-body">
-                <h5 class="card-title"><i class="bi bi-images"></i> Selected Items (<span id="selectedCount">0</span>)</h5>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="card-title mb-0"><i class="bi bi-images"></i> Selected Items (<span id="selectedCount">0</span>)</h5>
+                    <button class="btn btn-success" id="approveReadyBtn" disabled>
+                        <i class="bi bi-check-circle"></i> Approve & Mark Ready for Scheduling
+                    </button>
+                </div>
                 <div id="selectedPreview" class="d-flex flex-wrap gap-2">
                     <p class="text-muted w-100">No items selected. Go to Content tab and check items to select.</p>
                 </div>

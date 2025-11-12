@@ -134,6 +134,12 @@ def migrate_schema():
                     db.session.commit()
                     print("assigned_platform column added successfully!")
             
+            # Normalize workflow status values (ensure all images have valid status)
+            print("Normalizing workflow status values...")
+            db.session.execute(text("UPDATE image SET status = 'Draft' WHERE status IS NULL OR status = ''"))
+            db.session.commit()
+            print("Status normalization complete!")
+            
             print("Migration complete!")
             return
         

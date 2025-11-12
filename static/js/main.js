@@ -2296,10 +2296,25 @@ document.addEventListener('DOMContentLoaded', function() {
                                 </div>
                             </div>
                             <div class="mb-3">
-                                <label class="form-label">Platform</label>
-                                <select class="form-select" id="assignPlatform">
-                                    ${platforms.map(p => `<option value="${p}">${getPlatformEmoji(p)} ${p}</option>`).join('')}
-                                </select>
+                                <label class="form-label">Platforms</label>
+                                <div class="mb-2">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="platformAll">
+                                        <label class="form-check-label" for="platformAll">
+                                            <strong>All Platforms</strong>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div id="platformCheckboxes">
+                                    ${platforms.map(p => `
+                                        <div class="form-check">
+                                            <input class="form-check-input platform-checkbox" type="checkbox" value="${p}" id="platform${p}">
+                                            <label class="form-check-label" for="platform${p}">
+                                                ${getPlatformEmoji(p)} ${p}
+                                            </label>
+                                        </div>
+                                    `).join('')}
+                                </div>
                             </div>
                         </div>
                         <div class="modal-footer">
@@ -2322,6 +2337,20 @@ document.addEventListener('DOMContentLoaded', function() {
         
         loadUnassignedImagesForModal();
         
+        const platformAllCheckbox = document.getElementById('platformAll');
+        const platformCheckboxes = document.querySelectorAll('.platform-checkbox');
+        
+        platformAllCheckbox.addEventListener('change', () => {
+            platformCheckboxes.forEach(cb => cb.checked = platformAllCheckbox.checked);
+        });
+        
+        platformCheckboxes.forEach(cb => {
+            cb.addEventListener('change', () => {
+                const allChecked = Array.from(platformCheckboxes).every(checkbox => checkbox.checked);
+                platformAllCheckbox.checked = allChecked;
+            });
+        });
+        
         document.getElementById('confirmAssignBtn').addEventListener('click', async () => {
             const selectedImage = document.querySelector('input[name="assignImage"]:checked');
             if (!selectedImage) {
@@ -2329,10 +2358,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            const imageId = selectedImage.value;
-            const platform = document.getElementById('assignPlatform').value;
+            const selectedPlatforms = Array.from(platformCheckboxes)
+                .filter(cb => cb.checked)
+                .map(cb => cb.value);
             
-            await assignContentToEvent(eventId, imageId, platform);
+            if (selectedPlatforms.length === 0) {
+                showMessage('Please select at least one platform', 'warning');
+                return;
+            }
+            
+            const imageId = selectedImage.value;
+            
+            await assignContentToEvent(eventId, imageId, selectedPlatforms);
             modal.hide();
             loadScheduleGrid();
         });
@@ -2372,7 +2409,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    async function assignContentToEvent(eventId, imageId, platform) {
+    async function assignContentToEvent(eventId, imageId, platforms) {
         try {
             const response = await fetch('/api/assign', {
                 method: 'POST',
@@ -2380,12 +2417,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 body: JSON.stringify({
                     event_id: eventId,
                     image_id: imageId,
-                    platform: platform
+                    platforms: platforms
                 })
             });
             
             if (response.ok) {
-                showMessage('Content assigned successfully', 'success');
+                const platformList = platforms.join(', ');
+                showMessage(`Content assigned to ${platformList}`, 'success');
             } else {
                 const error = await response.json();
                 throw new Error(error.error || 'Assignment failed');
