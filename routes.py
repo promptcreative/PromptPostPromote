@@ -1411,15 +1411,18 @@ def get_schedule_grid():
 
 @app.route('/api/assign', methods=['POST'])
 def assign_content_to_event():
-    """Assign content to a calendar event slot"""
+    """Assign content to a calendar event slot for one or more platforms"""
     try:
         data = request.get_json()
         event_id = data.get('event_id')
         image_id = data.get('image_id')
-        platform = data.get('platform')
+        platforms = data.get('platforms', [])
         
-        if not event_id or not image_id or not platform:
-            return jsonify({'error': 'Missing required fields'}), 400
+        if not event_id or not image_id:
+            return jsonify({'error': 'Missing event_id or image_id'}), 400
+        
+        if not platforms or not isinstance(platforms, list):
+            return jsonify({'error': 'platforms must be a non-empty array'}), 400
         
         event = CalendarEvent.query.get(event_id)
         if not event:
@@ -1429,31 +1432,44 @@ def assign_content_to_event():
         if not image:
             return jsonify({'error': 'Image not found'}), 404
         
-        existing = EventAssignment.query.filter_by(
-            calendar_event_id=event_id, 
-            image_id=image_id, 
-            platform=platform
-        ).first()
-        if existing:
-            return jsonify({'error': 'This content is already assigned to this slot and platform'}), 400
+        created_assignments = []
         
-        assignment = EventAssignment()
-        assignment.calendar_event_id = event_id
-        assignment.image_id = image_id
-        assignment.platform = platform
+        for platform in platforms:
+            existing = EventAssignment.query.filter_by(
+                calendar_event_id=event_id, 
+                image_id=image_id, 
+                platform=platform
+            ).first()
+            
+            if existing:
+                continue
+            
+            assignment = EventAssignment()
+            assignment.calendar_event_id = event_id
+            assignment.image_id = image_id
+            assignment.platform = platform
+            
+            db.session.add(assignment)
+            created_assignments.append(assignment)
         
-        db.session.add(assignment)
-        
-        image.platform = platform
-        image.date = event.midpoint_time.strftime('%Y-%m-%d')
-        image.time = event.midpoint_time.strftime('%H:%M')
-        calendar = Calendar.query.get(event.calendar_id)
-        if calendar:
-            image.calendar_source = calendar.calendar_type
+        if created_assignments:
+            image.date = event.midpoint_time.strftime('%Y-%m-%d')
+            image.time = event.midpoint_time.strftime('%H:%M')
+            calendar = Calendar.query.get(event.calendar_id)
+            if calendar:
+                image.calendar_source = calendar.calendar_type
+            
+            if image.status == 'Ready':
+                image.status = 'Scheduled'
         
         db.session.commit()
         
-        return jsonify(assignment.to_dict()), 200
+        return jsonify({
+            'success': True,
+            'assignments': [a.to_dict() for a in created_assignments],
+            'count': len(created_assignments),
+            'already_assigned': len(platforms) - len(created_assignments)
+        }), 200
         
     except Exception as e:
         db.session.rollback()

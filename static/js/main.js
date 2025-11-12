@@ -55,6 +55,69 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+    
+    const statusFilter = document.getElementById('statusFilter');
+    if (statusFilter) {
+        statusFilter.addEventListener('change', applyStatusFilter);
+    }
+    
+    const approveReadyBtn = document.getElementById('approveReadyBtn');
+    if (approveReadyBtn) {
+        approveReadyBtn.addEventListener('click', async function() {
+            const selectedImages = getSelectedImages();
+            if (selectedImages.length === 0) {
+                showMessage('No items selected', 'warning');
+                return;
+            }
+            
+            const draftImages = selectedImages.filter(id => {
+                const img = allImages.find(i => i.id === id);
+                return img && (!img.status || img.status === 'Draft');
+            });
+            
+            if (draftImages.length === 0) {
+                showMessage('No Draft items selected. Only Draft items can be marked Ready.', 'warning');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/batch_update', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        image_ids: draftImages,
+                        updates: {
+                            status: 'Ready'
+                        }
+                    })
+                });
+                
+                if (response.ok) {
+                    const skipped = selectedImages.length - draftImages.length;
+                    let message = `${draftImages.length} items marked as Ready for Scheduling`;
+                    if (skipped > 0) {
+                        message += ` (${skipped} already Ready/Scheduled)`;
+                    }
+                    showMessage(message, 'success');
+                    await loadImages();
+                    updateSelectedPreview();
+                } else {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Update failed');
+                }
+            } catch (error) {
+                showMessage('Failed to update status: ' + error.message, 'danger');
+            }
+        });
+    }
+    
+    function getSelectedImages() {
+        const checkboxes = document.querySelectorAll('#imageTableBody .row-select:checked');
+        return Array.from(checkboxes).map(cb => {
+            const row = cb.closest('tr');
+            return parseInt(row.dataset.imageId);
+        });
+    }
 
     function showMessage(message, type = 'success') {
         const alertDiv = document.createElement('div');
@@ -208,9 +271,34 @@ document.addEventListener('DOMContentLoaded', function() {
             const response = await fetch('/images');
             const images = await response.json();
             allImages = images;
-            renderGroupedTable(images);
+            applyStatusFilter();
         } catch (error) {
             showMessage('Error loading images: ' + error.message, 'danger');
+        }
+    }
+    
+    function applyStatusFilter() {
+        const filterValue = document.getElementById('statusFilter')?.value || 'all';
+        let filteredImages = allImages;
+        
+        if (filterValue === 'unscheduled') {
+            filteredImages = allImages.filter(img => !img.status || img.status === 'Draft' || img.status === 'Ready');
+        } else if (filterValue === 'scheduled') {
+            filteredImages = allImages.filter(img => img.status === 'Scheduled');
+        }
+        
+        renderGroupedTable(filteredImages);
+        updateTotalCount(filteredImages.length, allImages.length);
+    }
+    
+    function updateTotalCount(filteredCount, totalCount) {
+        const countElement = document.getElementById('totalItemsCount');
+        if (countElement) {
+            if (filteredCount === totalCount) {
+                countElement.textContent = `${totalCount} items`;
+            } else {
+                countElement.textContent = `${filteredCount} of ${totalCount} items`;
+            }
         }
     }
 
@@ -587,10 +675,15 @@ document.addEventListener('DOMContentLoaded', function() {
         const selectedIds = getSelectedImageIds();
         const selectedCount = document.getElementById('selectedCount');
         const selectedPreview = document.getElementById('selectedPreview');
+        const approveReadyBtn = document.getElementById('approveReadyBtn');
         
         if (!selectedCount || !selectedPreview) return;
         
         selectedCount.textContent = selectedIds.length;
+        
+        if (approveReadyBtn) {
+            approveReadyBtn.disabled = selectedIds.length === 0;
+        }
         
         if (selectedIds.length === 0) {
             selectedPreview.innerHTML = '<p class="text-muted w-100">No items selected. Go to Content tab and check items to select.</p>';
@@ -615,7 +708,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <img src="/static/uploads/${img.stored_filename}" class="card-img-top" style="height: 150px; object-fit: cover;">
                     <div class="card-body p-2">
                         <p class="card-text small mb-1"><strong>${img.painting_name || 'Untitled'}</strong></p>
-                        <p class="small mb-1">${img.platform || 'No platform'}</p>
+                        <p class="small mb-1">Status: ${img.status || 'Draft'}</p>
                         ${missingContent.length > 0 ? 
                             `<p class="small text-${statusColor} mb-0"><i class="bi bi-${statusIcon}"></i> Missing: ${missingContent.join(', ')}</p>` :
                             `<p class="small text-${statusColor} mb-0"><i class="bi bi-${statusIcon}"></i> Complete</p>`
