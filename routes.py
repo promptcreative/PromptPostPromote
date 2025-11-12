@@ -985,97 +985,60 @@ def assign_times():
 
 @app.route('/export', methods=['GET'])
 def export_csv():
-    """Export to Publer-compatible CSV format with all required columns"""
-    images = Image.query.order_by(Image.date, Image.time).all()
+    """Export all content to Publer-compatible CSV format (12-column format)"""
+    import os
+    images = Image.query.filter(
+        (Image.stored_filename != None) & (Image.stored_filename != '')
+    ).order_by(Image.date, Image.time).all()
     
     output = StringIO()
     writer = csv.writer(output)
     
     writer.writerow([
-        'Collection',
-        'Title',
-        'Painting Name',
-        'Materials',
-        'Size',
-        'Artist Note',
-        'Post subtype',
-        'Platform',
         'Date',
-        'Time',
-        'Status',
-        'Label(s)',
-        'Post URL',
-        'Alt text(s)',
-        'CTA',
-        'Comment(s)',
-        'Cover Image URL',
-        'Etsy Description',
-        'Etsy Listing Title',
-        'Etsy Price',
-        'Etsy Quantity',
-        'Etsy SKU',
-        'Instagram First Comment',
-        'Link(s)',
-        'Media',
-        'Media Source',
-        'Media URL(s)',
-        'Pin board, FB album, or Google category',
-        'Pinterest Description',
-        'Pinterest Link URL',
-        'Reminder',
-        'SEO Description',
-        'SEO Tags',
-        'SEO Title',
         'Text',
-        'Title - For the video, pin, PDF',
-        'Calendar Selection'
+        'Link',
+        'Media URLs',
+        'Title',
+        'Labels',
+        'Alt text',
+        'Comments',
+        'Pin Board/Facebook Album/Google Category',
+        'Subtype',
+        'CTA',
+        'Reminder'
     ])
     
+    replit_domain = os.environ.get('REPLIT_DEV_DOMAIN', '')
+    if replit_domain:
+        base_url = f"http://{replit_domain}"
+    else:
+        base_url = request.host_url.rstrip('/').replace('https://', 'http://')
+    
     for image in images:
-        collection_name = ''
-        if image.collection_id:
-            collection = Collection.query.get(image.collection_id)
-            if collection:
-                collection_name = collection.name
+        if not image.date or not image.time:
+            continue
+            
+        datetime_str = f"{image.date} {image.time}"
+        media_url = f"{base_url}/static/uploads/{image.stored_filename}"
+        
+        text_content = image.text or ''
+        if image.platform == 'Pinterest' and image.pinterest_description:
+            text_content = image.pinterest_description
         
         writer.writerow([
-            collection_name,
-            image.title or '',
-            image.painting_name or '',
-            image.materials or '',
-            image.size or '',
-            image.artist_note or '',
-            image.post_subtype or '',
-            image.platform or '',
-            image.date or '',
-            image.time or '',
-            image.status or '',
-            image.labels or '',
-            image.post_url or '',
-            image.alt_text or '',
-            image.cta or '',
-            image.comments or '',
-            image.cover_image_url or '',
-            image.etsy_description or '',
-            image.etsy_listing_title or '',
-            image.etsy_price or '',
-            image.etsy_quantity or '',
-            image.etsy_sku or '',
-            image.instagram_first_comment or '',
+            datetime_str,
+            text_content,
             image.links or '',
-            image.media or '',
-            image.media_source or '',
-            image.media_urls or '',
+            media_url,
+            image.painting_name or image.video_pin_pdf_title or '',
+            image.calendar_selection or '',
+            image.alt_text or '',
+            image.instagram_first_comment or image.comments or '',
             image.pin_board_fb_album_google_category or '',
-            image.pinterest_description or '',
-            image.pinterest_link_url or '',
-            image.reminder or '',
-            image.seo_description or '',
-            image.seo_tags or '',
-            image.seo_title or '',
-            image.text or '',
-            image.video_pin_pdf_title or '',
-            image.calendar_selection or ''
+            image.post_subtype or '',
+            image.cta or '',
+            image.reminder or ''
         ])
     
     output_string = output.getvalue()
@@ -1085,7 +1048,7 @@ def export_csv():
         BytesIO(output_string.encode()),
         mimetype='text/csv',
         as_attachment=True,
-        download_name='publer_content.csv'
+        download_name='publer_all_content.csv'
     )
 
 @app.route('/export_calendar/<int:calendar_id>', methods=['GET'])
