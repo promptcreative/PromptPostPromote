@@ -1664,7 +1664,7 @@ def export_scheduled_csv():
     try:
         assignments = EventAssignment.query.all()
         
-        output = io.StringIO()
+        output = StringIO()
         writer = csv.writer(output)
         
         writer.writerow([
