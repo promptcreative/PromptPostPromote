@@ -1662,6 +1662,7 @@ def get_scheduled_content():
 def export_scheduled_csv():
     """Export all scheduled content as Publer-compatible CSV with full 37-column format"""
     try:
+        import os
         assignments = EventAssignment.query.all()
         
         output = StringIO()
@@ -1707,6 +1708,12 @@ def export_scheduled_csv():
             'Calendar Selection'
         ])
         
+        replit_domain = os.environ.get('REPLIT_DEV_DOMAIN', '')
+        if replit_domain:
+            base_url = f"https://{replit_domain}"
+        else:
+            base_url = request.host_url.rstrip('/')
+        
         rows = []
         for assignment in assignments:
             image = Image.query.get(assignment.image_id)
@@ -1724,7 +1731,7 @@ def export_scheduled_csv():
                 if collection:
                     collection_name = collection.name
             
-            media_url = f"{request.host_url}static/uploads/{image.stored_filename}"
+            media_url = f"{base_url}/static/uploads/{image.stored_filename}"
             
             rows.append({
                 'datetime': event.midpoint_time,
