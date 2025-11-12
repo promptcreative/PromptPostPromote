@@ -1660,7 +1660,7 @@ def get_scheduled_content():
 
 @app.route('/schedule/export_scheduled_csv', methods=['GET'])
 def export_scheduled_csv():
-    """Export all scheduled content as Publer-compatible CSV"""
+    """Export all scheduled content as Publer-compatible CSV with full 37-column format"""
     try:
         assignments = EventAssignment.query.all()
         
@@ -1668,9 +1668,43 @@ def export_scheduled_csv():
         writer = csv.writer(output)
         
         writer.writerow([
-            'Text', 'Painting Name', 'Pinterest Description', 'SEO Title', 'SEO Tags', 
-            'Date', 'Time', 'Platform', 'Media URLs', 'Labels', 
-            'First Comment', 'Calendar Source'
+            'Collection',
+            'Title',
+            'Painting Name',
+            'Materials',
+            'Size',
+            'Artist Note',
+            'Post subtype',
+            'Platform',
+            'Date',
+            'Time',
+            'Status',
+            'Label(s)',
+            'Post URL',
+            'Alt text(s)',
+            'CTA',
+            'Comment(s)',
+            'Cover Image URL',
+            'Etsy Description',
+            'Etsy Listing Title',
+            'Etsy Price',
+            'Etsy Quantity',
+            'Etsy SKU',
+            'Instagram First Comment',
+            'Link(s)',
+            'Media',
+            'Media Source',
+            'Media URL(s)',
+            'Pin board, FB album, or Google category',
+            'Pinterest Description',
+            'Pinterest Link URL',
+            'Reminder',
+            'SEO Description',
+            'SEO Tags',
+            'SEO Title',
+            'Text',
+            'Title - For the video, pin, PDF',
+            'Calendar Selection'
         ])
         
         rows = []
@@ -1684,22 +1718,53 @@ def export_scheduled_csv():
             calendar = Calendar.query.get(event.calendar_id) if event.calendar_id else None
             calendar_type = calendar.calendar_type if calendar else 'General'
             
+            collection_name = ''
+            if image.collection_id:
+                collection = Collection.query.get(image.collection_id)
+                if collection:
+                    collection_name = collection.name
+            
             media_url = f"{request.host_url}static/uploads/{image.stored_filename}"
             
             rows.append({
                 'datetime': event.midpoint_time,
                 'row': [
-                    image.text or '',
+                    collection_name,
+                    image.title or '',
                     image.painting_name or '',
-                    image.pinterest_description or '',
-                    image.seo_title or '',
-                    image.seo_tags or '',
+                    image.materials or '',
+                    image.size or '',
+                    image.artist_note or '',
+                    image.post_subtype or '',
+                    assignment.platform,
                     event.midpoint_time.strftime('%Y-%m-%d'),
                     event.midpoint_time.strftime('%H:%M'),
-                    assignment.platform,
-                    media_url,
+                    image.status or '',
                     image.labels or '',
+                    image.post_url or '',
+                    image.alt_text or '',
+                    image.cta or '',
+                    image.comments or '',
+                    image.cover_image_url or '',
+                    image.etsy_description or '',
+                    image.etsy_listing_title or '',
+                    image.etsy_price or '',
+                    image.etsy_quantity or '',
+                    image.etsy_sku or '',
                     image.instagram_first_comment or '',
+                    image.links or '',
+                    image.media or '',
+                    image.media_source or '',
+                    media_url,
+                    image.pin_board_fb_album_google_category or '',
+                    image.pinterest_description or '',
+                    image.pinterest_link_url or '',
+                    image.reminder or '',
+                    image.seo_description or '',
+                    image.seo_tags or '',
+                    image.seo_title or '',
+                    image.text or '',
+                    image.video_pin_pdf_title or '',
                     calendar_type
                 ]
             })
@@ -1709,12 +1774,14 @@ def export_scheduled_csv():
         for row in rows:
             writer.writerow(row['row'])
         
-        output.seek(0)
+        output_string = output.getvalue()
+        output.close()
+        
         return send_file(
-            BytesIO(output.getvalue().encode('utf-8')), 
-            mimetype='text/csv', 
-            as_attachment=True, 
-            download_name='scheduled_content.csv'
+            BytesIO(output_string.encode()),
+            mimetype='text/csv',
+            as_attachment=True,
+            download_name='publer_scheduled.csv'
         )
         
     except Exception as e:
