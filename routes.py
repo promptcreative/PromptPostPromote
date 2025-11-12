@@ -660,7 +660,7 @@ def generate_calendar():
                 
                 while slots_created < limit:
                     event = None
-                    calendar_source = 'Optimal'
+                    calendar_source = 'General'
                     time_str = None
                     event_id = None
                     
@@ -708,7 +708,7 @@ def generate_calendar():
                             
                             if not conflict:
                                 time_str = test_time
-                                calendar_source = 'Optimal'
+                                calendar_source = 'General'
                                 break
                     
                     # Stop if we couldn't find a valid time
@@ -791,7 +791,7 @@ def generate_calendar():
             'AB': sum(1 for s in created_slots if s['calendar_source'] == 'AB'),
             'YP': sum(1 for s in created_slots if s['calendar_source'] == 'YP'),
             'POF': sum(1 for s in created_slots if s['calendar_source'] == 'POF'),
-            'Optimal': sum(1 for s in created_slots if s['calendar_source'] == 'Optimal')
+            'General': sum(1 for s in created_slots if s['calendar_source'] == 'General')
         }
         
         return jsonify({

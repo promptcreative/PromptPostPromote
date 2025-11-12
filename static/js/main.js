@@ -1657,7 +1657,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Update stats
         const summary = data.summary;
-        const statsHTML = `<strong>${data.created_count} slots created</strong> - Instagram: ${summary.Instagram || 0}, Pinterest: ${summary.Pinterest || 0} | AB: ${summary.AB || 0}, YP: ${summary.YP || 0}, POF: ${summary.POF || 0}, Optimal: ${summary.Optimal || 0}`;
+        const statsHTML = `<strong>${data.created_count} slots created</strong> - Instagram: ${summary.Instagram || 0}, Pinterest: ${summary.Pinterest || 0} | AB: ${summary.AB || 0}, YP: ${summary.YP || 0}, POF: ${summary.POF || 0}, General: ${summary.Optimal || summary.General || 0}`;
         stats.innerHTML = statsHTML;
         
         // Build day-by-day schedule
@@ -1679,7 +1679,8 @@ document.addEventListener('DOMContentLoaded', function() {
             
             day.slots.forEach(slot => {
                 const platformEmoji = slot.platform === 'Instagram' ? '📸' : slot.platform === 'Pinterest' ? '📌' : '📱';
-                const calendarBadge = `<span class="badge bg-${slot.calendar_source === 'AB' ? 'primary' : slot.calendar_source === 'YP' ? 'info' : slot.calendar_source === 'POF' ? 'warning' : 'secondary'}">${slot.calendar_source}</span>`;
+                const badgeText = slot.calendar_source === 'Optimal' ? 'General' : slot.calendar_source;
+                const calendarBadge = `<span class="badge bg-${slot.calendar_source === 'AB' ? 'primary' : slot.calendar_source === 'YP' ? 'info' : slot.calendar_source === 'POF' ? 'warning' : 'secondary'}">${badgeText}</span>`;
                 
                 // Convert 24hr to 12hr format
                 const [hours, minutes] = slot.time.split(':');
@@ -1721,7 +1722,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <span class="badge bg-primary">AB: ${summary.AB || 0}</span>
                     <span class="badge bg-info">YP: ${summary.YP || 0}</span>
                     <span class="badge bg-warning">POF: ${summary.POF || 0}</span>
-                    <span class="badge bg-secondary">Optimal: ${summary.Optimal || 0}</span>
+                    <span class="badge bg-secondary">General: ${summary.Optimal || summary.General || 0}</span>
                 </div>
             `;
             onPageList.innerHTML = html;
