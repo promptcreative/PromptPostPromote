@@ -6,6 +6,16 @@ This project is a Flask-based content planning and scheduling system designed fo
 
 ## Recent Changes (November 2025)
 
+**FeedHive Export Integration - November 13, 2025:**
+- ✅ **Dual Platform Export** - Now supports both Publer AND FeedHive CSV formats
+- ✅ **6-Column FeedHive Format** - Text, Title, Media URLs, Labels, Social Medias, Scheduled (ISO 8601)
+- ✅ **Complete AI Content Export** - Instagram captions + hashtags, Pinterest descriptions, SEO tags all included
+- ✅ **Dropdown Export Menus** - Both navbar and Scheduled tab have platform selection dropdowns
+- Backend: `/export_feedhive` and `/schedule/export_scheduled_feedhive` endpoints
+- Hashtags intelligently placed in Text column (published content) vs Labels (internal organization)
+- ISO 8601 timestamp format: `2025-11-13T14:30:00.000Z`
+- User can now compare Publer vs FeedHive to see which platform better handles their AI-generated content! 🐝
+
 **Scheduled Tab CSV Export Fix - November 12, 2025:**
 - ✅ **Fixed Publer CSV Import** - Scheduled tab export now matches exact Publer format
 - ✅ **Correct Column Names** - Updated to use "Media URLs" (plural), "Labels", "Alt text", "Comments", "Subtype"
