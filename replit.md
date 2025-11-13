@@ -6,14 +6,25 @@ This project is a Flask-based content planning and scheduling system designed fo
 
 ## Recent Changes (November 2025)
 
+**Pinterest Hashtags Separation - November 13, 2025:**
+- ✅ **Dedicated Pinterest Hashtags Field** - Created separate `pinterest_hashtags` database column to prevent Instagram/Pinterest hashtag conflicts
+- ✅ **Platform-Specific AI Generation** - GPT now generates distinct hashtags for Instagram (15-25) and Pinterest (15-20)
+- ✅ **Isolated Export Logic** - FeedHive/Publer exports strictly use correct hashtag field per platform (no leakage!)
+- ✅ **Character Limit Enforcement** - Runtime validation truncates Pinterest description (450 chars), board/title (90 chars)
+- ✅ **7-Column FeedHive Format** - Added Notes column for calendar tracking (🔮 POF/YP/AB/General)
+- Database migration: `pinterest_hashtags TEXT` column added via migrations.py
+- Field mapping: `PINTEREST_HASHTAGS` → `pinterest_hashtags`, `IG_FIRST_COMMENT` → `instagram_first_comment`
+- Export logic: Pinterest posts use `pinterest_hashtags`, Instagram posts use `instagram_first_comment`, other platforms default to Instagram hashtags
+- ISO 8601 timestamp format: `2025-11-13T14:30:00.000Z`
+- **User benefit**: No more hashtag overwriting! Each platform maintains its own optimized hashtag set 🎯
+
 **FeedHive Export Integration - November 13, 2025:**
 - ✅ **Dual Platform Export** - Now supports both Publer AND FeedHive CSV formats
-- ✅ **6-Column FeedHive Format** - Text, Title, Media URLs, Labels, Social Medias, Scheduled (ISO 8601)
-- ✅ **Complete AI Content Export** - Instagram captions + hashtags, Pinterest descriptions, SEO tags all included
+- ✅ **7-Column FeedHive Format** - Text, Title, Media URLs, Labels, Social Medias, Scheduled, Notes
+- ✅ **Complete AI Content Export** - Instagram captions + hashtags, Pinterest descriptions + hashtags, SEO tags all included
 - ✅ **Dropdown Export Menus** - Both navbar and Scheduled tab have platform selection dropdowns
 - Backend: `/export_feedhive` and `/schedule/export_scheduled_feedhive` endpoints
-- Hashtags intelligently placed in Text column (published content) vs Labels (internal organization)
-- ISO 8601 timestamp format: `2025-11-13T14:30:00.000Z`
+- Hashtags appear in Text column (published content) AND Labels column (tracking/filtering)
 - User can now compare Publer vs FeedHive to see which platform better handles their AI-generated content! 🐝
 
 **Scheduled Tab CSV Export Fix - November 12, 2025:**
@@ -68,7 +79,7 @@ The frontend uses Jinja2 templates with Bootstrap 5 dark theme for a modern and 
 - **Calendar Processing**: Includes a robust parser for .ics files, capable of extracting event details and calculating midpoint times for scheduling. Priority logic ensures astrological events (AB/YP/POF) are scheduled optimally.
 - **Data Models**:
     - `Collection`: Organizes artwork into series for batch actions.
-    - `Image`: Stores all Publer-compatible fields for multi-platform content items, supporting both images and videos.
+    - `Image`: Stores all Publer-compatible fields for multi-platform content items, supporting both images and videos. Includes separate `instagram_first_comment` and `pinterest_hashtags` fields for platform-specific hashtag management.
     - `Calendar`: Stores imported calendar data.
     - `CalendarEvent`: Stores individual events from imported calendars with calculated midpoints for scheduling.
 
