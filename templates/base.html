@@ -15,9 +15,18 @@
             <a class="navbar-brand" href="/" style="color: #FFFFFF; font-weight: 600; font-size: 1.3rem;">
                 <i class="bi bi-palette"></i> Painting Content Planner
             </a>
-            <button class="btn btn-success" id="exportBtn" style="background-color: #D8B7AB; border-color: #D8B7AB; color: #191818;" title="Export ALL content with dates/times from Content tab">
-                <i class="bi bi-download"></i> Export All Content
-            </button>
+            <div class="btn-group">
+                <button type="button" class="btn btn-success" id="exportBtn" style="background-color: #D8B7AB; border-color: #D8B7AB; color: #191818;" title="Export ALL content with dates/times from Content tab to Publer">
+                    <i class="bi bi-download"></i> Export to Publer
+                </button>
+                <button type="button" class="btn btn-success dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false" style="background-color: #D8B7AB; border-color: #D8B7AB; color: #191818;">
+                    <span class="visually-hidden">Toggle Dropdown</span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="#" id="exportPublerBtn"><i class="bi bi-share"></i> Export to Publer</a></li>
+                    <li><a class="dropdown-item" href="#" id="exportFeedHiveBtn"><i class="bi bi-hive"></i> Export to FeedHive</a></li>
+                </ul>
+            </div>
         </div>
     </nav>
     

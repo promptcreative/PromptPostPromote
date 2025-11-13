@@ -1716,6 +1716,176 @@ def export_scheduled_csv():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/export_feedhive', methods=['GET'])
+def export_feedhive_csv():
+    """Export all content to FeedHive-compatible CSV format (6-column format)"""
+    from datetime import datetime
+    import os
+    images = Image.query.filter(
+        (Image.stored_filename != None) & (Image.stored_filename != '')
+    ).order_by(Image.date, Image.time).all()
+    
+    output = StringIO()
+    writer = csv.writer(output)
+    
+    writer.writerow([
+        'Text',
+        'Title',
+        'Media URLs',
+        'Labels',
+        'Social Medias',
+        'Scheduled'
+    ])
+    
+    replit_domain = os.environ.get('REPLIT_DEV_DOMAIN', '')
+    if replit_domain:
+        base_url = f"http://{replit_domain}"
+    else:
+        base_url = request.host_url.rstrip('/').replace('https://', 'http://')
+    
+    for image in images:
+        if not image.date or not image.time:
+            continue
+        
+        try:
+            dt = datetime.strptime(f"{image.date} {image.time}", '%Y-%m-%d %H:%M')
+            scheduled_iso = dt.strftime('%Y-%m-%dT%H:%M:%S.000Z')
+        except:
+            continue
+        
+        media_url = f"{base_url}/static/uploads/{image.stored_filename}"
+        
+        text_content = image.text or ''
+        if image.platform == 'Pinterest' and image.pinterest_description:
+            text_content = image.pinterest_description
+        elif image.platform == 'Instagram' and image.text:
+            text_content = image.text
+        
+        if image.platform == 'Instagram' and image.instagram_first_comment:
+            text_content = text_content + '\n\n' + image.instagram_first_comment if text_content else image.instagram_first_comment
+        
+        title = image.painting_name or image.video_pin_pdf_title or ''
+        
+        labels_list = []
+        if image.seo_tags:
+            labels_list.append(image.seo_tags)
+        if image.calendar_selection:
+            labels_list.append(image.calendar_selection)
+        labels = ', '.join(labels_list) if labels_list else ''
+        
+        social_medias = image.platform or ''
+        
+        writer.writerow([
+            text_content,
+            title,
+            media_url,
+            labels,
+            social_medias,
+            scheduled_iso
+        ])
+    
+    output_string = output.getvalue()
+    output.close()
+    
+    return send_file(
+        BytesIO(output_string.encode()),
+        mimetype='text/csv',
+        as_attachment=True,
+        download_name='feedhive_all_content.csv'
+    )
+
+
+@app.route('/schedule/export_scheduled_feedhive', methods=['GET'])
+def export_scheduled_feedhive():
+    """Export all scheduled content as FeedHive-compatible CSV (6-column format)"""
+    from datetime import datetime
+    import os
+    try:
+        assignments = EventAssignment.query.all()
+        
+        output = StringIO()
+        writer = csv.writer(output)
+        
+        writer.writerow([
+            'Text',
+            'Title',
+            'Media URLs',
+            'Labels',
+            'Social Medias',
+            'Scheduled'
+        ])
+        
+        replit_domain = os.environ.get('REPLIT_DEV_DOMAIN', '')
+        if replit_domain:
+            base_url = f"http://{replit_domain}"
+        else:
+            base_url = request.host_url.rstrip('/').replace('https://', 'http://')
+        
+        rows = []
+        for assignment in assignments:
+            image = Image.query.get(assignment.image_id)
+            event = CalendarEvent.query.get(assignment.calendar_event_id)
+            
+            if not image or not event:
+                continue
+            
+            calendar = Calendar.query.get(event.calendar_id) if event.calendar_id else None
+            calendar_type = calendar.calendar_type if calendar else 'General'
+            
+            media_url = f"{base_url}/static/uploads/{image.stored_filename}"
+            
+            scheduled_iso = event.midpoint_time.strftime('%Y-%m-%dT%H:%M:%S.000Z')
+            
+            text_content = image.text or ''
+            if assignment.platform == 'Pinterest' and image.pinterest_description:
+                text_content = image.pinterest_description
+            elif assignment.platform == 'Instagram' and image.text:
+                text_content = image.text
+            
+            if assignment.platform == 'Instagram' and image.instagram_first_comment:
+                text_content = text_content + '\n\n' + image.instagram_first_comment if text_content else image.instagram_first_comment
+            
+            title = image.painting_name or image.video_pin_pdf_title or ''
+            
+            labels_list = []
+            if image.seo_tags:
+                labels_list.append(image.seo_tags)
+            labels_list.append(calendar_type)
+            labels = ', '.join(labels_list) if labels_list else ''
+            
+            social_medias = assignment.platform or ''
+            
+            rows.append({
+                'datetime': event.midpoint_time,
+                'row': [
+                    text_content,
+                    title,
+                    media_url,
+                    labels,
+                    social_medias,
+                    scheduled_iso
+                ]
+            })
+        
+        rows.sort(key=lambda x: x['datetime'])
+        
+        for row in rows:
+            writer.writerow(row['row'])
+        
+        output_string = output.getvalue()
+        output.close()
+        
+        return send_file(
+            BytesIO(output_string.encode()),
+            mimetype='text/csv',
+            as_attachment=True,
+            download_name='feedhive_scheduled.csv'
+        )
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/debug/images', methods=['GET'])
 def debug_images():
     """Debug endpoint to check image records"""

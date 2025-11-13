@@ -253,9 +253,18 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h5 class="card-title mb-0"><i class="bi bi-check2-square"></i> Scheduled Content</h5>
-                    <button class="btn btn-primary" id="exportScheduledBtn" title="Export only scheduled assignments with calendar times (AB/YP/POF/General)">
-                        <i class="bi bi-download"></i> Export Scheduled
-                    </button>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-primary" id="exportScheduledBtn" title="Export scheduled assignments with calendar times to Publer">
+                            <i class="bi bi-download"></i> Export to Publer
+                        </button>
+                        <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                            <span class="visually-hidden">Toggle Dropdown</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="#" id="exportScheduledPublerBtn"><i class="bi bi-share"></i> Export to Publer</a></li>
+                            <li><a class="dropdown-item" href="#" id="exportScheduledFeedHiveBtn"><i class="bi bi-hive"></i> Export to FeedHive</a></li>
+                        </ul>
+                    </div>
                 </div>
                 <div id="scheduledContent" style="max-height: 700px; overflow-y: auto;">
                     <p class="text-muted">No scheduled content yet. Assign artwork to calendar slots in Schedule Grid.</p>

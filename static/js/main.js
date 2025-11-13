@@ -726,6 +726,22 @@ document.addEventListener('DOMContentLoaded', function() {
             window.location.href = '/export';
         });
     }
+    
+    const exportPublerBtn = document.getElementById('exportPublerBtn');
+    if (exportPublerBtn) {
+        exportPublerBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            window.location.href = '/export';
+        });
+    }
+    
+    const exportFeedHiveBtn = document.getElementById('exportFeedHiveBtn');
+    if (exportFeedHiveBtn) {
+        exportFeedHiveBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            window.location.href = '/export_feedhive';
+        });
+    }
 
     if (calendarImportForm) {
         calendarImportForm.addEventListener('submit', async function(e) {
@@ -2660,6 +2676,46 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 
                 window.location.href = '/schedule/export_scheduled_csv';
+            } catch (error) {
+                showMessage('Export failed: ' + error.message, 'danger');
+            }
+        });
+    }
+    
+    const exportScheduledPublerBtn = document.getElementById('exportScheduledPublerBtn');
+    if (exportScheduledPublerBtn) {
+        exportScheduledPublerBtn.addEventListener('click', async function(e) {
+            e.preventDefault();
+            try {
+                const response = await fetch('/api/scheduled');
+                const data = await response.json();
+                
+                if (!data.assignments || data.assignments.length === 0) {
+                    showMessage('No scheduled content to export', 'warning');
+                    return;
+                }
+                
+                window.location.href = '/schedule/export_scheduled_csv';
+            } catch (error) {
+                showMessage('Export failed: ' + error.message, 'danger');
+            }
+        });
+    }
+    
+    const exportScheduledFeedHiveBtn = document.getElementById('exportScheduledFeedHiveBtn');
+    if (exportScheduledFeedHiveBtn) {
+        exportScheduledFeedHiveBtn.addEventListener('click', async function(e) {
+            e.preventDefault();
+            try {
+                const response = await fetch('/api/scheduled');
+                const data = await response.json();
+                
+                if (!data.assignments || data.assignments.length === 0) {
+                    showMessage('No scheduled content to export', 'warning');
+                    return;
+                }
+                
+                window.location.href = '/schedule/export_scheduled_feedhive';
             } catch (error) {
                 showMessage('Export failed: ' + error.message, 'danger');
             }
