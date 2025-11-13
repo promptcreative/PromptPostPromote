@@ -1764,16 +1764,19 @@ def export_feedhive_csv():
         if image.platform == 'Instagram' and image.instagram_first_comment:
             text_content = text_content + '\n\n' + image.instagram_first_comment if text_content else image.instagram_first_comment
         
-        title = image.painting_name or image.video_pin_pdf_title or ''
+        platform_prefix = f"[{image.platform}] " if image.platform else ""
+        title = f"{platform_prefix}{image.painting_name or image.video_pin_pdf_title or ''}"
         
         labels_list = []
+        if image.calendar_selection:
+            labels_list.append(f"🔮 {image.calendar_selection}")
+        if image.platform:
+            labels_list.append(image.platform)
         if image.seo_tags:
             labels_list.append(image.seo_tags)
-        if image.calendar_selection:
-            labels_list.append(image.calendar_selection)
         labels = ', '.join(labels_list) if labels_list else ''
         
-        social_medias = image.platform or ''
+        social_medias = ''
         
         writer.writerow([
             text_content,
@@ -1845,15 +1848,18 @@ def export_scheduled_feedhive():
             if assignment.platform == 'Instagram' and image.instagram_first_comment:
                 text_content = text_content + '\n\n' + image.instagram_first_comment if text_content else image.instagram_first_comment
             
-            title = image.painting_name or image.video_pin_pdf_title or ''
+            platform_prefix = f"[{assignment.platform}] " if assignment.platform else ""
+            title = f"{platform_prefix}{image.painting_name or image.video_pin_pdf_title or ''}"
             
             labels_list = []
+            labels_list.append(f"🔮 {calendar_type}")
+            if assignment.platform:
+                labels_list.append(assignment.platform)
             if image.seo_tags:
                 labels_list.append(image.seo_tags)
-            labels_list.append(calendar_type)
             labels = ', '.join(labels_list) if labels_list else ''
             
-            social_medias = assignment.platform or ''
+            social_medias = ''
             
             rows.append({
                 'datetime': event.midpoint_time,
