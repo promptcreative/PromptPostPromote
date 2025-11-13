@@ -119,6 +119,12 @@ def migrate_schema():
                 db.session.commit()
                 print("calendar_event_id column added successfully!")
             
+            if 'pinterest_hashtags' not in image_columns_fresh:
+                print("Adding pinterest_hashtags column to Image table...")
+                db.session.execute(text('ALTER TABLE image ADD COLUMN pinterest_hashtags TEXT'))
+                db.session.commit()
+                print("pinterest_hashtags column added successfully!")
+            
             # Add smart scheduler columns to CalendarEvent table
             if 'calendar_event' in inspector.get_table_names():
                 event_columns = [col['name'] for col in inspector.get_columns('calendar_event')]

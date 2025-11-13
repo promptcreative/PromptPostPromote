@@ -33,6 +33,7 @@ class Image(db.Model):
     etsy_sku = db.Column(db.String(100))
     
     instagram_first_comment = db.Column(db.Text)
+    pinterest_hashtags = db.Column(db.Text)
     
     links = db.Column(db.Text)
     media = db.Column(db.String(255))
@@ -88,6 +89,7 @@ class Image(db.Model):
             'etsy_quantity': self.etsy_quantity or '',
             'etsy_sku': self.etsy_sku or '',
             'instagram_first_comment': self.instagram_first_comment or '',
+            'pinterest_hashtags': self.pinterest_hashtags or '',
             'links': self.links or '',
             'media': self.media or '',
             'media_source': self.media_source or '',

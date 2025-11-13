@@ -80,10 +80,11 @@ def update_image(image_id):
         'status', 'labels', 'post_url', 'alt_text', 'cta', 'comments', 
         'cover_image_url', 'etsy_description', 'etsy_listing_title', 
         'etsy_price', 'etsy_quantity', 'etsy_sku', 'instagram_first_comment',
-        'links', 'media_source', 'media_urls', 'pin_board_fb_album_google_category',
-        'pinterest_description', 'pinterest_link_url', 'reminder',
-        'seo_description', 'seo_tags', 'seo_title', 'text', 'video_pin_pdf_title',
-        'calendar_selection', 'collection_id'
+        'pinterest_hashtags', 'links', 'media_source', 'media_urls', 
+        'pin_board_fb_album_google_category', 'pinterest_description', 
+        'pinterest_link_url', 'reminder', 'seo_description', 'seo_tags', 
+        'seo_title', 'text', 'video_pin_pdf_title', 'calendar_selection', 
+        'collection_id'
     ]
     
     if field not in valid_fields:
@@ -117,10 +118,11 @@ def batch_update():
         'status', 'labels', 'post_url', 'alt_text', 'cta', 'comments', 
         'cover_image_url', 'etsy_description', 'etsy_listing_title', 
         'etsy_price', 'etsy_quantity', 'etsy_sku', 'instagram_first_comment',
-        'links', 'media_source', 'media_urls', 'pin_board_fb_album_google_category',
-        'pinterest_description', 'pinterest_link_url', 'reminder',
-        'seo_description', 'seo_tags', 'seo_title', 'text', 'video_pin_pdf_title',
-        'calendar_selection', 'collection_id'
+        'pinterest_hashtags', 'links', 'media_source', 'media_urls', 
+        'pin_board_fb_album_google_category', 'pinterest_description', 
+        'pinterest_link_url', 'reminder', 'seo_description', 'seo_tags', 
+        'seo_title', 'text', 'video_pin_pdf_title', 'calendar_selection', 
+        'collection_id'
     ]
     
     for field in updates.keys():
@@ -1734,7 +1736,8 @@ def export_feedhive_csv():
         'Media URLs',
         'Labels',
         'Social Medias',
-        'Scheduled'
+        'Scheduled',
+        'Notes'
     ])
     
     replit_domain = os.environ.get('REPLIT_DEV_DOMAIN', '')
@@ -1761,26 +1764,36 @@ def export_feedhive_csv():
         elif image.platform == 'Instagram' and image.text:
             text_content = image.text
         
-        if image.platform == 'Instagram' and image.instagram_first_comment:
-            text_content = text_content + '\n\n' + image.instagram_first_comment if text_content else image.instagram_first_comment
+        if image.platform == 'Pinterest':
+            if image.pinterest_hashtags:
+                text_content = text_content + '\n\n' + image.pinterest_hashtags if text_content else image.pinterest_hashtags
+        elif image.platform == 'Instagram':
+            if image.instagram_first_comment:
+                text_content = text_content + '\n\n' + image.instagram_first_comment if text_content else image.instagram_first_comment
+        else:
+            if image.instagram_first_comment:
+                text_content = text_content + '\n\n' + image.instagram_first_comment if text_content else image.instagram_first_comment
         
         platform_prefix = f"[{image.platform}] " if image.platform else ""
         title = f"{platform_prefix}{image.painting_name or image.video_pin_pdf_title or ''}"
         
         labels_list = []
-        if image.calendar_selection:
-            labels_list.append(f"🔮 {image.calendar_selection}")
         if image.platform:
             labels_list.append(image.platform)
-        if image.instagram_first_comment:
-            hashtags_only = ' '.join([tag for tag in image.instagram_first_comment.split() if tag.startswith('#')])
+        
+        hashtag_field = image.pinterest_hashtags if image.platform == 'Pinterest' else image.instagram_first_comment
+        if hashtag_field:
+            hashtags_only = ' '.join([tag for tag in hashtag_field.split() if tag.startswith('#')])
             if hashtags_only:
                 labels_list.append(hashtags_only)
+        
         if image.seo_tags:
             labels_list.append(image.seo_tags)
         labels = ', '.join(labels_list) if labels_list else ''
         
         social_medias = ''
+        
+        notes = f"🔮 {image.calendar_selection}" if image.calendar_selection else ''
         
         writer.writerow([
             text_content,
@@ -1788,7 +1801,8 @@ def export_feedhive_csv():
             media_url,
             labels,
             social_medias,
-            scheduled_iso
+            scheduled_iso,
+            notes
         ])
     
     output_string = output.getvalue()
@@ -1819,7 +1833,8 @@ def export_scheduled_feedhive():
             'Media URLs',
             'Labels',
             'Social Medias',
-            'Scheduled'
+            'Scheduled',
+            'Notes'
         ])
         
         replit_domain = os.environ.get('REPLIT_DEV_DOMAIN', '')
@@ -1849,25 +1864,36 @@ def export_scheduled_feedhive():
             elif assignment.platform == 'Instagram' and image.text:
                 text_content = image.text
             
-            if assignment.platform == 'Instagram' and image.instagram_first_comment:
-                text_content = text_content + '\n\n' + image.instagram_first_comment if text_content else image.instagram_first_comment
+            if assignment.platform == 'Pinterest':
+                if image.pinterest_hashtags:
+                    text_content = text_content + '\n\n' + image.pinterest_hashtags if text_content else image.pinterest_hashtags
+            elif assignment.platform == 'Instagram':
+                if image.instagram_first_comment:
+                    text_content = text_content + '\n\n' + image.instagram_first_comment if text_content else image.instagram_first_comment
+            else:
+                if image.instagram_first_comment:
+                    text_content = text_content + '\n\n' + image.instagram_first_comment if text_content else image.instagram_first_comment
             
             platform_prefix = f"[{assignment.platform}] " if assignment.platform else ""
             title = f"{platform_prefix}{image.painting_name or image.video_pin_pdf_title or ''}"
             
             labels_list = []
-            labels_list.append(f"🔮 {calendar_type}")
             if assignment.platform:
                 labels_list.append(assignment.platform)
-            if image.instagram_first_comment:
-                hashtags_only = ' '.join([tag for tag in image.instagram_first_comment.split() if tag.startswith('#')])
+            
+            hashtag_field = image.pinterest_hashtags if assignment.platform == 'Pinterest' else image.instagram_first_comment
+            if hashtag_field:
+                hashtags_only = ' '.join([tag for tag in hashtag_field.split() if tag.startswith('#')])
                 if hashtags_only:
                     labels_list.append(hashtags_only)
+            
             if image.seo_tags:
                 labels_list.append(image.seo_tags)
             labels = ', '.join(labels_list) if labels_list else ''
             
             social_medias = ''
+            
+            notes = f"🔮 {calendar_type}"
             
             rows.append({
                 'datetime': event.midpoint_time,
@@ -1877,7 +1903,8 @@ def export_scheduled_feedhive():
                     media_url,
                     labels,
                     social_medias,
-                    scheduled_iso
+                    scheduled_iso,
+                    notes
                 ]
             })
         

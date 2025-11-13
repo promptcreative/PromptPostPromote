@@ -52,33 +52,43 @@ class GPTService:
         
         platform_prompts = {
             "instagram": """Analyze this artwork and create Instagram content:
-1. A captivating caption (2-3 sentences, engaging and authentic)
-2. Instagram first comment with relevant hashtags (20-30 hashtags including art style, colors, medium, mood)
-3. SEO-friendly title
+1. A captivating caption (2-3 sentences, front-load best content in first 125 characters for feed preview)
+2. Instagram first comment with relevant hashtags (15-25 hashtags - quality over quantity, including art style, colors, medium, mood)
+3. SEO-friendly title (MAX 90 characters)
 4. SEO description
 5. SEO tags (comma-separated keywords)
 
+IMPORTANT: First 125 characters of caption appear in feed before "...more" - make them count!
+Optimal hashtag count is 15-25 (too many looks spammy and hurts reach)
+
 Format your response as:
-CAPTION: [caption text]
-FIRST_COMMENT: [hashtags only]
-SEO_TITLE: [title]
+CAPTION: [caption text - best content in first 125 chars]
+FIRST_COMMENT: [15-25 hashtags only]
+SEO_TITLE: [title - MAX 90 chars]
 SEO_DESCRIPTION: [description]
 SEO_TAGS: [tags]""",
             
             "pinterest": """Analyze this artwork and create Pinterest content:
-1. Pinterest description (detailed, 300-500 chars, keyword-rich for search)
-2. Pinterest board category suggestion
-3. Link URL suggestion (where to link this pin)
-4. SEO title
-5. SEO description
-6. SEO tags (comma-separated keywords)
-7. Alt text for accessibility
+1. Pinterest description (MAXIMUM 450 characters including spaces - this is a HARD LIMIT, keyword-rich for search)
+2. Pinterest board category suggestion (MAXIMUM 90 characters)
+3. Hashtags (15-20 relevant hashtags for Pinterest discovery - they support up to 20)
+4. Link URL suggestion (where to link this pin)
+5. SEO title (MAXIMUM 90 characters)
+6. SEO description
+7. SEO tags (comma-separated keywords)
+8. Alt text for accessibility
+
+CRITICAL: Pinterest has strict character limits. Posts will FAIL if exceeded.
+- Description MUST be under 450 characters
+- Title/Board names MUST be under 90 characters
+- Use 15-20 hashtags (Pinterest supports up to 20)
 
 Format your response as:
-PINTEREST_DESC: [description]
-PINTEREST_BOARD: [board name]
+PINTEREST_DESC: [description - MAX 450 chars]
+PINTEREST_BOARD: [board name - MAX 90 chars]
+PINTEREST_HASHTAGS: [15-20 hashtags for Pinterest]
 PINTEREST_LINK: [suggested link]
-SEO_TITLE: [title]
+SEO_TITLE: [title - MAX 90 chars]
 SEO_DESCRIPTION: [description]
 SEO_TAGS: [tags]
 ALT_TEXT: [accessibility description]""",
@@ -100,36 +110,44 @@ ALT_TEXT: [accessibility description]""",
             "all": """Analyze this artwork and create comprehensive content for ALL platforms (Instagram, Pinterest, Etsy):
 
 INSTAGRAM:
-- Caption (2-3 sentences)
-- First comment hashtags (20-30 hashtags)
+- Caption (2-3 sentences, first 125 characters are most important for preview)
+- First comment hashtags (15-25 hashtags maximum - quality over quantity)
 
 PINTEREST:
-- Description (keyword-rich, 300-500 chars)
-- Board category
+- Description (keyword-rich, MAXIMUM 450 characters - HARD LIMIT)
+- Board category (MAXIMUM 90 characters)
+- Hashtags (15-20 hashtags optimized for Pinterest discovery)
 - Link suggestion
 
 ETSY:
-- Listing title (under 140 chars)
+- Listing title (engaging, under 140 chars)
 - Full description (2-3 paragraphs)
 - Price range suggestion
 
 GENERAL:
-- SEO title
+- SEO title (MAXIMUM 90 characters for consistency)
 - SEO description
 - SEO tags (comprehensive list)
 - Alt text for accessibility
 - General text/caption
 
+CRITICAL CHARACTER LIMITS (posts will FAIL if exceeded):
+- Pinterest description: MAX 450 characters
+- Pinterest board/title: MAX 90 characters
+- Instagram: First 125 chars show in feed preview
+- Hashtags: 15-25 is optimal (avoid spam)
+
 Format your response as:
-IG_CAPTION: [caption]
-IG_FIRST_COMMENT: [hashtags]
-PINTEREST_DESC: [description]
-PINTEREST_BOARD: [board]
+IG_CAPTION: [caption - front-load best content in first 125 chars]
+IG_FIRST_COMMENT: [15-25 hashtags for Instagram]
+PINTEREST_DESC: [description - MAX 450 chars]
+PINTEREST_BOARD: [board - MAX 90 chars]
+PINTEREST_HASHTAGS: [15-20 hashtags for Pinterest]
 PINTEREST_LINK: [link]
-ETSY_TITLE: [title]
+ETSY_TITLE: [title - under 140 chars]
 ETSY_DESC: [description]
 ETSY_PRICE: [price]
-SEO_TITLE: [title]
+SEO_TITLE: [title - MAX 90 chars]
 SEO_DESCRIPTION: [description]
 SEO_TAGS: [tags]
 ALT_TEXT: [alt text]
@@ -198,6 +216,7 @@ TEXT: [general caption]"""
                     'IG_CAPTION': 'text',
                     'FIRST_COMMENT': 'instagram_first_comment',
                     'IG_FIRST_COMMENT': 'instagram_first_comment',
+                    'PINTEREST_HASHTAGS': 'pinterest_hashtags',
                     'PINTEREST_DESC': 'pinterest_description',
                     'PINTEREST_BOARD': 'pin_board_fb_album_google_category',
                     'PINTEREST_LINK': 'pinterest_link_url',
@@ -214,7 +233,28 @@ TEXT: [general caption]"""
                 if key in field_mapping:
                     result[field_mapping[key]] = value
         
+        result = self._enforce_character_limits(result)
         return result
+    
+    def _enforce_character_limits(self, content: Dict[str, str]) -> Dict[str, str]:
+        """Enforce strict character limits on generated content"""
+        if 'pinterest_description' in content and content['pinterest_description']:
+            if len(content['pinterest_description']) > 450:
+                content['pinterest_description'] = content['pinterest_description'][:447] + '...'
+        
+        if 'pin_board_fb_album_google_category' in content and content['pin_board_fb_album_google_category']:
+            if len(content['pin_board_fb_album_google_category']) > 90:
+                content['pin_board_fb_album_google_category'] = content['pin_board_fb_album_google_category'][:87] + '...'
+        
+        if 'seo_title' in content and content['seo_title']:
+            if len(content['seo_title']) > 90:
+                content['seo_title'] = content['seo_title'][:87] + '...'
+        
+        if 'video_pin_pdf_title' in content and content['video_pin_pdf_title']:
+            if len(content['video_pin_pdf_title']) > 90:
+                content['video_pin_pdf_title'] = content['video_pin_pdf_title'][:87] + '...'
+        
+        return content
 
     def _generate_fallback_content(self, painting_name: str, platform: str) -> Dict[str, str]:
         """Generate basic content when vision API fails"""
