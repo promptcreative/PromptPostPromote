@@ -1772,6 +1772,10 @@ def export_feedhive_csv():
             labels_list.append(f"🔮 {image.calendar_selection}")
         if image.platform:
             labels_list.append(image.platform)
+        if image.instagram_first_comment:
+            hashtags_only = ' '.join([tag for tag in image.instagram_first_comment.split() if tag.startswith('#')])
+            if hashtags_only:
+                labels_list.append(hashtags_only)
         if image.seo_tags:
             labels_list.append(image.seo_tags)
         labels = ', '.join(labels_list) if labels_list else ''
@@ -1855,6 +1859,10 @@ def export_scheduled_feedhive():
             labels_list.append(f"🔮 {calendar_type}")
             if assignment.platform:
                 labels_list.append(assignment.platform)
+            if image.instagram_first_comment:
+                hashtags_only = ' '.join([tag for tag in image.instagram_first_comment.split() if tag.startswith('#')])
+                if hashtags_only:
+                    labels_list.append(hashtags_only)
             if image.seo_tags:
                 labels_list.append(image.seo_tags)
             labels = ', '.join(labels_list) if labels_list else ''
