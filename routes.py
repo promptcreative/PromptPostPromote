@@ -194,8 +194,49 @@ def remove_image(image_id):
     image = Image.query.get(image_id)
     if not image:
         return jsonify({'error': 'Image not found'}), 404
-        
+    
+    data = request.get_json() or {}
+    force_delete = data.get('force_delete', False)
+    
     try:
+        assignments = EventAssignment.query.filter_by(image_id=image_id).all()
+        
+        if assignments and not force_delete:
+            assignment_details = []
+            for assignment in assignments:
+                event = CalendarEvent.query.get(assignment.calendar_event_id)
+                if event:
+                    calendar = Calendar.query.get(event.calendar_id)
+                    assignment_details.append({
+                        'assignment_id': assignment.id,
+                        'platform': assignment.platform,
+                        'event_time': event.midpoint_time.strftime('%Y-%m-%d %H:%M') if event.midpoint_time else '',
+                        'calendar_name': calendar.calendar_type if calendar else 'Unknown'
+                    })
+            
+            return jsonify({
+                'error': 'Image is scheduled',
+                'assigned': True,
+                'assignments': assignment_details,
+                'count': len(assignments)
+            }), 400
+        
+        if assignments and force_delete:
+            for assignment in assignments:
+                event = CalendarEvent.query.get(assignment.calendar_event_id)
+                if event:
+                    remaining = EventAssignment.query.filter(
+                        EventAssignment.calendar_event_id == assignment.calendar_event_id,
+                        EventAssignment.id != assignment.id
+                    ).first()
+                    
+                    if not remaining:
+                        event.is_assigned = False
+                        event.assigned_image_id = None
+                        event.assigned_platform = None
+                
+                db.session.delete(assignment)
+        
         if app.static_folder and image.stored_filename:
             file_path = os.path.join(app.static_folder, 'uploads', image.stored_filename)
             if os.path.exists(file_path):
@@ -1449,7 +1490,9 @@ def delete_assignment(assignment_id):
         if not assignment:
             return jsonify({'error': 'Assignment not found'}), 404
         
+        calendar_event = CalendarEvent.query.get(assignment.calendar_event_id)
         image = Image.query.get(assignment.image_id)
+        
         if image:
             other_assignments = EventAssignment.query.filter(
                 EventAssignment.image_id == assignment.image_id,
@@ -1461,6 +1504,19 @@ def delete_assignment(assignment_id):
                 image.date = None
                 image.time = None
                 image.calendar_source = None
+                if image.status == 'Scheduled':
+                    image.status = 'Ready'
+        
+        if calendar_event:
+            remaining_assignments = EventAssignment.query.filter(
+                EventAssignment.calendar_event_id == assignment.calendar_event_id,
+                EventAssignment.id != assignment_id
+            ).first()
+            
+            if not remaining_assignments:
+                calendar_event.is_assigned = False
+                calendar_event.assigned_image_id = None
+                calendar_event.assigned_platform = None
         
         db.session.delete(assignment)
         db.session.commit()
@@ -1469,6 +1525,103 @@ def delete_assignment(assignment_id):
         
     except Exception as e:
         db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/assign/<int:assignment_id>/replace-image', methods=['PUT'])
+def replace_assignment_image(assignment_id):
+    """Replace the image in a schedule slot while keeping the assignment"""
+    try:
+        data = request.get_json()
+        new_image_id = data.get('image_id')
+        
+        if not new_image_id:
+            return jsonify({'error': 'image_id required'}), 400
+        
+        assignment = EventAssignment.query.get(assignment_id)
+        if not assignment:
+            return jsonify({'error': 'Assignment not found'}), 404
+        
+        new_image = Image.query.get(new_image_id)
+        if not new_image:
+            return jsonify({'error': 'New image not found'}), 404
+        
+        if new_image.status not in ['Ready', 'Scheduled']:
+            return jsonify({'error': 'Image must be in Ready or Scheduled status'}), 400
+        
+        old_image = Image.query.get(assignment.image_id)
+        calendar_event = CalendarEvent.query.get(assignment.calendar_event_id)
+        
+        if old_image:
+            other_old_assignments = EventAssignment.query.filter(
+                EventAssignment.image_id == assignment.image_id,
+                EventAssignment.id != assignment_id
+            ).first()
+            
+            if not other_old_assignments:
+                old_image.platform = None
+                old_image.date = None
+                old_image.time = None
+                old_image.calendar_source = None
+                if old_image.status == 'Scheduled':
+                    old_image.status = 'Ready'
+        
+        assignment.image_id = new_image_id
+        
+        if calendar_event:
+            new_image.date = calendar_event.midpoint_time.strftime('%Y-%m-%d')
+            new_image.time = calendar_event.midpoint_time.strftime('%H:%M')
+            calendar = Calendar.query.get(calendar_event.calendar_id)
+            if calendar:
+                new_image.calendar_source = calendar.calendar_type
+            new_image.platform = assignment.platform
+            if new_image.status == 'Ready':
+                new_image.status = 'Scheduled'
+            
+            calendar_event.assigned_image_id = new_image_id
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'assignment': assignment.to_dict()
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/image/<int:image_id>/assignments', methods=['GET'])
+def get_image_assignments(image_id):
+    """Get all schedule slots where this image is assigned"""
+    try:
+        image = Image.query.get(image_id)
+        if not image:
+            return jsonify({'error': 'Image not found'}), 404
+        
+        assignments = EventAssignment.query.filter_by(image_id=image_id).all()
+        
+        result = []
+        for assignment in assignments:
+            event = CalendarEvent.query.get(assignment.calendar_event_id)
+            if event:
+                calendar = Calendar.query.get(event.calendar_id)
+                result.append({
+                    'assignment_id': assignment.id,
+                    'platform': assignment.platform,
+                    'event_time': event.midpoint_time.isoformat() if event.midpoint_time else '',
+                    'event_summary': event.summary or '',
+                    'calendar_name': calendar.calendar_type if calendar else 'Unknown'
+                })
+        
+        return jsonify({
+            'image_id': image_id,
+            'assignments': result,
+            'count': len(result)
+        }), 200
+        
+    except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 

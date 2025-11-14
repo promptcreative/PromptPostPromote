@@ -543,18 +543,49 @@ document.addEventListener('DOMContentLoaded', function() {
             const imageId = row.dataset.imageId;
             
             if (e.target.closest('.remove-btn')) {
-                if (confirm('Remove this image?')) {
-                    try {
-                        const response = await fetch(`/remove_image/${imageId}`, {
-                            method: 'POST'
-                        });
-                        if (response.ok) {
-                            row.remove();
-                            showMessage('Image removed');
+                try {
+                    const response = await fetch(`/remove_image/${imageId}`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({})
+                    });
+                    
+                    if (response.ok) {
+                        row.remove();
+                        showMessage('Image removed');
+                    } else {
+                        const error = await response.json();
+                        
+                        if (error.assigned && error.assignments) {
+                            let assignmentList = error.assignments.map(a => 
+                                `- ${a.platform} on ${a.event_time} (${a.calendar_name})`
+                            ).join('\n');
+                            
+                            const message = `This image is scheduled for:\n\n${assignmentList}\n\nDo you want to:\n- Remove from schedule and delete image (Yes)\n- Cancel (No)`;
+                            
+                            if (confirm(message)) {
+                                const forceResponse = await fetch(`/remove_image/${imageId}`, {
+                                    method: 'POST',
+                                    headers: {'Content-Type': 'application/json'},
+                                    body: JSON.stringify({ force_delete: true })
+                                });
+                                
+                                if (forceResponse.ok) {
+                                    row.remove();
+                                    showMessage('Image removed from schedule and library');
+                                    loadScheduleGrid();
+                                    loadScheduledContent();
+                                } else {
+                                    const forceError = await forceResponse.json();
+                                    showMessage('Remove failed: ' + forceError.error, 'danger');
+                                }
+                            }
+                        } else {
+                            showMessage('Remove failed: ' + error.error, 'danger');
                         }
-                    } catch (error) {
-                        showMessage('Remove failed: ' + error.message, 'danger');
                     }
+                } catch (error) {
+                    showMessage('Remove failed: ' + error.message, 'danger');
                 }
             } else if (e.target.closest('.edit-details-btn')) {
                 openDetailModal(imageId);
@@ -2547,7 +2578,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     async function unassignContent(assignmentId) {
-        if (!confirm('Remove this assignment?')) {
+        if (!confirm('Remove this item from the schedule? The image will remain in your library.')) {
             return;
         }
         
@@ -2557,20 +2588,95 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             
             if (response.ok) {
-                showMessage('Assignment removed', 'success');
+                showMessage('Removed from schedule', 'success');
                 loadScheduleGrid();
                 loadScheduledContent();
             } else {
                 const error = await response.json();
-                throw new Error(error.error || 'Unassign failed');
+                throw new Error(error.error || 'Remove failed');
             }
             
         } catch (error) {
-            showMessage('Unassign failed: ' + error.message, 'danger');
+            showMessage('Remove failed: ' + error.message, 'danger');
+        }
+    }
+    
+    async function replaceScheduledImage(assignmentId) {
+        const modal = new bootstrap.Modal(document.getElementById('replaceImageModal'));
+        
+        document.getElementById('replaceImageModal').dataset.assignmentId = assignmentId;
+        
+        await loadImagesForReplaceModal();
+        
+        modal.show();
+    }
+    
+    async function loadImagesForReplaceModal() {
+        try {
+            const response = await fetch('/api/images?status=Ready,Scheduled');
+            const data = await response.json();
+            
+            const container = document.getElementById('replaceImageGrid');
+            if (!container) return;
+            
+            if (!data.images || data.images.length === 0) {
+                container.innerHTML = '<p class="text-muted">No images available to replace with.</p>';
+                return;
+            }
+            
+            let html = '<div class="row g-3">';
+            
+            data.images.forEach(img => {
+                html += `
+                    <div class="col-md-4">
+                        <div class="card h-100" style="cursor: pointer;" onclick="selectReplaceImage(${img.id})">
+                            <img src="/static/uploads/${img.stored_filename}" class="card-img-top" style="height: 200px; object-fit: cover;">
+                            <div class="card-body p-2">
+                                <p class="mb-0 small"><strong>${img.painting_name || img.title || 'Untitled'}</strong></p>
+                                <p class="mb-0 text-muted" style="font-size: 0.75rem;">${img.status || ''}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            container.innerHTML = html;
+            
+        } catch (error) {
+            console.error('Failed to load images for replace modal:', error);
+        }
+    }
+    
+    async function selectReplaceImage(newImageId) {
+        const modal = bootstrap.Modal.getInstance(document.getElementById('replaceImageModal'));
+        const assignmentId = document.getElementById('replaceImageModal').dataset.assignmentId;
+        
+        try {
+            const response = await fetch(`/api/assign/${assignmentId}/replace-image`, {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ image_id: newImageId })
+            });
+            
+            if (response.ok) {
+                showMessage('Image replaced successfully', 'success');
+                modal.hide();
+                loadScheduleGrid();
+                loadScheduledContent();
+            } else {
+                const error = await response.json();
+                throw new Error(error.error || 'Replace failed');
+            }
+            
+        } catch (error) {
+            showMessage('Replace failed: ' + error.message, 'danger');
         }
     }
     
     window.unassignContent = unassignContent;
+    window.replaceScheduledImage = replaceScheduledImage;
+    window.selectReplaceImage = selectReplaceImage;
     
     function getCalendarBadge(calendarType) {
         const badges = {
@@ -2643,9 +2749,14 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <div class="text-muted small">${item.event_time} - ${platformEmoji} ${item.platform} ${calendarBadge}</div>
                                 <div class="text-muted small">${item.event_summary || ''}</div>
                             </div>
-                            <button class="btn btn-sm btn-danger" onclick="window.unassignContent(${item.assignment_id})" title="Remove assignment">
-                                <i class="bi bi-trash"></i>
-                            </button>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-sm btn-primary" onclick="window.replaceScheduledImage(${item.assignment_id})" title="Replace with different image">
+                                    <i class="bi bi-arrow-repeat"></i> Replace
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="window.unassignContent(${item.assignment_id})" title="Remove from schedule">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
                         </div>
                     `;
                 });
