@@ -6,6 +6,18 @@ This project is a Flask-based content planning and scheduling system designed fo
 
 ## Recent Changes (November 2025)
 
+**Brand Settings & Content Control - November 14, 2025:**
+- ✅ **Settings Tab Added** - New gear icon tab for configuring brand preferences
+- ✅ **Company Name Integration** - "Prompt Creative" automatically mentioned in AI-generated content
+- ✅ **Branded Hashtag Auto-Append** - "#ShopPromptCreative" automatically added to Instagram & Pinterest posts
+- ✅ **Hashtag Count Control** - Adjustable sliders for Instagram (3-15) and Pinterest (2-10) hashtag limits
+- ✅ **Content Tone Selection** - Choose between Poetic 🎨, Balanced ⚖️, or Direct Sales 💰 writing styles
+- ✅ **Shop URL Field** - Store your Etsy/website link for easy reference
+- Backend: Settings model with defaults, GET/POST /api/settings endpoints
+- GPT Service: Dynamic prompts use settings for company name, tone guidance, hashtag counts
+- Database: Settings table initialized with Prompt Creative defaults on first run
+- **User benefit**: Configure once in Settings, all future AI content matches your brand voice and hashtag strategy! 🎯
+
 **Schedule Management Fix - November 14, 2025:**
 - ✅ **Fixed Database Constraint Violation** - Resolved NOT NULL constraint error on EventAssignment.image_id
 - ✅ **Replace Image Functionality** - New "Replace" button swaps scheduled images without losing schedule data

@@ -27,6 +27,11 @@
             <i class="bi bi-calendar3"></i> Calendars
         </button>
     </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings-pane" type="button">
+            <i class="bi bi-gear"></i> Settings
+        </button>
+    </li>
 </ul>
 
 <div class="tab-content" id="mainTabContent">
@@ -469,6 +474,74 @@
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-pane fade" id="settings-pane" role="tabpanel">
+        <div class="row">
+            <div class="col-md-8 mx-auto">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="bi bi-gear"></i> Brand Settings</h5>
+                        <p class="text-muted">Configure your brand information and content generation preferences. These settings apply to all AI-generated content.</p>
+                        
+                        <form id="settingsForm">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6 class="mb-3">Brand Information</h6>
+                                    <div class="mb-3">
+                                        <label class="form-label">Company/Brand Name</label>
+                                        <input type="text" class="form-control" id="companyName" placeholder="Prompt Creative">
+                                        <small class="form-text text-muted">This will be mentioned in AI-generated content</small>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Branded Hashtag</label>
+                                        <input type="text" class="form-control" id="brandedHashtag" placeholder="#ShopPromptCreative">
+                                        <small class="form-text text-muted">Automatically added to all posts</small>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Shop/Website URL</label>
+                                        <input type="text" class="form-control" id="shopUrl" placeholder="https://...">
+                                        <small class="form-text text-muted">Link to your store or portfolio</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6 class="mb-3">Content Generation</h6>
+                                    <div class="mb-3">
+                                        <label class="form-label">Content Tone</label>
+                                        <select class="form-select" id="contentTone">
+                                            <option value="poetic">🎨 Poetic - Artistic and evocative</option>
+                                            <option value="balanced" selected>⚖️ Balanced - Mix of artistry and approachability</option>
+                                            <option value="direct">💰 Direct Sales - Clear and concise</option>
+                                        </select>
+                                        <small class="form-text text-muted">How AI describes your artwork</small>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Instagram Hashtag Count: <span id="igHashtagValue">8</span></label>
+                                        <input type="range" class="form-range" id="instagramHashtagCount" min="3" max="15" value="8">
+                                        <small class="form-text text-muted">Recommended: 5-10 hashtags</small>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Pinterest Hashtag Count: <span id="pinterestHashtagValue">4</span></label>
+                                        <input type="range" class="form-range" id="pinterestHashtagCount" min="2" max="10" value="4">
+                                        <small class="form-text text-muted">Recommended: 3-5 hashtags</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-end gap-2 mt-4">
+                                <button type="button" class="btn btn-secondary" id="resetSettingsBtn">
+                                    <i class="bi bi-arrow-clockwise"></i> Reset to Defaults
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-check-lg"></i> Save Settings
+                                </button>
+                            </div>
+                        </form>
+                        
+                        <div id="settingsMessage" class="alert mt-3 d-none"></div>
                     </div>
                 </div>
             </div>

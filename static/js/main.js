@@ -2854,4 +2854,99 @@ document.addEventListener('DOMContentLoaded', function() {
                 collections.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
         });
     }
+    
+    // Settings functionality
+    async function loadSettings() {
+        try {
+            const response = await fetch('/api/settings');
+            const settings = await response.json();
+            
+            document.getElementById('companyName').value = settings.company_name || '';
+            document.getElementById('brandedHashtag').value = settings.branded_hashtag || '';
+            document.getElementById('shopUrl').value = settings.shop_url || '';
+            document.getElementById('contentTone').value = settings.content_tone || 'balanced';
+            document.getElementById('instagramHashtagCount').value = settings.instagram_hashtag_count || 8;
+            document.getElementById('pinterestHashtagCount').value = settings.pinterest_hashtag_count || 4;
+            
+            updateHashtagLabels();
+        } catch (error) {
+            console.error('Failed to load settings:', error);
+        }
+    }
+    
+    function updateHashtagLabels() {
+        const igValue = document.getElementById('instagramHashtagCount').value;
+        const pinterestValue = document.getElementById('pinterestHashtagCount').value;
+        document.getElementById('igHashtagValue').textContent = igValue;
+        document.getElementById('pinterestHashtagValue').textContent = pinterestValue;
+    }
+    
+    const igHashtagSlider = document.getElementById('instagramHashtagCount');
+    if (igHashtagSlider) {
+        igHashtagSlider.addEventListener('input', updateHashtagLabels);
+    }
+    
+    const pinterestHashtagSlider = document.getElementById('pinterestHashtagCount');
+    if (pinterestHashtagSlider) {
+        pinterestHashtagSlider.addEventListener('input', updateHashtagLabels);
+    }
+    
+    const settingsForm = document.getElementById('settingsForm');
+    if (settingsForm) {
+        settingsForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const settings = {
+                company_name: document.getElementById('companyName').value,
+                branded_hashtag: document.getElementById('brandedHashtag').value,
+                shop_url: document.getElementById('shopUrl').value,
+                content_tone: document.getElementById('contentTone').value,
+                instagram_hashtag_count: parseInt(document.getElementById('instagramHashtagCount').value),
+                pinterest_hashtag_count: parseInt(document.getElementById('pinterestHashtagCount').value)
+            };
+            
+            try {
+                const response = await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(settings)
+                });
+                
+                if (response.ok) {
+                    const messageDiv = document.getElementById('settingsMessage');
+                    messageDiv.className = 'alert alert-success mt-3';
+                    messageDiv.textContent = '✅ Settings saved successfully! These will be used for all future AI content generation.';
+                    messageDiv.classList.remove('d-none');
+                    setTimeout(() => messageDiv.classList.add('d-none'), 5000);
+                } else {
+                    throw new Error('Failed to save settings');
+                }
+            } catch (error) {
+                const messageDiv = document.getElementById('settingsMessage');
+                messageDiv.className = 'alert alert-danger mt-3';
+                messageDiv.textContent = '❌ Failed to save settings: ' + error.message;
+                messageDiv.classList.remove('d-none');
+            }
+        });
+    }
+    
+    const resetSettingsBtn = document.getElementById('resetSettingsBtn');
+    if (resetSettingsBtn) {
+        resetSettingsBtn.addEventListener('click', function() {
+            document.getElementById('companyName').value = 'Prompt Creative';
+            document.getElementById('brandedHashtag').value = '#ShopPromptCreative';
+            document.getElementById('shopUrl').value = '';
+            document.getElementById('contentTone').value = 'balanced';
+            document.getElementById('instagramHashtagCount').value = 8;
+            document.getElementById('pinterestHashtagCount').value = 4;
+            updateHashtagLabels();
+        });
+    }
+    
+    const settingsTab = document.getElementById('settings-tab');
+    if (settingsTab) {
+        settingsTab.addEventListener('shown.bs.tab', function() {
+            loadSettings();
+        });
+    }
 });
