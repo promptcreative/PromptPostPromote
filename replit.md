@@ -6,6 +6,17 @@ This project is a Flask-based content planning and scheduling system designed fo
 
 ## Recent Changes (November 2025)
 
+**Schedule Management Fix - November 14, 2025:**
+- ✅ **Fixed Database Constraint Violation** - Resolved NOT NULL constraint error on EventAssignment.image_id
+- ✅ **Replace Image Functionality** - New "Replace" button swaps scheduled images without losing schedule data
+- ✅ **Remove from Schedule** - Clear button to unassign content while keeping image in library
+- ✅ **Pre-Delete Warnings** - System now warns when trying to delete scheduled images with assignment details
+- ✅ **Safe Data Flow** - Proper transaction handling prevents data loss during image operations
+- Backend: Added `/api/assign/<id>/replace-image` (PUT) and `/api/image/<id>/assignments` (GET) endpoints
+- Frontend: Replace Image modal with visual picker, updated delete flow with confirmation dialogs
+- Database: EventAssignment records now properly deleted instead of setting image_id to NULL
+- **User benefit**: No more data loss! Replace images or remove from schedule without wiping out your calendar ✅
+
 **Pinterest Hashtags Separation - November 13, 2025:**
 - ✅ **Dedicated Pinterest Hashtags Field** - Created separate `pinterest_hashtags` database column to prevent Instagram/Pinterest hashtag conflicts
 - ✅ **Platform-Specific AI Generation** - GPT now generates distinct hashtags for Instagram (15-25) and Pinterest (15-20)
