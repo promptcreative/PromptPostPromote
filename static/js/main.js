@@ -418,10 +418,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <button class="btn btn-sm btn-primary edit-details-btn" title="Edit Details">
                     <i class="bi bi-pencil"></i>
                 </button>
-                <button class="btn btn-sm btn-warning replace-image-btn" title="Replace Image File">
-                    <i class="bi bi-arrow-repeat"></i>
-                </button>
-                <button class="btn btn-sm btn-danger remove-btn" title="Delete">
+                <button class="btn btn-sm btn-danger remove-btn" title="Remove">
                     <i class="bi bi-trash"></i>
                 </button>
             </td>
@@ -546,9 +543,19 @@ document.addEventListener('DOMContentLoaded', function() {
             const imageId = row.dataset.imageId;
             
             if (e.target.closest('.remove-btn')) {
-                showDeleteOptionsModal(imageId);
-            } else if (e.target.closest('.replace-image-btn')) {
-                showReplaceImageModal(imageId);
+                if (confirm('Remove this image?')) {
+                    try {
+                        const response = await fetch(`/remove_image/${imageId}`, {
+                            method: 'POST'
+                        });
+                        if (response.ok) {
+                            row.remove();
+                            showMessage('Image removed');
+                        }
+                    } catch (error) {
+                        showMessage('Remove failed: ' + error.message, 'danger');
+                    }
+                }
             } else if (e.target.closest('.edit-details-btn')) {
                 openDetailModal(imageId);
             } else if (e.target.closest('.generate-ai-btn')) {
@@ -1790,91 +1797,37 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            showBulkDeleteModal(selectedIds);
-        });
-    }
-    
-    window.showBulkDeleteModal = function(selectedIds) {
-        const modal = document.getElementById('bulkDeleteOptionsModal');
-        if (!modal) {
-            if (confirm(`Delete ${selectedIds.length} selected items?`)) {
-                performBulkDelete(selectedIds, 'full');
+            if (!confirm(`Delete ${selectedIds.length} selected items?`)) {
+                return;
             }
-            return;
-        }
-        
-        modal.dataset.selectedIds = JSON.stringify(selectedIds);
-        
-        const countSpan = document.getElementById('bulkDeleteCount');
-        if (countSpan) {
-            countSpan.textContent = selectedIds.length;
-        }
-        
-        const bsModal = new bootstrap.Modal(modal);
-        bsModal.show();
-        
-        const bulkDeleteFullBtn = document.getElementById('bulkDeleteFull');
-        const bulkDeleteMediaOnlyBtn = document.getElementById('bulkDeleteMediaOnly');
-        
-        if (bulkDeleteFullBtn) {
-            bulkDeleteFullBtn.onclick = async function() {
-                if (!confirm(`Delete ${selectedIds.length} items completely with all content and schedules? This cannot be undone.`)) {
-                    return;
-                }
-                
-                bsModal.hide();
-                await performBulkDelete(selectedIds, 'full');
-            };
-        }
-        
-        if (bulkDeleteMediaOnlyBtn) {
-            bulkDeleteMediaOnlyBtn.onclick = async function() {
-                if (!confirm(`Remove image files from ${selectedIds.length} items? Entries and metadata will be preserved.`)) {
-                    return;
-                }
-                
-                bsModal.hide();
-                await performBulkDelete(selectedIds, 'media_only');
-            };
-        }
-    };
-    
-    async function performBulkDelete(selectedIds, mode) {
-        const btn = document.getElementById('bulkDeleteBtn');
-        if (!btn) return;
-        
-        const originalHtml = btn.innerHTML;
-        btn.disabled = true;
-        btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Deleting...';
-        
-        try {
-            const response = await fetch('/bulk_delete', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ ids: selectedIds, mode: mode })
-            });
             
-            if (response.ok) {
-                const data = await response.json();
-                let message = `✅ ${data.message}`;
-                if (data.cleanup_summary) {
-                    const summary = data.cleanup_summary;
-                    if (summary.generated_assets > 0 || summary.event_assignments > 0 || summary.calendar_events_reset > 0) {
-                        message += ` (Cleaned up: ${summary.generated_assets} assets, ${summary.event_assignments} assignments, ${summary.calendar_events_reset} calendar events)`;
-                    }
+            const btn = this;
+            const originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Deleting...';
+            
+            try {
+                const response = await fetch('/bulk_delete', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ ids: selectedIds })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    showMessage(`✅ ${data.message}`, 'success');
+                    loadImages();
+                } else {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Delete failed');
                 }
-                showMessage(message, 'success');
-                loadImages();
-            } else {
-                const error = await response.json();
-                throw new Error(error.error || 'Delete failed');
+            } catch (error) {
+                showMessage('Delete failed: ' + error.message, 'danger');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
             }
-        } catch (error) {
-            showMessage('Delete failed: ' + error.message, 'danger');
-        } finally {
-            btn.disabled = false;
-            btn.innerHTML = originalHtml;
-        }
+        });
     }
     
     // Delete all empty slots button handler
@@ -2789,111 +2742,5 @@ document.addEventListener('DOMContentLoaded', function() {
             scheduleCollectionFilter.innerHTML = '<option value="">All Collections</option>' +
                 collections.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
         });
-    }
-    
-    // Image replacement modal
-    window.showReplaceImageModal = function(imageId) {
-        const modal = document.getElementById('replaceImageModal');
-        const fileInput = document.getElementById('replaceImageFile');
-        const confirmBtn = document.getElementById('confirmReplaceImage');
-        
-        if (!modal || !fileInput || !confirmBtn) return;
-        
-        fileInput.value = '';
-        modal.dataset.imageId = imageId;
-        
-        const bsModal = new bootstrap.Modal(modal);
-        bsModal.show();
-        
-        confirmBtn.onclick = async function() {
-            const file = fileInput.files[0];
-            if (!file) {
-                showMessage('Please select a file', 'warning');
-                return;
-            }
-            
-            const formData = new FormData();
-            formData.append('file', file);
-            
-            confirmBtn.disabled = true;
-            confirmBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Replacing...';
-            
-            try {
-                const response = await fetch(`/images/${imageId}/file`, {
-                    method: 'PUT',
-                    body: formData
-                });
-                
-                if (response.ok) {
-                    showMessage('Image replaced successfully! Refreshing...', 'success');
-                    bsModal.hide();
-                    setTimeout(() => loadImages(), 500);
-                } else {
-                    const error = await response.json();
-                    throw new Error(error.error || 'Replace failed');
-                }
-            } catch (error) {
-                showMessage('Replace failed: ' + error.message, 'danger');
-            } finally {
-                confirmBtn.disabled = false;
-                confirmBtn.innerHTML = '<i class="bi bi-check-lg"></i> Replace Image';
-            }
-        };
-    };
-    
-    // Delete options modal
-    window.showDeleteOptionsModal = function(imageId) {
-        const modal = document.getElementById('deleteOptionsModal');
-        if (!modal) return;
-        
-        modal.dataset.imageId = imageId;
-        
-        const bsModal = new bootstrap.Modal(modal);
-        bsModal.show();
-        
-        const deleteFullBtn = document.getElementById('deleteFullEntry');
-        const deleteMediaOnlyBtn = document.getElementById('deleteMediaOnly');
-        
-        if (deleteFullBtn) {
-            deleteFullBtn.onclick = async function() {
-                if (!confirm('Delete this entire entry including all content, schedules, and related data? This cannot be undone.')) {
-                    return;
-                }
-                
-                await performDelete(imageId, 'full', bsModal);
-            };
-        }
-        
-        if (deleteMediaOnlyBtn) {
-            deleteMediaOnlyBtn.onclick = async function() {
-                if (!confirm('Remove only the image file? The entry and all metadata will be preserved for later replacement.')) {
-                    return;
-                }
-                
-                await performDelete(imageId, 'media_only', bsModal);
-            };
-        }
-    };
-    
-    async function performDelete(imageId, mode, modal) {
-        try {
-            const response = await fetch(`/remove_image/${imageId}`, {
-                method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ mode: mode })
-            });
-            
-            if (response.ok) {
-                const result = await response.json();
-                showMessage(result.message, 'success');
-                modal.hide();
-                setTimeout(() => loadImages(), 500);
-            } else {
-                const error = await response.json();
-                throw new Error(error.error || 'Delete failed');
-            }
-        } catch (error) {
-            showMessage('Delete failed: ' + error.message, 'danger');
-        }
     }
 });
