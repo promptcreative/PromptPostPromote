@@ -2,7 +2,7 @@ import os
 from flask import render_template, request, jsonify, send_file
 from werkzeug.utils import secure_filename
 from app import app, db
-from models import Image, Calendar, CalendarEvent, Collection, GeneratedAsset, EventAssignment
+from models import Image, Calendar, CalendarEvent, Collection, GeneratedAsset, EventAssignment, Settings
 from utils import allowed_file, generate_unique_filename, parse_ics_content
 from gpt_service import gpt_service
 from dynamic_mockups_service import DynamicMockupsService
@@ -2288,4 +2288,65 @@ def push_days_to_publer():
         }), 200
         
     except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/settings', methods=['GET'])
+def get_settings():
+    """Get current brand settings"""
+    try:
+        settings = Settings.query.first()
+        
+        if not settings:
+            settings = Settings(
+                company_name='Prompt Creative',
+                branded_hashtag='#ShopPromptCreative',
+                shop_url='',
+                instagram_hashtag_count=8,
+                pinterest_hashtag_count=4,
+                content_tone='balanced'
+            )
+            db.session.add(settings)
+            db.session.commit()
+        
+        return jsonify(settings.to_dict()), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/settings', methods=['POST'])
+def save_settings():
+    """Save brand settings"""
+    try:
+        data = request.get_json()
+        
+        settings = Settings.query.first()
+        
+        if not settings:
+            settings = Settings()
+            db.session.add(settings)
+        
+        if 'company_name' in data:
+            settings.company_name = data['company_name']
+        if 'branded_hashtag' in data:
+            settings.branded_hashtag = data['branded_hashtag']
+        if 'shop_url' in data:
+            settings.shop_url = data['shop_url']
+        if 'instagram_hashtag_count' in data:
+            settings.instagram_hashtag_count = int(data['instagram_hashtag_count'])
+        if 'pinterest_hashtag_count' in data:
+            settings.pinterest_hashtag_count = int(data['pinterest_hashtag_count'])
+        if 'content_tone' in data:
+            settings.content_tone = data['content_tone']
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'settings': settings.to_dict()
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
         return jsonify({'error': str(e)}), 500

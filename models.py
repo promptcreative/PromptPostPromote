@@ -260,3 +260,27 @@ class GeneratedAsset(db.Model):
             'metadata': metadata_dict,
             'created_at': self.created_at.isoformat() if self.created_at else ''
         }
+
+
+class Settings(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    company_name = db.Column(db.String(255), default='Prompt Creative')
+    branded_hashtag = db.Column(db.String(100), default='#ShopPromptCreative')
+    shop_url = db.Column(db.Text, default='')
+    instagram_hashtag_count = db.Column(db.Integer, default=8)
+    pinterest_hashtag_count = db.Column(db.Integer, default=4)
+    content_tone = db.Column(db.String(50), default='balanced')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'company_name': self.company_name or '',
+            'branded_hashtag': self.branded_hashtag or '',
+            'shop_url': self.shop_url or '',
+            'instagram_hashtag_count': self.instagram_hashtag_count or 8,
+            'pinterest_hashtag_count': self.pinterest_hashtag_count or 4,
+            'content_tone': self.content_tone or 'balanced',
+            'updated_at': self.updated_at.isoformat() if self.updated_at else ''
+        }

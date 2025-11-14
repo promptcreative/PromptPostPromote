@@ -9,6 +9,65 @@ class GPTService:
         self.client = OpenAI(api_key=os.environ.get('OPENAI_API_KEY'))
         self.last_request_time = 0
         self.min_request_interval = 1
+    
+    def _get_settings(self):
+        """Load brand settings from database"""
+        try:
+            from app import app, db
+            from models import Settings
+            
+            with app.app_context():
+                settings = Settings.query.first()
+                
+                if not settings:
+                    return {
+                        'company_name': 'Prompt Creative',
+                        'branded_hashtag': '#ShopPromptCreative',
+                        'shop_url': '',
+                        'instagram_hashtag_count': 8,
+                        'pinterest_hashtag_count': 4,
+                        'content_tone': 'balanced'
+                    }
+                
+                return {
+                    'company_name': settings.company_name or 'Prompt Creative',
+                    'branded_hashtag': settings.branded_hashtag or '#ShopPromptCreative',
+                    'shop_url': settings.shop_url or '',
+                    'instagram_hashtag_count': settings.instagram_hashtag_count or 8,
+                    'pinterest_hashtag_count': settings.pinterest_hashtag_count or 4,
+                    'content_tone': settings.content_tone or 'balanced'
+                }
+        except Exception as e:
+            print(f"Error loading settings: {e}")
+            return {
+                'company_name': 'Prompt Creative',
+                'branded_hashtag': '#ShopPromptCreative',
+                'shop_url': '',
+                'instagram_hashtag_count': 8,
+                'pinterest_hashtag_count': 4,
+                'content_tone': 'balanced'
+            }
+    
+    def _get_tone_guidance(self, tone: str) -> str:
+        """Get tone-specific guidance for content generation"""
+        tone_templates = {
+            'poetic': """
+TONE: Artistic and poetic. Use evocative, flowing language that captures the emotional essence.
+Example: "Dance in the lively moonlight of this vibrant acrylic creation..."
+Style: Emphasize mood, feeling, artistic expression""",
+            
+            'balanced': """
+TONE: Balanced mix of artistry and approachability. Describe the artwork while keeping it relatable.
+Example: "This vibrant acrylic piece captures movement and energy, perfect for brightening any space..."
+Style: Blend aesthetic appreciation with practical appeal""",
+            
+            'direct': """
+TONE: Direct and sales-focused. Clear, concise descriptions that highlight value.
+Example: "Original acrylic art. Bold colors, professional quality. Shop now at [shop link]"
+Style: Emphasize uniqueness, value, call-to-action"""
+        }
+        
+        return tone_templates.get(tone, tone_templates['balanced'])
 
     def _rate_limit(self):
         """Simple rate limiting implementation"""
@@ -43,6 +102,13 @@ class GPTService:
         """
         self._rate_limit()
         
+        settings = self._get_settings()
+        company_name = settings['company_name']
+        tone_guidance = self._get_tone_guidance(settings['content_tone'])
+        ig_hashtag_count = settings['instagram_hashtag_count']
+        pinterest_hashtag_count = settings['pinterest_hashtag_count']
+        branded_hashtag = settings['branded_hashtag']
+        
         try:
             with open(image_path, "rb") as image_file:
                 base64_image = base64.b64encode(image_file.read()).decode('utf-8')
@@ -51,27 +117,35 @@ class GPTService:
             return self._generate_fallback_content(painting_name, platform)
         
         platform_prompts = {
-            "instagram": """Analyze this artwork and create Instagram content:
+            "instagram": f"""Analyze this artwork and create Instagram content for {company_name}:
+
+{tone_guidance}
+
 1. A captivating caption (2-3 sentences, front-load best content in first 125 characters for feed preview)
-2. Instagram first comment with relevant hashtags (15-25 hashtags - quality over quantity, including art style, colors, medium, mood)
+2. Instagram first comment with relevant hashtags ({ig_hashtag_count} hashtags - quality over quantity, including art style, colors, medium, mood)
 3. SEO-friendly title (MAX 90 characters)
 4. SEO description
 5. SEO tags (comma-separated keywords)
 
-IMPORTANT: First 125 characters of caption appear in feed before "...more" - make them count!
-Optimal hashtag count is 15-25 (too many looks spammy and hurts reach)
+IMPORTANT: 
+- First 125 characters of caption appear in feed before "...more" - make them count!
+- Generate EXACTLY {ig_hashtag_count} high-quality hashtags
+- Content created by {company_name}
 
 Format your response as:
 CAPTION: [caption text - best content in first 125 chars]
-FIRST_COMMENT: [15-25 hashtags only]
+FIRST_COMMENT: [{ig_hashtag_count} hashtags only - do NOT include {branded_hashtag} as it will be added automatically]
 SEO_TITLE: [title - MAX 90 chars]
 SEO_DESCRIPTION: [description]
 SEO_TAGS: [tags]""",
             
-            "pinterest": """Analyze this artwork and create Pinterest content:
+            "pinterest": f"""Analyze this artwork and create Pinterest content for {company_name}:
+
+{tone_guidance}
+
 1. Pinterest description (MAXIMUM 450 characters including spaces - this is a HARD LIMIT, keyword-rich for search)
 2. Pinterest board category suggestion (MAXIMUM 90 characters)
-3. Hashtags (15-20 relevant hashtags for Pinterest discovery - they support up to 20)
+3. Hashtags ({pinterest_hashtag_count} relevant hashtags for Pinterest discovery)
 4. Link URL suggestion (where to link this pin)
 5. SEO title (MAXIMUM 90 characters)
 6. SEO description
@@ -81,24 +155,32 @@ SEO_TAGS: [tags]""",
 CRITICAL: Pinterest has strict character limits. Posts will FAIL if exceeded.
 - Description MUST be under 450 characters
 - Title/Board names MUST be under 90 characters
-- Use 15-20 hashtags (Pinterest supports up to 20)
+- Generate EXACTLY {pinterest_hashtag_count} hashtags
+- Content created by {company_name}
 
 Format your response as:
 PINTEREST_DESC: [description - MAX 450 chars]
 PINTEREST_BOARD: [board name - MAX 90 chars]
-PINTEREST_HASHTAGS: [15-20 hashtags for Pinterest]
+PINTEREST_HASHTAGS: [{pinterest_hashtag_count} hashtags for Pinterest - do NOT include {branded_hashtag} as it will be added automatically]
 PINTEREST_LINK: [suggested link]
 SEO_TITLE: [title - MAX 90 chars]
 SEO_DESCRIPTION: [description]
 SEO_TAGS: [tags]
 ALT_TEXT: [accessibility description]""",
             
-            "etsy": """Analyze this artwork and create Etsy listing content:
+            "etsy": f"""Analyze this artwork and create Etsy listing content for {company_name}:
+
+{tone_guidance}
+
 1. Listing title (engaging, keyword-rich, under 140 chars)
 2. Full description (detailed, 2-3 paragraphs about the artwork, style, colors, mood, what makes it special)
 3. SEO tags (13 relevant keywords/phrases for Etsy search)
 4. Suggested price range
 5. Alt text for accessibility
+
+IMPORTANT:
+- Content created by {company_name}
+- Emphasize original artwork and professional quality
 
 Format your response as:
 ETSY_TITLE: [title]
@@ -234,7 +316,30 @@ TEXT: [general caption]"""
                     result[field_mapping[key]] = value
         
         result = self._enforce_character_limits(result)
+        result = self._append_branded_hashtag(result)
         return result
+    
+    def _append_branded_hashtag(self, content: Dict[str, str]) -> Dict[str, str]:
+        """Append branded hashtag to Instagram and Pinterest hashtags"""
+        try:
+            settings = self._get_settings()
+            branded_hashtag = settings['branded_hashtag']
+            
+            if not branded_hashtag:
+                return content
+            
+            if 'instagram_first_comment' in content and content['instagram_first_comment']:
+                if branded_hashtag not in content['instagram_first_comment']:
+                    content['instagram_first_comment'] += f" {branded_hashtag}"
+            
+            if 'pinterest_hashtags' in content and content['pinterest_hashtags']:
+                if branded_hashtag not in content['pinterest_hashtags']:
+                    content['pinterest_hashtags'] += f" {branded_hashtag}"
+            
+            return content
+        except Exception as e:
+            print(f"Error appending branded hashtag: {e}")
+            return content
     
     def _enforce_character_limits(self, content: Dict[str, str]) -> Dict[str, str]:
         """Enforce strict character limits on generated content"""

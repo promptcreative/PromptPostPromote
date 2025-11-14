@@ -146,6 +146,29 @@ def migrate_schema():
             db.session.commit()
             print("Status normalization complete!")
             
+            # Create Settings table if it doesn't exist
+            if 'settings' not in inspector.get_table_names():
+                print("Creating Settings table...")
+                db.create_all()
+                print("Settings table created successfully!")
+                
+                # Insert default settings row
+                from models import Settings
+                settings = Settings.query.first()
+                if not settings:
+                    print("Initializing default settings...")
+                    default_settings = Settings(
+                        company_name='Prompt Creative',
+                        branded_hashtag='#ShopPromptCreative',
+                        shop_url='',
+                        instagram_hashtag_count=8,
+                        pinterest_hashtag_count=4,
+                        content_tone='balanced'
+                    )
+                    db.session.add(default_settings)
+                    db.session.commit()
+                    print("Default settings initialized!")
+            
             print("Migration complete!")
             return
         
