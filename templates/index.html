@@ -51,9 +51,14 @@
                                     <strong>Uploading to:</strong> <span id="collectionInfoName"></span><br>
                                     <small id="collectionInfoDetails"></small>
                                 </div>
-                                <button type="button" class="btn btn-sm btn-outline-primary w-100" id="createCollectionBtn">
-                                    <i class="bi bi-plus-circle"></i> Create New Collection
-                                </button>
+                                <div class="d-grid gap-2">
+                                    <button type="button" class="btn btn-sm btn-outline-primary" id="createCollectionBtn">
+                                        <i class="bi bi-plus-circle"></i> Create New Collection
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" id="manageCollectionsBtn">
+                                        <i class="bi bi-folder-minus"></i> Manage Collections
+                                    </button>
+                                </div>
                             </div>
                             <div id="newCollectionForm" class="mb-3 d-none">
                                 <input type="text" class="form-control mb-2" id="newCollectionName" placeholder="Collection name (e.g., Accidental Iris)">
@@ -655,6 +660,32 @@
                 <button type="button" class="btn btn-primary" onclick="window.location.reload()">
                     <i class="bi bi-arrow-clockwise"></i> Refresh Page to See in Content Tab
                 </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="manageCollectionsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-folder-minus"></i> Manage Collections
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted">Delete collections below. Images in deleted collections will be preserved with no collection assigned.</p>
+                <div id="collectionsListContainer">
+                    <div class="text-center">
+                        <div class="spinner-border spinner-border-sm text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>

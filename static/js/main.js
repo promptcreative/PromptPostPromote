@@ -267,6 +267,69 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+    
+    const manageCollectionsBtn = document.getElementById('manageCollectionsBtn');
+    if (manageCollectionsBtn) {
+        manageCollectionsBtn.addEventListener('click', async function() {
+            const modal = new bootstrap.Modal(document.getElementById('manageCollectionsModal'));
+            modal.show();
+            await loadCollectionsForManagement();
+        });
+    }
+    
+    async function loadCollectionsForManagement() {
+        const container = document.getElementById('collectionsListContainer');
+        container.innerHTML = '<div class="text-center"><div class="spinner-border spinner-border-sm text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+        
+        try {
+            const response = await fetch('/collections');
+            const collections = await response.json();
+            
+            if (collections.length === 0) {
+                container.innerHTML = '<p class="text-muted text-center">No collections found.</p>';
+                return;
+            }
+            
+            container.innerHTML = '<div class="list-group">' + collections.map(collection => `
+                <div class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>${collection.name}</strong>
+                        <small class="text-muted d-block">${collection.image_count || 0} images</small>
+                    </div>
+                    <button class="btn btn-sm btn-danger" onclick="deleteCollection(${collection.id}, '${collection.name}')">
+                        <i class="bi bi-trash"></i> Delete
+                    </button>
+                </div>
+            `).join('') + '</div>';
+        } catch (error) {
+            container.innerHTML = '<p class="text-danger">Failed to load collections</p>';
+            showMessage('Error loading collections: ' + error.message, 'danger');
+        }
+    }
+    
+    window.deleteCollection = async function(id, name) {
+        if (!confirm(`Delete collection "${name}"?\n\nImages in this collection will be preserved but will have no collection assigned.`)) {
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/collections/${id}`, {
+                method: 'DELETE'
+            });
+            
+            if (response.ok) {
+                showMessage(`Collection "${name}" deleted successfully`);
+                await loadCollectionsForManagement();
+                await loadCollections();
+                updateCollectionSelect();
+                await loadImages();
+            } else {
+                showMessage('Failed to delete collection', 'danger');
+            }
+        } catch (error) {
+            showMessage('Error deleting collection: ' + error.message, 'danger');
+        }
+    }
 
     async function loadImages() {
         try {
