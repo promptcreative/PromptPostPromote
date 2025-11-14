@@ -12,6 +12,16 @@ from io import StringIO, BytesIO
 import csv
 import json
 
+_image_asset_service = None
+
+def get_image_asset_service():
+    global _image_asset_service
+    if _image_asset_service is None:
+        from image_asset_service import ImageAssetService
+        upload_folder = os.path.join(app.static_folder or '', 'uploads')
+        _image_asset_service = ImageAssetService(upload_folder)
+    return _image_asset_service
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -189,26 +199,57 @@ def generate_content(image_id):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-@app.route('/remove_image/<int:image_id>', methods=['POST'])
+@app.route('/remove_image/<int:image_id>', methods=['POST', 'DELETE'])
 def remove_image(image_id):
+    """
+    Delete an image entry with optional mode selection.
+    Supports two modes:
+    - 'full' (default): Delete entire entry including all related data
+    - 'media_only': Remove only the image file, keep the database entry
+    """
     image = Image.query.get(image_id)
     if not image:
         return jsonify({'error': 'Image not found'}), 404
-        
-    try:
-        if app.static_folder and image.stored_filename:
-            file_path = os.path.join(app.static_folder, 'uploads', image.stored_filename)
-            if os.path.exists(file_path):
-                os.remove(file_path)
-            
-        db.session.delete(image)
-        db.session.commit()
-        
-        return jsonify({'success': True, 'message': 'Image removed successfully'}), 200
-        
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': f'Failed to remove image: {str(e)}'}), 500
+    
+    data = request.get_json() if request.is_json else {}
+    mode = data.get('mode', 'full')
+    
+    service = get_image_asset_service()
+    if mode == 'media_only':
+        result = service.remove_media_only(image)
+    else:
+        result = service.delete_entry(image, cleanup_related=True)
+    
+    if result['success']:
+        return jsonify(result), 200
+    else:
+        return jsonify(result), 500
+
+@app.route('/images/<int:image_id>/file', methods=['PUT', 'POST'])
+def replace_image_file(image_id):
+    """
+    Replace an image file while keeping all metadata intact.
+    Accepts a new file upload and swaps the file, preserving all content,
+    schedules, and related data.
+    """
+    image = Image.query.get(image_id)
+    if not image:
+        return jsonify({'error': 'Image not found'}), 404
+    
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file provided'}), 400
+    
+    new_file = request.files['file']
+    if not new_file or new_file.filename == '':
+        return jsonify({'error': 'No file selected'}), 400
+    
+    service = get_image_asset_service()
+    result = service.replace_file(image, new_file)
+    
+    if result['success']:
+        return jsonify(result), 200
+    else:
+        return jsonify(result), 400
 
 @app.route('/delete_empty_slots', methods=['POST'])
 @app.route('/delete_all_empty_slots', methods=['POST'])
@@ -250,7 +291,10 @@ def delete_all_empty_slots():
 
 @app.route('/bulk_delete', methods=['POST'])
 def bulk_delete():
-    """Delete multiple selected items by their IDs"""
+    """
+    Delete multiple selected items by their IDs.
+    Supports mode selection (default: 'full' with complete cleanup)
+    """
     data = request.get_json()
     if not data or 'ids' not in data:
         return jsonify({'error': 'No IDs provided'}), 400
@@ -259,43 +303,16 @@ def bulk_delete():
     if not isinstance(ids, list) or len(ids) == 0:
         return jsonify({'error': 'Invalid IDs list'}), 400
     
-    try:
-        # Get all images to be deleted
-        images = Image.query.filter(Image.id.in_(ids)).all()
-        count = len(images)
-        
-        # Reset calendar events if assigned
-        for image in images:
-            if image.calendar_event_id:
-                event = CalendarEvent.query.get(image.calendar_event_id)
-                if event:
-                    event.is_assigned = False
-                    event.assigned_image_id = None
-                    event.assigned_platform = None
-        
-        # Delete physical files (skip calendar slot placeholders)
-        if app.static_folder:
-            for image in images:
-                if image.stored_filename and image.original_filename != '[Calendar Slot]':
-                    file_path = os.path.join(app.static_folder, 'uploads', image.stored_filename)
-                    if os.path.exists(file_path):
-                        os.remove(file_path)
-        
-        # Delete from database
-        for image in images:
-            db.session.delete(image)
-        
-        db.session.commit()
-        
-        return jsonify({
-            'success': True,
-            'deleted_count': count,
-            'message': f'Deleted {count} items'
-        }), 200
-        
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+    mode = data.get('mode', 'full')
+    cleanup_related = (mode == 'full')
+    
+    service = get_image_asset_service()
+    result = service.bulk_delete_entries(ids, cleanup_related=cleanup_related)
+    
+    if result['success']:
+        return jsonify(result), 200
+    else:
+        return jsonify(result), 500
 
 @app.route('/reset_calendar_events', methods=['POST'])
 def reset_calendar_events():

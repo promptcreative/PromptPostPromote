@@ -4,7 +4,7 @@ from app import db
 class Image(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     original_filename = db.Column(db.String(255), nullable=False)
-    stored_filename = db.Column(db.String(255), nullable=False, unique=True)
+    stored_filename = db.Column(db.String(255), nullable=True, unique=True)
     
     collection_id = db.Column(db.Integer, db.ForeignKey('collection.id'), nullable=True)
     
