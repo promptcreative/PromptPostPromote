@@ -19,6 +19,8 @@ class Image(db.Model):
     time = db.Column(db.String(20))
     # Workflow status: Draft (uploaded) → Ready (AI generated/approved) → Scheduled (assigned to calendar slot)
     status = db.Column(db.String(100), default='Draft')
+    # Inventory/availability status: Available (can be scheduled) → Sold (don't schedule) → Hold (reserved)
+    availability_status = db.Column(db.String(20), nullable=False, default='Available')
     labels = db.Column(db.Text)
     post_url = db.Column(db.Text)
     alt_text = db.Column(db.Text)
@@ -77,6 +79,7 @@ class Image(db.Model):
             'date': self.date or '',
             'time': self.time or '',
             'status': self.status or '',
+            'availability_status': self.availability_status or 'Available',
             'labels': self.labels or '',
             'post_url': self.post_url or '',
             'alt_text': self.alt_text or '',

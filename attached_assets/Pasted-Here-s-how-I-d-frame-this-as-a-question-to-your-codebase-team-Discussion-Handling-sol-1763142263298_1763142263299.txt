@@ -1,0 +1,45 @@
+Here's how I'd frame this as a question to your codebase/team:
+
+---
+
+## Discussion: Handling sold artwork in our astrology-optimized social media schedule
+
+**Current Scenario:**
+We're scheduling original artwork posts at specific "lucky" astrological timing slots (AB/Yogi/POF calendars) and exporting this schedule to Publer. 
+
+**The Problem:**
+What happens when artwork sells on Etsy after we've scheduled it in Publer but before it actually posts? We don't want to promote sold items, but we also don't want to waste our premium astrological posting slots.
+
+**Key Considerations:**
+- We're using a CSV export to Publer (no direct API integration yet)
+- We have three tiers of astrological timing (AB, Yogi Point, Part of Fortune)
+- We need to maintain the integrity of these carefully timed posting slots
+- We're batch uploading multiple content types (original art, quotes, macros, videos)
+
+**Potential Solutions to Explore:**
+
+1. **Buffer Inventory System**
+   - Maintain a queue of "ready to post" unsold artwork
+   - When something sells, have a quick-replace workflow
+
+2. **Two-Phase Scheduling**
+   - Only schedule 1-2 weeks out in Publer for original artwork
+   - Keep longer-term slots filled with evergreen content
+
+3. **Post-Sale Content Strategy**
+   - Create a template for "sold but similar available" posts
+   - Convert sold artwork slots to promotion of similar works
+
+4. **Manual Update Process**
+   - Create a checklist for when artwork sells
+   - Include steps to update Publer directly
+
+5. **Content Categorization**
+   - Tag content as "Original/Sellable" vs "Derivative/Evergreen" 
+   - Develop rules for which content types go in which time slots
+
+What other approaches could we consider? What would be the simplest solution to implement in our current system while we work toward fuller automation?
+
+---
+
+This frames the issue as an open question to encourage creative problem-solving, while providing enough context about your specific needs. It acknowledges the current constraints (CSV export, no direct API) while inviting solutions at various levels of complexity.

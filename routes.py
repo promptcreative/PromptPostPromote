@@ -65,6 +65,22 @@ def get_images():
         db.session.rollback()
         return jsonify({'error': 'Failed to fetch images', 'details': str(e)}), 500
 
+@app.route('/api/images', methods=['GET'])
+def get_api_images():
+    try:
+        query = Image.query
+        
+        status_param = request.args.get('status')
+        if status_param:
+            statuses = [s.strip() for s in status_param.split(',')]
+            query = query.filter(Image.status.in_(statuses))
+        
+        images = query.order_by(Image.created_at.desc()).all()
+        return jsonify({'images': [img.to_dict() for img in images]})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'Failed to fetch images', 'details': str(e)}), 500
+
 @app.route('/update/<int:image_id>', methods=['POST'])
 def update_image(image_id):
     data = request.get_json()
@@ -77,7 +93,7 @@ def update_image(image_id):
     valid_fields = [
         'title', 'painting_name', 'materials', 'size', 'artist_note',
         'post_subtype', 'platform', 'date', 'time', 
-        'status', 'labels', 'post_url', 'alt_text', 'cta', 'comments', 
+        'status', 'availability_status', 'labels', 'post_url', 'alt_text', 'cta', 'comments', 
         'cover_image_url', 'etsy_description', 'etsy_listing_title', 
         'etsy_price', 'etsy_quantity', 'etsy_sku', 'instagram_first_comment',
         'pinterest_hashtags', 'links', 'media_source', 'media_urls', 
@@ -90,12 +106,32 @@ def update_image(image_id):
     if field not in valid_fields:
         return jsonify({'error': 'Invalid field'}), 400
     
+    if field == 'availability_status' and value not in ['Available', 'Sold', 'Hold']:
+        return jsonify({'error': 'Invalid availability_status. Must be Available, Sold, or Hold'}), 400
+    
     image = Image.query.get(image_id)
     if not image:
         return jsonify({'error': 'Image not found'}), 404
     
     try:
         setattr(image, field, value)
+        
+        if field == 'availability_status' and value == 'Sold':
+            assignments = EventAssignment.query.filter_by(image_id=image_id).all()
+            event_ids = [a.calendar_event_id for a in assignments]
+            
+            EventAssignment.query.filter_by(image_id=image_id).delete()
+            
+            for event_id in event_ids:
+                event = CalendarEvent.query.get(event_id)
+                if event:
+                    event.is_assigned = False
+                    event.assigned_image_id = None
+                    event.assigned_platform = None
+            
+            image.calendar_event_id = None
+            image.calendar_source = None
+        
         db.session.commit()
         return jsonify({'success': True}), 200
     except Exception as e:
@@ -115,7 +151,7 @@ def batch_update():
     valid_fields = [
         'title', 'painting_name', 'materials', 'size', 'artist_note',
         'post_subtype', 'platform', 'date', 'time', 
-        'status', 'labels', 'post_url', 'alt_text', 'cta', 'comments', 
+        'status', 'availability_status', 'labels', 'post_url', 'alt_text', 'cta', 'comments', 
         'cover_image_url', 'etsy_description', 'etsy_listing_title', 
         'etsy_price', 'etsy_quantity', 'etsy_sku', 'instagram_first_comment',
         'pinterest_hashtags', 'links', 'media_source', 'media_urls', 
@@ -129,12 +165,31 @@ def batch_update():
         if field not in valid_fields:
             return jsonify({'error': f'Invalid field: {field}'}), 400
     
+    if 'availability_status' in updates and updates['availability_status'] not in ['Available', 'Sold', 'Hold']:
+        return jsonify({'error': 'Invalid availability_status. Must be Available, Sold, or Hold'}), 400
+    
     try:
         for image_id in image_ids:
             image = Image.query.get(image_id)
             if image:
                 for field, value in updates.items():
                     setattr(image, field, value)
+                
+                if 'availability_status' in updates and updates['availability_status'] == 'Sold':
+                    assignments = EventAssignment.query.filter_by(image_id=image_id).all()
+                    event_ids = [a.calendar_event_id for a in assignments]
+                    
+                    EventAssignment.query.filter_by(image_id=image_id).delete()
+                    
+                    for event_id in event_ids:
+                        event = CalendarEvent.query.get(event_id)
+                        if event:
+                            event.is_assigned = False
+                            event.assigned_image_id = None
+                            event.assigned_platform = None
+                    
+                    image.calendar_event_id = None
+                    image.calendar_source = None
         
         db.session.commit()
         return jsonify({'success': True, 'updated_count': len(image_ids)}), 200
@@ -342,23 +397,27 @@ def bulk_delete():
 def reset_calendar_events():
     """Reset all calendar events to unassigned state so they can be reused"""
     try:
-        # Reset all calendar events
-        events = CalendarEvent.query.all()
-        reset_count = 0
+        assignment_count = EventAssignment.query.count()
         
+        EventAssignment.query.delete()
+        
+        events = CalendarEvent.query.all()
         for event in events:
-            if event.is_assigned:
-                event.is_assigned = False
-                event.assigned_image_id = None
-                event.assigned_platform = None
-                reset_count += 1
+            event.is_assigned = False
+            event.assigned_image_id = None
+            event.assigned_platform = None
+        
+        images = Image.query.filter(Image.calendar_event_id.isnot(None)).all()
+        for image in images:
+            image.calendar_event_id = None
+            image.calendar_source = None
         
         db.session.commit()
         
         return jsonify({
             'success': True,
-            'reset_count': reset_count,
-            'message': f'Reset {reset_count} calendar events to unassigned state'
+            'reset_count': assignment_count,
+            'message': f'Reset {assignment_count} schedule assignments and cleared all calendar events'
         }), 200
         
     except Exception as e:
