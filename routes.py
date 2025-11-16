@@ -13,9 +13,9 @@ from io import StringIO, BytesIO
 import csv
 import json
 
-# Simple admin credentials
-ADMIN_USERNAME = "admin"
-ADMIN_PASSWORD = "123"
+# Simple admin credentials from environment
+ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "admin")
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "123")
 
 # Login required decorator
 def login_required(f):

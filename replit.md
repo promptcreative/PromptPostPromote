@@ -7,16 +7,16 @@ This project is a Flask-based content planning and scheduling system designed fo
 ## Recent Changes (November 2025)
 
 **Login Protection & PostgreSQL Migration - November 16, 2025:**
-- ✅ **Replit Auth Integration** - Full authentication system with Google/GitHub/Email login
-- ✅ **PostgreSQL Database** - Migrated from SQLite to PostgreSQL for scalability and auth support
-- ✅ **Protected Routes** - Main app requires login before access (`@require_login` decorator)
-- ✅ **Session Management** - Secure user sessions with OAuth tokens and refresh
+- ✅ **Simple Admin Login** - Basic password protection with username/password (admin/123)
+- ✅ **PostgreSQL Database** - Migrated from SQLite to PostgreSQL for production readiness
+- ✅ **Protected Routes** - Main app requires login before access (`@login_required` decorator)
+- ✅ **Session Management** - Flask session-based authentication (no database needed)
 - ✅ **Automatic Data Migration** - SQLite data migrated to PostgreSQL on first run
 - ✅ **Multi-Tenant Roadmap** - Complete implementation plan in `docs/multi-tenant-roadmap.md`
-- Backend: Added User and OAuth models, replit_auth.py auth handler, ProxyFix middleware
+- Backend: Simple credentials in environment variables, session-based auth, no OAuth complexity
 - Database: Switched to PostgreSQL with environment variable configuration
-- Security: SESSION_SECRET for encryption, PKCE flow for OAuth, automatic token refresh
-- **User benefit**: App is now secure and ready to demo to Etsy! Foundation ready for future multi-client agency model 🔒
+- Security: Configurable ADMIN_USERNAME and ADMIN_PASSWORD via environment variables
+- **User benefit**: App is now secured and ready to show Etsy for API approval! Clean, simple access control 🔒
 
 **Auto-Delete Publer Posts When Sold - November 16, 2025:**
 - ✅ **Auto-Delete on Sale** - When collection marked Pending/Shipped, automatically cancels ALL Publer posts for that artwork
