@@ -290,22 +290,111 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            container.innerHTML = '<div class="list-group">' + collections.map(collection => `
-                <div class="list-group-item d-flex justify-content-between align-items-center">
-                    <div>
-                        <strong>${collection.name}</strong>
-                        <small class="text-muted d-block">${collection.image_count || 0} images</small>
+            container.innerHTML = '<div class="accordion" id="collectionsAccordion">' + collections.map((collection, index) => {
+                const fulfillmentBadge = collection.fulfillment_status === 'Pending' ? 
+                    '<span class="badge bg-warning text-dark ms-2">📦 Pending</span>' :
+                    collection.fulfillment_status === 'Shipped' ?
+                    '<span class="badge bg-info ms-2">🚚 Shipped</span>' :
+                    '<span class="badge bg-success ms-2">✅ Available</span>';
+                
+                const etsyBadge = collection.etsy_listing_id ?
+                    `<span class="badge bg-primary ms-2">🏷️ Etsy #${collection.etsy_listing_id}</span>` : '';
+                
+                return `
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse${index}">
+                            <div class="d-flex align-items-center gap-2">
+                                <strong>${collection.name}</strong>
+                                <small class="text-muted">${collection.image_count || 0} images</small>
+                                ${fulfillmentBadge}
+                                ${etsyBadge}
+                            </div>
+                        </button>
+                    </h2>
+                    <div id="collapse${index}" class="accordion-collapse collapse" data-bs-parent="#collectionsAccordion">
+                        <div class="accordion-body">
+                            <form id="editCollectionForm${collection.id}" class="collection-edit-form">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Collection Name</label>
+                                    <input type="text" class="form-control" value="${collection.name}" readonly disabled>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Etsy Listing URL</label>
+                                    <input type="url" class="form-control" id="etsyUrl${collection.id}" 
+                                           value="${collection.etsy_listing_url || ''}" 
+                                           placeholder="https://www.etsy.com/listing/123456789/...">
+                                    <small class="text-muted">Paste your full Etsy listing URL</small>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Fulfillment Status</label>
+                                    <select class="form-select" id="fulfillmentStatus${collection.id}">
+                                        <option value="Available" ${collection.fulfillment_status === 'Available' ? 'selected' : ''}>✅ Available (Can be scheduled)</option>
+                                        <option value="Pending" ${collection.fulfillment_status === 'Pending' ? 'selected' : ''}>📦 Pending (Pack & Ship)</option>
+                                        <option value="Shipped" ${collection.fulfillment_status === 'Shipped' ? 'selected' : ''}>🚚 Shipped (Order fulfilled)</option>
+                                    </select>
+                                    <small class="text-muted">When marked Pending/Shipped, posts will be auto-cancelled</small>
+                                </div>
+                                
+                                <div class="d-flex gap-2">
+                                    <button type="button" class="btn btn-primary" onclick="saveCollectionEtsyFields(${collection.id})">
+                                        <i class="bi bi-save"></i> Save Changes
+                                    </button>
+                                    <button type="button" class="btn btn-danger" onclick="deleteCollection(${collection.id}, '${collection.name}')">
+                                        <i class="bi bi-trash"></i> Delete Collection
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
-                    <button class="btn btn-sm btn-danger" onclick="deleteCollection(${collection.id}, '${collection.name}')">
-                        <i class="bi bi-trash"></i> Delete
-                    </button>
                 </div>
-            `).join('') + '</div>';
+            `}).join('') + '</div>';
         } catch (error) {
             container.innerHTML = '<p class="text-danger">Failed to load collections</p>';
             showMessage('Error loading collections: ' + error.message, 'danger');
         }
     }
+    
+    window.saveCollectionEtsyFields = async function(collectionId) {
+        const etsyUrl = document.getElementById(`etsyUrl${collectionId}`).value.trim();
+        const fulfillmentStatus = document.getElementById(`fulfillmentStatus${collectionId}`).value;
+        
+        // Extract Etsy listing ID from URL
+        let etsyListingId = '';
+        if (etsyUrl) {
+            const match = etsyUrl.match(/\/listing\/(\d+)/);
+            if (match) {
+                etsyListingId = match[1];
+            }
+        }
+        
+        try {
+            const response = await fetch(`/collections/${collectionId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    etsy_listing_id: etsyListingId,
+                    etsy_listing_url: etsyUrl,
+                    fulfillment_status: fulfillmentStatus
+                })
+            });
+            
+            if (response.ok) {
+                showMessage('Collection updated! Etsy tracking enabled.', 'success');
+                await loadCollectionsForManagement();
+                await loadCollections();
+            } else {
+                const error = await response.json();
+                showMessage(error.error || 'Failed to update collection', 'danger');
+            }
+        } catch (error) {
+            showMessage('Error updating collection: ' + error.message, 'danger');
+        }
+    };
     
     window.deleteCollection = async function(id, name) {
         if (!confirm(`Delete collection "${name}"?\n\nImages in this collection will be preserved but will have no collection assigned.`)) {

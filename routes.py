@@ -469,6 +469,8 @@ def update_collection(collection_id):
         return jsonify({'error': 'Invalid request data'}), 400
     
     try:
+        old_fulfillment_status = collection.fulfillment_status
+        
         if 'name' in data:
             collection.name = data['name']
         if 'description' in data:
@@ -478,7 +480,35 @@ def update_collection(collection_id):
         if 'mockup_template_ids' in data:
             collection.mockup_template_ids = json.dumps(data['mockup_template_ids'])
         
+        # Etsy integration fields
+        if 'etsy_listing_id' in data:
+            collection.etsy_listing_id = data['etsy_listing_id']
+        if 'etsy_listing_url' in data:
+            collection.etsy_listing_url = data['etsy_listing_url']
+        if 'fulfillment_status' in data:
+            collection.fulfillment_status = data['fulfillment_status']
+        
         db.session.commit()
+        
+        # Auto-unschedule when marked Pending or Shipped
+        new_fulfillment_status = collection.fulfillment_status
+        if old_fulfillment_status != new_fulfillment_status and new_fulfillment_status in ['Pending', 'Shipped']:
+            # Get all images in this collection
+            collection_images = Image.query.filter_by(collection_id=collection_id).all()
+            image_ids = [img.id for img in collection_images]
+            
+            if image_ids:
+                # Delete all EventAssignments for these images
+                deleted_count = EventAssignment.query.filter(EventAssignment.image_id.in_(image_ids)).delete(synchronize_session=False)
+                db.session.commit()
+                
+                if deleted_count > 0:
+                    return jsonify({
+                        **collection.to_dict(),
+                        'unscheduled_count': deleted_count,
+                        'message': f'Collection updated. {deleted_count} scheduled post(s) automatically cancelled.'
+                    }), 200
+        
         return jsonify(collection.to_dict()), 200
     except Exception as e:
         db.session.rollback()

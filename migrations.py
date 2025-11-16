@@ -105,6 +105,26 @@ def migrate_schema():
                 db.session.commit()
                 print("artist_note column added to Collection successfully!")
             
+            # Add Etsy integration fields to Collection table
+            collection_columns_etsy = [col['name'] for col in inspector.get_columns('collection')]
+            if 'etsy_listing_id' not in collection_columns_etsy:
+                print("Adding etsy_listing_id column to Collection table...")
+                db.session.execute(text('ALTER TABLE collection ADD COLUMN etsy_listing_id VARCHAR(100)'))
+                db.session.commit()
+                print("etsy_listing_id column added to Collection successfully!")
+            
+            if 'etsy_listing_url' not in collection_columns_etsy:
+                print("Adding etsy_listing_url column to Collection table...")
+                db.session.execute(text('ALTER TABLE collection ADD COLUMN etsy_listing_url TEXT'))
+                db.session.commit()
+                print("etsy_listing_url column added to Collection successfully!")
+            
+            if 'fulfillment_status' not in collection_columns_etsy:
+                print("Adding fulfillment_status column to Collection table...")
+                db.session.execute(text("ALTER TABLE collection ADD COLUMN fulfillment_status VARCHAR(20) NOT NULL DEFAULT 'Available'"))
+                db.session.commit()
+                print("fulfillment_status column added to Collection successfully!")
+            
             # Add smart scheduler columns to Image table
             image_columns_fresh = [col['name'] for col in inspector.get_columns('image')]
             if 'calendar_source' not in image_columns_fresh:

@@ -122,6 +122,11 @@ class Collection(db.Model):
     artist_note = db.Column(db.Text)
     thumbnail_image_id = db.Column(db.Integer, nullable=True)
     mockup_template_ids = db.Column(db.Text)
+    
+    etsy_listing_id = db.Column(db.String(100))
+    etsy_listing_url = db.Column(db.Text)
+    fulfillment_status = db.Column(db.String(20), nullable=False, default='Available')
+    
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -157,6 +162,9 @@ class Collection(db.Model):
             'thumbnail_url': thumbnail_url,
             'mockup_template_ids': template_ids,
             'image_count': image_count,
+            'etsy_listing_id': self.etsy_listing_id or '',
+            'etsy_listing_url': self.etsy_listing_url or '',
+            'fulfillment_status': self.fulfillment_status or 'Available',
             'created_at': self.created_at.isoformat() if self.created_at else '',
             'updated_at': self.updated_at.isoformat() if self.updated_at else ''
         }
