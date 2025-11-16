@@ -79,10 +79,13 @@ def upload_file():
             collection = Collection.query.get(int(collection_id))
             if collection:
                 image.painting_name = collection.name
+                image.title = collection.name
         
         if not image.painting_name:
             name_without_ext = os.path.splitext(original_filename)[0]
-            image.painting_name = name_without_ext.replace('_', ' ').replace('-', ' ').title()
+            cleaned_name = name_without_ext.replace('_', ' ').replace('-', ' ').title()
+            image.painting_name = cleaned_name
+            image.title = cleaned_name
         
         db.session.add(image)
         db.session.commit()
@@ -395,14 +398,23 @@ def bulk_delete():
         images = Image.query.filter(Image.id.in_(ids)).all()
         count = len(images)
         
-        # Reset calendar events if assigned
+        # Delete EventAssignment records and reset calendar events
         for image in images:
-            if image.calendar_event_id:
-                event = CalendarEvent.query.get(image.calendar_event_id)
+            assignments = EventAssignment.query.filter_by(image_id=image.id).all()
+            for assignment in assignments:
+                event = CalendarEvent.query.get(assignment.calendar_event_id)
                 if event:
-                    event.is_assigned = False
-                    event.assigned_image_id = None
-                    event.assigned_platform = None
+                    remaining = EventAssignment.query.filter(
+                        EventAssignment.calendar_event_id == assignment.calendar_event_id,
+                        EventAssignment.id != assignment.id
+                    ).first()
+                    
+                    if not remaining:
+                        event.is_assigned = False
+                        event.assigned_image_id = None
+                        event.assigned_platform = None
+                
+                db.session.delete(assignment)
         
         # Delete physical files (skip calendar slot placeholders)
         if app.static_folder:
