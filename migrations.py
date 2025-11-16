@@ -166,6 +166,15 @@ def migrate_schema():
                     db.session.commit()
                     print("assigned_platform column added successfully!")
             
+            # Add Publer integration field to EventAssignment table
+            if 'event_assignment' in inspector.get_table_names():
+                assignment_columns = [col['name'] for col in inspector.get_columns('event_assignment')]
+                if 'publer_post_id' not in assignment_columns:
+                    print("Adding publer_post_id column to EventAssignment table...")
+                    db.session.execute(text('ALTER TABLE event_assignment ADD COLUMN publer_post_id VARCHAR(100)'))
+                    db.session.commit()
+                    print("publer_post_id column added successfully!")
+            
             # Normalize workflow status values (ensure all images have valid status)
             print("Normalizing workflow status values...")
             db.session.execute(text("UPDATE image SET status = 'Draft' WHERE status IS NULL OR status = ''"))

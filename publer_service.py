@@ -242,9 +242,54 @@ class PublerAPI:
             print(f"DEBUG: Response: {response.text[:500]}")
             
             response.raise_for_status()
+            result = response.json()
+            
+            # Get job_id and poll for completion
+            job_id = result.get('job_id')
+            if not job_id:
+                return {
+                    'success': False,
+                    'error': 'No job_id returned from Publer'
+                }
+            
+            # Poll job status (wait up to 10 seconds)
+            import time
+            for attempt in range(10):
+                time.sleep(1)
+                status_response = requests.get(
+                    f'{self.base_url}/job_status/{job_id}',
+                    headers=self._get_headers()
+                )
+                status_response.raise_for_status()
+                status_data = status_response.json()
+                
+                # Check for failures
+                failures = status_data.get('payload', {}).get('failures', {})
+                if failures:
+                    error_messages = []
+                    for key, errors in failures.items():
+                        for error in errors:
+                            error_messages.append(error.get('message', 'Unknown error'))
+                    return {
+                        'success': False,
+                        'error': '; '.join(error_messages)
+                    }
+                
+                # Check for successful posts
+                posts = status_data.get('posts', [])
+                if posts:
+                    post_id = posts[0].get('id')
+                    print(f"DEBUG: Post created with ID: {post_id}")
+                    return {
+                        'success': True,
+                        'post_id': post_id,
+                        'draft': status_data
+                    }
+            
+            # Timeout waiting for job
             return {
-                'success': True,
-                'draft': response.json()
+                'success': False,
+                'error': 'Timeout waiting for post creation'
             }
         except requests.exceptions.RequestException as e:
             error_result = {
@@ -254,4 +299,38 @@ class PublerAPI:
                 'response_text': getattr(e.response, 'text', None) if hasattr(e, 'response') else None
             }
             print(f"DEBUG: Draft creation error: {error_result}")
+            return error_result
+    
+    def delete_post(self, post_id):
+        """
+        Delete a scheduled post from Publer
+        
+        Args:
+            post_id: The Publer post ID to delete
+        
+        Returns:
+            dict with success status
+        """
+        try:
+            response = requests.delete(
+                f'{self.base_url}/posts/{post_id}',
+                headers=self._get_headers()
+            )
+            
+            print(f"DEBUG: Delete post {post_id} - Status: {response.status_code}")
+            
+            response.raise_for_status()
+            return {
+                'success': True,
+                'post_id': post_id
+            }
+        except requests.exceptions.RequestException as e:
+            error_result = {
+                'success': False,
+                'error': str(e),
+                'post_id': post_id,
+                'status_code': getattr(e.response, 'status_code', None),
+                'response_text': getattr(e.response, 'text', None) if hasattr(e, 'response') else None
+            }
+            print(f"DEBUG: Delete post error: {error_result}")
             return error_result

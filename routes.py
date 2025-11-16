@@ -498,15 +498,41 @@ def update_collection(collection_id):
             image_ids = [img.id for img in collection_images]
             
             if image_ids:
-                # Delete all EventAssignments for these images
+                # Get all EventAssignments for these images that have Publer post IDs
+                assignments = EventAssignment.query.filter(EventAssignment.image_id.in_(image_ids)).all()
+                
+                # Delete posts from Publer
+                publer_deleted_count = 0
+                publer_errors = []
+                if assignments:
+                    from publer_service import PublerAPI
+                    publer = PublerAPI()
+                    
+                    for assignment in assignments:
+                        if assignment.publer_post_id:
+                            delete_result = publer.delete_post(assignment.publer_post_id)
+                            if delete_result['success']:
+                                publer_deleted_count += 1
+                                print(f"DEBUG: Deleted Publer post {assignment.publer_post_id}")
+                            else:
+                                publer_errors.append(f"Failed to delete post {assignment.publer_post_id}: {delete_result.get('error')}")
+                
+                # Delete local EventAssignments
                 deleted_count = EventAssignment.query.filter(EventAssignment.image_id.in_(image_ids)).delete(synchronize_session=False)
                 db.session.commit()
                 
                 if deleted_count > 0:
+                    message = f'Collection updated. {deleted_count} scheduled post(s) automatically cancelled.'
+                    if publer_deleted_count > 0:
+                        message += f' {publer_deleted_count} post(s) deleted from Publer.'
+                    if publer_errors:
+                        message += f' Errors: {"; ".join(publer_errors[:3])}'
+                    
                     return jsonify({
                         **collection.to_dict(),
                         'unscheduled_count': deleted_count,
-                        'message': f'Collection updated. {deleted_count} scheduled post(s) automatically cancelled.'
+                        'publer_deleted_count': publer_deleted_count,
+                        'message': message
                     }), 200
         
         return jsonify(collection.to_dict()), 200
@@ -2372,11 +2398,20 @@ def push_days_to_publer():
                     
                     if draft_result['success']:
                         draft_count += 1
+                        
+                        # Save Publer post ID to assignment
+                        post_id = draft_result.get('post_id')
+                        if post_id:
+                            assignment.publer_post_id = post_id
+                            db.session.commit()
+                            print(f"DEBUG: Saved Publer post ID {post_id} to assignment {assignment.id}")
+                        
                         results.append({
                             'success': True,
                             'painting_name': image.painting_name or image.original_filename,
                             'platform': assignment.platform,
-                            'scheduled_time': event.midpoint_time.strftime('%Y-%m-%d %H:%M')
+                            'scheduled_time': event.midpoint_time.strftime('%Y-%m-%d %H:%M'),
+                            'publer_post_id': post_id
                         })
                     else:
                         results.append({

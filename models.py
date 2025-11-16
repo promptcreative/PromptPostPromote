@@ -227,6 +227,7 @@ class EventAssignment(db.Model):
     calendar_event_id = db.Column(db.Integer, db.ForeignKey('calendar_event.id'), nullable=False)
     image_id = db.Column(db.Integer, db.ForeignKey('image.id'), nullable=False)
     platform = db.Column(db.String(50), nullable=False)
+    publer_post_id = db.Column(db.String(100), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     calendar_event = db.relationship('CalendarEvent', backref='assignments', lazy=True)
@@ -238,6 +239,7 @@ class EventAssignment(db.Model):
             'calendar_event_id': self.calendar_event_id,
             'image_id': self.image_id,
             'platform': self.platform,
+            'publer_post_id': self.publer_post_id or '',
             'created_at': self.created_at.isoformat() if self.created_at else ''
         }
 
