@@ -174,7 +174,7 @@ class PublerAPI:
                 'response_text': getattr(e.response, 'text', None) if hasattr(e, 'response') else None
             }
     
-    def create_scheduled_draft(self, account_id, scheduled_time, text='', media_ids=None, network='instagram', is_public=False):
+    def create_scheduled_draft(self, account_id, scheduled_time, text='', media_ids=None, network='instagram', is_public=False, pinterest_board_id=None):
         """
         Create a scheduled draft post using Publer's bulk API
         
@@ -185,6 +185,7 @@ class PublerAPI:
             media_ids: List of media IDs from upload_media
             network: 'instagram' or 'pinterest'
             is_public: True for draft_public, False for draft_private
+            pinterest_board_id: Required for Pinterest posts - the board ID to pin to
         """
         try:
             # Build media array
@@ -205,20 +206,25 @@ class PublerAPI:
             if media_array:
                 network_content['media'] = media_array
             
+            # Build account object
+            account_obj = {
+                'id': account_id,
+                'scheduled_at': scheduled_time
+            }
+            
+            # Add board ID for Pinterest
+            if network == 'pinterest' and pinterest_board_id:
+                account_obj['album_id'] = pinterest_board_id
+            
             payload = {
                 'bulk': {
-                    'state': 'draft',
+                    'state': 'scheduled',
                     'posts': [
                         {
                             'networks': {
-                                'default': network_content
+                                network: network_content
                             },
-                            'accounts': [
-                                {
-                                    'id': account_id,
-                                    'scheduled_at': scheduled_time
-                                }
-                            ]
+                            'accounts': [account_obj]
                         }
                     ]
                 }

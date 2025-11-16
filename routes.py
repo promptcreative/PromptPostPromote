@@ -2282,6 +2282,22 @@ def push_days_to_publer():
         # Account IDs from the test results
         INSTAGRAM_ACCOUNT_ID = '690d1b4ebe32d2156db74a85'
         PINTEREST_ACCOUNT_ID = '690d29b4f0c7ea9a5833a3bb'
+        PINTEREST_BOARD_ID = None
+        
+        # Get Pinterest board ID for "Original Art" board
+        accounts_result = publer.get_accounts()
+        if accounts_result['success']:
+            pinterest_account = next((acc for acc in accounts_result['accounts'] if acc.get('provider') == 'pinterest'), None)
+            if pinterest_account and 'albums' in pinterest_account:
+                boards = pinterest_account.get('albums', [])
+                original_art_board = next((b for b in boards if 'original' in b['name'].lower() and 'art' in b['name'].lower()), None)
+                if original_art_board:
+                    PINTEREST_BOARD_ID = original_art_board['id']
+                    print(f"DEBUG: Found Pinterest board '{original_art_board['name']}' with ID: {PINTEREST_BOARD_ID}")
+                else:
+                    # Use first board as fallback
+                    PINTEREST_BOARD_ID = boards[0]['id'] if boards else None
+                    print(f"DEBUG: Using fallback Pinterest board: {boards[0]['name'] if boards else 'None'}")
         
         # Get all assignments for the selected dates
         for date_str in selected_dates:
@@ -2350,7 +2366,8 @@ def push_days_to_publer():
                         text=text,
                         media_ids=[media_id] if media_id else None,
                         network=assignment.platform,
-                        is_public=True
+                        is_public=True,
+                        pinterest_board_id=PINTEREST_BOARD_ID if assignment.platform == 'pinterest' else None
                     )
                     
                     if draft_result['success']:
