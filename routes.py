@@ -1,6 +1,7 @@
 import os
-from flask import render_template, request, jsonify, send_file, session
+from flask import render_template, request, jsonify, send_file, session, redirect, url_for
 from werkzeug.utils import secure_filename
+from functools import wraps
 from app import app, db
 from models import Image, Calendar, CalendarEvent, Collection, GeneratedAsset, EventAssignment, Settings
 from utils import allowed_file, generate_unique_filename, parse_ics_content
@@ -8,22 +9,45 @@ from gpt_service import gpt_service
 from dynamic_mockups_service import DynamicMockupsService
 from fal_service import FalService
 from publer_service import PublerAPI
-from replit_auth import require_login, make_replit_blueprint
-from flask_login import current_user
 from io import StringIO, BytesIO
 import csv
 import json
 
-# Register auth blueprint
-app.register_blueprint(make_replit_blueprint(), url_prefix="/auth")
+# Simple admin credentials
+ADMIN_USERNAME = "admin"
+ADMIN_PASSWORD = "123"
 
-# Make session permanent
-@app.before_request
-def make_session_permanent():
-    session.permanent = True
+# Login required decorator
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get('logged_in'):
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        
+        if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
+            session['logged_in'] = True
+            session.permanent = True
+            return redirect(url_for('index'))
+        else:
+            return render_template('login.html', error='Invalid credentials')
+    
+    return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    session.pop('logged_in', None)
+    return redirect(url_for('login'))
 
 @app.route('/')
-@require_login
+@login_required
 def index():
     return render_template('index.html')
 
