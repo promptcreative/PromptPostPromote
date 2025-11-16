@@ -6,6 +6,18 @@ This project is a Flask-based content planning and scheduling system designed fo
 
 ## Recent Changes (November 2025)
 
+**Auto-Delete Publer Posts When Sold - November 16, 2025:**
+- ✅ **Auto-Delete on Sale** - When collection marked Pending/Shipped, automatically cancels ALL Publer posts for that artwork
+- ✅ **Post ID Tracking** - EventAssignment now stores `publer_post_id` to track scheduled posts
+- ✅ **Publer API Integration** - Direct API calls to create AND delete posts (no CSV needed!)
+- ✅ **Pinterest Posts Fixed** - Corrected network key bug (was 'default', now platform-specific)
+- ✅ **Pinterest Board Support** - Auto-fetches "Original Art" board for Pinterest pins
+- ✅ **Job Polling** - Waits for post creation confirmation and extracts post IDs
+- Backend: Added `publer_post_id` column to EventAssignment, `delete_post()` method in PublerAPI
+- Database migration: `publer_post_id VARCHAR(100)` column added via migrations.py
+- Collection update endpoint: Loops through assignments, deletes Publer posts, then removes local schedule
+- **User benefit**: Never promote sold artwork! Mark as sold → system auto-cancels all scheduled posts 🎯
+
 **Brand Settings & Content Control - November 14, 2025:**
 - ✅ **Settings Tab Added** - New gear icon tab for configuring brand preferences
 - ✅ **Company Name Integration** - "Prompt Creative" automatically mentioned in AI-generated content
