@@ -226,7 +226,8 @@ def migrate_schema():
         
         print(f"Backing up {len(old_data)} records...")
         
-        db.session.execute(text('DROP TABLE IF EXISTS image'))
+        # Use CASCADE for PostgreSQL to handle foreign key constraints
+        db.session.execute(text('DROP TABLE IF EXISTS image CASCADE'))
         db.session.commit()
         
         print("Creating new schema...")
@@ -237,10 +238,10 @@ def migrate_schema():
             insert_sql = text("""
                 INSERT INTO image (
                     original_filename, stored_filename, painting_name, title,
-                    text, seo_tags, reminder, status, media, created_at
+                    text, seo_tags, reminder, status, media, created_at, availability_status
                 ) VALUES (
                     :original_filename, :stored_filename, :painting_name, :title,
-                    :text, :seo_tags, :reminder, :status, :media, :created_at
+                    :text, :seo_tags, :reminder, :status, :media, :created_at, :availability_status
                 )
             """)
             
@@ -254,7 +255,8 @@ def migrate_schema():
                 'reminder': data.get('key_points', ''),
                 'status': 'Draft',
                 'media': data.get('stored_filename', ''),
-                'created_at': data.get('created_at')
+                'created_at': data.get('created_at'),
+                'availability_status': 'Available'
             })
         
         db.session.commit()
