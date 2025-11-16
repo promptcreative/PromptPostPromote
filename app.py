@@ -2,6 +2,10 @@ import os
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
+from werkzeug.middleware.proxy_fix import ProxyFix
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
 
 class Base(DeclarativeBase):
     pass
@@ -10,12 +14,18 @@ db = SQLAlchemy(model_class=Base)
 app = Flask(__name__)
 
 # Configuration
-app.secret_key = os.environ.get("FLASK_SECRET_KEY") or "dev_key_123"
+app.secret_key = os.environ.get("SESSION_SECRET") or os.environ.get("FLASK_SECRET_KEY") or "dev_key_123"
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
-# Force SQLite usage by ignoring DATABASE_URL
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///artwork_manager.db"
-app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {}
-print("Forcing SQLite database usage")
+# Database configuration - Use PostgreSQL
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+    'pool_pre_ping': True,
+    "pool_recycle": 300,
+}
+print(f"Using database: {app.config['SQLALCHEMY_DATABASE_URI']}")
+
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 app.config['UPLOAD_FOLDER'] = os.path.join(app.static_folder, 'uploads')
 
@@ -36,9 +46,6 @@ def init_db():
         with app.app_context():
             db.create_all()
             print("Database tables created successfully")
-            print(f"Using database: {app.config['SQLALCHEMY_DATABASE_URI']}")
     except Exception as e:
         print(f"Error creating database tables: {e}")
         raise
-
-# Don't initialize database at module level

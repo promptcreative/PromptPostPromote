@@ -1,5 +1,5 @@
 import os
-from flask import render_template, request, jsonify, send_file
+from flask import render_template, request, jsonify, send_file, session
 from werkzeug.utils import secure_filename
 from app import app, db
 from models import Image, Calendar, CalendarEvent, Collection, GeneratedAsset, EventAssignment, Settings
@@ -8,11 +8,22 @@ from gpt_service import gpt_service
 from dynamic_mockups_service import DynamicMockupsService
 from fal_service import FalService
 from publer_service import PublerAPI
+from replit_auth import require_login, make_replit_blueprint
+from flask_login import current_user
 from io import StringIO, BytesIO
 import csv
 import json
 
+# Register auth blueprint
+app.register_blueprint(make_replit_blueprint(), url_prefix="/auth")
+
+# Make session permanent
+@app.before_request
+def make_session_permanent():
+    session.permanent = True
+
 @app.route('/')
+@require_login
 def index():
     return render_template('index.html')
 
