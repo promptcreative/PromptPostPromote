@@ -35,13 +35,5 @@ deploymentTarget = "vm"
 localPort = 5000
 externalPort = 80
 
-[[ports]]
-localPort = 32879
-externalPort = 3001
-
-[[ports]]
-localPort = 39725
-externalPort = 3000
-
 [agent]
 expertMode = true
