@@ -28,11 +28,16 @@ args = "python main.py"
 waitForPort = 5000
 
 [deployment]
-run = ["sh", "-c", "python main.py"]
+run = ["gunicorn", "--bind=0.0.0.0:5000", "--reuse-port", "app:app"]
+deploymentTarget = "vm"
 
 [[ports]]
 localPort = 5000
 externalPort = 80
+
+[[ports]]
+localPort = 32879
+externalPort = 3001
 
 [[ports]]
 localPort = 39725
