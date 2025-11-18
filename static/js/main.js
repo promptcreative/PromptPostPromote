@@ -747,23 +747,37 @@ document.addEventListener('DOMContentLoaded', function() {
                 btn.disabled = true;
                 btn.innerHTML = '<i class="bi bi-hourglass-split"></i>';
                 
+                // Show progress message
+                showMessage('🎨 Vision AI analyzing artwork... This takes 20-30 seconds.', 'info');
+                
                 try {
+                    // Create AbortController with 60 second timeout
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 60000);
+                    
                     const response = await fetch(`/generate_content/${imageId}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ platform: 'all' })
+                        body: JSON.stringify({ platform: 'all' }),
+                        signal: controller.signal
                     });
                     
+                    clearTimeout(timeoutId);
+                    
                     if (response.ok) {
-                        showMessage('AI content generated! Refresh to see updates.', 'success');
+                        showMessage('✅ AI content generated successfully!', 'success');
                         // Reload the table to show updated content
-                        setTimeout(() => loadImages(), 1000);
+                        setTimeout(() => loadImages(), 500);
                     } else {
                         const data = await response.json();
                         throw new Error(data.error || 'Generation failed');
                     }
                 } catch (error) {
-                    showMessage('AI generation failed: ' + error.message, 'danger');
+                    if (error.name === 'AbortError') {
+                        showMessage('⏱️ Request timed out after 60 seconds. Please try again.', 'warning');
+                    } else {
+                        showMessage('AI generation failed: ' + error.message, 'danger');
+                    }
                 } finally {
                     btn.disabled = false;
                     btn.innerHTML = originalHtml;
@@ -814,16 +828,26 @@ document.addEventListener('DOMContentLoaded', function() {
                     return;
                 }
                 
-                showMessage(`Generating AI content for ${imageIds.length} items...`, 'info');
+                showMessage(`🎨 Generating AI content for ${imageIds.length} items... (20-30s each)`, 'info');
                 
                 let successCount = 0;
-                for (const imageId of imageIds) {
+                for (let i = 0; i < imageIds.length; i++) {
+                    const imageId = imageIds[i];
                     try {
+                        showMessage(`🎨 Processing ${i + 1}/${imageIds.length}... (20-30s per image)`, 'info');
+                        
+                        // Create AbortController with 60 second timeout
+                        const controller = new AbortController();
+                        const timeoutId = setTimeout(() => controller.abort(), 60000);
+                        
                         const response = await fetch(`/generate_content/${imageId}`, {
                             method: 'POST',
                             headers: {'Content-Type': 'application/json'},
-                            body: JSON.stringify({platform: 'all'})
+                            body: JSON.stringify({platform: 'all'}),
+                            signal: controller.signal
                         });
+                        
+                        clearTimeout(timeoutId);
                         
                         if (response.ok) {
                             successCount++;
