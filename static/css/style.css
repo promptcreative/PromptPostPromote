@@ -1,15 +1,15 @@
-/* Custom Color Palette */
+/* Custom Color Palette - Prompt Post Branding */
 :root {
-    --bg-main: #E2E2E2;
+    --bg-main: #f5f7fa;
     --bg-panel: #FFFFFF;
-    --bg-sidebar: #424750;
-    --accent-primary: #899FF5;
-    --accent-secondary: #ABAB9C;
-    --accent-warm: #D8B7AB;
-    --text-dark: #191818;
+    --bg-sidebar: #667eea;
+    --accent-primary: #667eea;
+    --accent-secondary: #764ba2;
+    --accent-warm: #c3cfe2;
+    --text-dark: #2d3748;
     --text-light: #FFFFFF;
-    --text-muted: #6B7280;
-    --border-color: #D1D5DB;
+    --text-muted: #718096;
+    --border-color: #e2e8f0;
 }
 
 body {
