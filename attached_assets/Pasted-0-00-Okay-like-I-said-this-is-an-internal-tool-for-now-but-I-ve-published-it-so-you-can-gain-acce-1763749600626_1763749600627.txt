@@ -1,0 +1,15 @@
+0:00 Okay, like I said, this is an internal tool for now, but I've published it so you can gain access. It's admin123.
+0:08 And then here is the application, uhm, uh, we do it by collection. And the first place you're going to add the Etsy listing is here, so it goes back and creates hashtags and links back to the shop, and so when it creates the content.
+0:25 It will, it will do that, and then the other way, and the most important one right now, is manage the collections.
+0:31 So see, I have, uhm, For each piece of artwork, you'll copy the Etsy listing here, and we want the API to notify because we're going to have a social media content schedule, so it's, uh, it's identified when the painting sells.
+0:52 And then it will, uhm, reschedule the corresponding post. Right now I have it set for Instagram. And Pinterest or anything else that you would use.
+1:03 And so that's where we were looking for that. And, I mean, it would be great to be able to do, eventually add the initial listing.
+1:09 Is just a draft, and then we could go in and tweak it. So the idea is that here, uhm, and after everything is selected, and actually I accidentally.
+1:21 He's twice. I'll just do a little demo here. Uhm, so I've selected those and then we go to edit. We're going to generate this.
+1:32 Takes a minute. And then while it's working on that, so I have these three.
+1:45 Specific calendars, and these are the times that I want to, uh, upload. And I know you don't probably know this, but, uh, just to give you an idea of what we're, what we're, we're doing.
+1:56 And then here you would go to the schedule grid. So say I want here till the end of the year or I'm sorry, end of the month.
+2:13 And then you assign the content. And so again, this is going to sit here until it pushes out to social media.
+2:17 So if a piece of art sells, it will swap it out to say I had something scheduled for Saturday. It sells on Friday.
+2:25 It would, before it would go to the social media schedule, it would, uh, reorganize it and send it out. So that's what we're doing.
+2:33 All right, let me know if you have any questions. Thank you.
