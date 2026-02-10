@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Four Calendar Systems Comparison</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .calendar-card {
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            min-height: 400px;
+        }
+        .calendar-card:hover {
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            transform: translateY(-2px);
+        }
+        .day-tile {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 8px;
+            margin: 2px;
+            min-height: 80px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .day-tile:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        .best { background: linear-gradient(135deg, #28a745, #20c997); color: white; }
+        .good { background: linear-gradient(135deg, #17a2b8, #6610f2); color: white; }
+        .neutral { background: linear-gradient(135deg, #ffc107, #fd7e14); color: black; }
+        .avoid { background: linear-gradient(135deg, #dc3545, #e83e8c); color: white; }
+        .power { background: linear-gradient(135deg, #6f42c1, #e83e8c); color: white; }
+        .supportive { background: linear-gradient(135deg, #00c851, #00ff41); color: white; }
+        .magi_best { background: linear-gradient(135deg, #ffd700, #ffed4e); color: black; }
+        .magi_go { background: linear-gradient(135deg, #28a745, #34ce57); color: white; }
+        .normal { background: linear-gradient(135deg, #6c757d, #adb5bd); color: white; }
+        .magi_slow { background: linear-gradient(135deg, #ffc107, #ffca2c); color: black; }
+        .worst_magi_slow { background: linear-gradient(135deg, #dc3545, #c82333); color: white; }
+        .go { background: linear-gradient(135deg, #28a745, #20c997); color: white; }
+        .slow { background: linear-gradient(135deg, #ffc107, #fd7e14); color: black; }
+        .system-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 8px 8px 0 0;
+            text-align: center;
+            font-weight: bold;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+        .date-input-group {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .btn-generate {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            color: white;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        .btn-generate:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+            color: white;
+        }
+        .legend {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+        .legend-item {
+            display: inline-block;
+            margin: 3px;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+        .day-number {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .day-quality {
+            font-size: 0.7em;
+            opacity: 0.9;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <div class="container-fluid py-4">
+        <div class="row mb-4">
+            <div class="col-12">
+                <h1 class="text-center mb-4">
+                    <i class="fas fa-calendar-alt me-3"></i>
+                    Four Astrology Systems Calendar Comparison
+                </h1>
+                
+                <!-- Input Form -->
+                <div class="date-input-group">
+                    <form id="calendarForm" class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">Birth Date</label>
+                            <input type="date" class="form-control" id="birthDate" value="1973-03-09" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Birth Time</label>
+                            <input type="time" class="form-control" id="birthTime" value="16:56" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Start Date</label>
+                            <input type="date" class="form-control" id="startDate" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">End Date</label>
+                            <input type="date" class="form-control" id="endDate" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Location Name</label>
+                            <input type="text" class="form-control" id="locationName" placeholder="New York, NY" value="Daytona Beach, FL">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Latitude</label>
+                            <input type="number" class="form-control" id="latitude" step="0.0001" value="29.2108" required>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Longitude</label>
+                            <input type="number" class="form-control" id="longitude" step="0.0001" value="-81.0228" required>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Timezone</label>
+                            <input type="number" class="form-control" id="timezone" step="0.5" value="-5" required>
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="submit" class="btn btn-generate w-100">
+                                <i class="fas fa-sync-alt me-2"></i>Generate Calendars
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loadingState" class="loading" style="display: none;">
+            <i class="fas fa-spinner fa-spin fa-3x mb-3"></i>
+            <h4>Calculating Astrological Data...</h4>
+            <p>Please wait while we analyze planetary positions and generate your personalized calendar.</p>
+        </div>
+
+        <!-- Calendar Grid -->
+        <div id="calendarGrid" class="row" style="display: none;">
+            <!-- Electional Calendar -->
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="calendar-card">
+                    <div class="system-header">
+                        <i class="fas fa-star me-2"></i>Electional Calendar
+                        <small class="d-block mt-1">Traditional Vedic Timing</small>
+                    </div>
+                    <div class="p-3">
+                        <div id="electionalDays" class="row g-1"></div>
+                        <div class="legend">
+                            <div class="legend-item best">Best</div>
+                            <div class="legend-item good">Good</div>
+                            <div class="legend-item neutral">Neutral</div>
+                            <div class="legend-item avoid">Avoid</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Personal Transit Calendar -->
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="calendar-card">
+                    <div class="system-header">
+                        <i class="fas fa-user me-2"></i>Personal Transit
+                        <small class="d-block mt-1">Birth Chart Analysis</small>
+                    </div>
+                    <div class="p-3">
+                        <div id="personalDays" class="row g-1"></div>
+                        <div class="legend">
+                            <div class="legend-item power">Power</div>
+                            <div class="legend-item supportive">Supportive</div>
+                            <div class="legend-item neutral">Neutral</div>
+                            <div class="legend-item avoid">Avoid</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vedic Collective Calendar -->
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="calendar-card">
+                    <div class="system-header">
+                        <i class="fas fa-yin-yang me-2"></i>Vedic Collective
+                        <small class="d-block mt-1">GO/STOP/SLOW System</small>
+                    </div>
+                    <div class="p-3">
+                        <div id="vedicDays" class="row g-1"></div>
+                        <div class="legend">
+                            <div class="legend-item go">GO</div>
+                            <div class="legend-item neutral">NEUTRAL</div>
+                            <div class="legend-item slow">SLOW</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Magi Transit Calendar -->
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="calendar-card">
+                    <div class="system-header">
+                        <i class="fas fa-magic me-2"></i>Magi Transit
+                        <small class="d-block mt-1">5-Tier Magi Astrology</small>
+                    </div>
+                    <div class="p-3">
+                        <div id="magiDays" class="row g-1"></div>
+                        <div class="legend">
+                            <div class="legend-item magi_best">Magi Best</div>
+                            <div class="legend-item magi_go">Magi Go</div>
+                            <div class="legend-item normal">Normal</div>
+                            <div class="legend-item magi_slow">Magi Slow</div>
+                            <div class="legend-item worst_magi_slow">Worst</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error Display -->
+        <div id="errorDisplay" class="alert alert-danger" style="display: none;">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <span id="errorMessage"></span>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Set default dates (today to 30 days from now)
+        const today = new Date();
+        const endDate = new Date(today);
+        endDate.setDate(today.getDate() + 30);
+        
+        document.getElementById('startDate').value = today.toISOString().split('T')[0];
+        document.getElementById('endDate').value = endDate.toISOString().split('T')[0];
+
+        document.getElementById('calendarForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                birth_date: document.getElementById('birthDate').value,
+                birth_time: document.getElementById('birthTime').value,
+                birth_latitude: parseFloat(document.getElementById('latitude').value),
+                birth_longitude: parseFloat(document.getElementById('longitude').value),
+                birth_timezone: parseFloat(document.getElementById('timezone').value),
+                start_date: document.getElementById('startDate').value,
+                end_date: document.getElementById('endDate').value,
+                location_latitude: parseFloat(document.getElementById('latitude').value),
+                location_longitude: parseFloat(document.getElementById('longitude').value),
+                location_timezone: parseFloat(document.getElementById('timezone').value),
+                location_name: document.getElementById('locationName').value
+            };
+
+            // Show loading state
+            document.getElementById('loadingState').style.display = 'block';
+            document.getElementById('calendarGrid').style.display = 'none';
+            document.getElementById('errorDisplay').style.display = 'none';
+
+            try {
+                const response = await fetch('/api/combined', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayCalendars(data);
+                } else {
+                    showError('Failed to generate calendars: ' + (data.error || 'Unknown error'));
+                }
+            } catch (error) {
+                showError('Network error: ' + error.message);
+            } finally {
+                document.getElementById('loadingState').style.display = 'none';
+            }
+        });
+
+        function displayCalendars(data) {
+            const days = data.days;
+            
+            // Clear previous results
+            document.getElementById('electionalDays').innerHTML = '';
+            document.getElementById('personalDays').innerHTML = '';
+            document.getElementById('vedicDays').innerHTML = '';
+            document.getElementById('magiDays').innerHTML = '';
+
+            // Process each day
+            Object.keys(days).sort().forEach(dateStr => {
+                const dayData = days[dateStr];
+                const dayNumber = new Date(dateStr).getDate();
+                const dayName = dayData.weekday.substring(0, 3);
+
+                // Electional Calendar Day
+                const electionalQuality = dayData.electional?.evaluation?.quality || 'neutral';
+                const electionalDiv = createDayTile(dayNumber, dayName, electionalQuality, electionalQuality);
+                document.getElementById('electionalDays').appendChild(electionalDiv);
+
+                // Personal Transit Calendar Day  
+                const personalQuality = dayData.personal?.personal_score?.quality || 'neutral';
+                const personalMoonHouse = dayData.personal?.personal_score?.moon_house;
+                const personalDisplayText = personalMoonHouse ? 
+                    `${personalQuality.toUpperCase()} (${personalMoonHouse}H)` : 
+                    personalQuality.toUpperCase();
+                const personalDiv = createDayTile(dayNumber, dayName, personalQuality, personalDisplayText);
+                document.getElementById('personalDays').appendChild(personalDiv);
+
+                // Vedic Collective Calendar Day
+                const vedicQuality = dayData.vedic_collective?.classification?.toLowerCase() || 'neutral';
+                const vedicDiv = createDayTile(dayNumber, dayName, vedicQuality, vedicQuality);
+                document.getElementById('vedicDays').appendChild(vedicDiv);
+
+                // Magi Transit Calendar Day
+                const magiQuality = dayData.magi_transit?.quality || 'normal';
+                const magiClassification = dayData.magi_transit?.classification || 'Normal';
+                const magiDiv = createDayTile(dayNumber, dayName, magiQuality, magiClassification);
+                document.getElementById('magiDays').appendChild(magiDiv);
+            });
+
+            document.getElementById('calendarGrid').style.display = 'block';
+        }
+
+        function createDayTile(dayNumber, dayName, cssClass, displayText) {
+            const div = document.createElement('div');
+            div.className = `col-6 col-sm-4 col-md-3`;
+            
+            div.innerHTML = `
+                <div class="day-tile ${cssClass}" title="${displayText}">
+                    <div class="day-number">${dayNumber}</div>
+                    <div class="day-quality">${dayName}</div>
+                </div>
+            `;
+            
+            return div;
+        }
+
+        function showError(message) {
+            document.getElementById('errorMessage').textContent = message;
+            document.getElementById('errorDisplay').style.display = 'block';
+            document.getElementById('calendarGrid').style.display = 'none';
+        }
+
+        // Auto-generate on page load with default values
+        window.addEventListener('load', function() {
+            document.getElementById('calendarForm').dispatchEvent(new Event('submit'));
+        });
+    </script>
+</body>
+</html>

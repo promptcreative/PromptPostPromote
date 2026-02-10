@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete Your Profile - Astrobatching</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { 
+            background: #06b6d4;
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .profile-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            padding: 2rem;
+            max-width: 600px;
+            margin: 2rem auto;
+        }
+        .form-group { margin-bottom: 1.5rem; }
+        .btn-primary {
+            background: #d97706;
+            border: none;
+            padding: 12px 30px;
+            font-weight: 600;
+        }
+        .location-search {
+            position: relative;
+        }
+        .location-suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ddd;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+        .location-suggestion {
+            padding: 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+        }
+        .location-suggestion:hover {
+            background: #f8f9fa;
+        }
+        
+        /* Calendar Range Selection Styles */
+        .btn-check:checked + .btn {
+            background: #06b6d4 !important;
+            border-color: #06b6d4 !important;
+            color: white !important;
+        }
+        .btn-check:checked + .btn small {
+            color: rgba(255,255,255,0.8) !important;
+        }
+        .btn-outline-primary:hover {
+            background: #f0f9ff;
+            border-color: #06b6d4;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="profile-container">
+            <div class="text-center mb-4">
+                <h2><i class="fas fa-user-circle text-primary"></i> Complete Your Profile</h2>
+                <p class="text-muted">Set up your birth details and location for personalized astrological calculations</p>
+            </div>
+
+            <form id="profileForm">
+                <div class="form-group">
+                    <label><i class="fas fa-envelope"></i> Your Email *</label>
+                    <input type="email" class="form-control" id="userEmail" placeholder="your.email@example.com" required>
+                    <small class="text-muted">Used to save and retrieve your profile</small>
+                </div>
+
+                <hr class="my-4">
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label><i class="fas fa-calendar-day"></i> Birth Date *</label>
+                            <input type="date" class="form-control" id="birthDate" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label><i class="fas fa-clock"></i> Birth Time *</label>
+                            <input type="time" class="form-control" id="birthTime" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-map-marker-alt"></i> Birth Location *</label>
+                    <div class="location-search">
+                        <input type="text" class="form-control" id="birthLocation" placeholder="Enter city, state/country" required>
+                        <div class="location-suggestions" id="birthLocationSuggestions"></div>
+                    </div>
+                    <small class="text-muted">This is used for your personal birth chart calculations</small>
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-home"></i> Current Location *</label>
+                    <div class="location-search">
+                        <input type="text" class="form-control" id="currentLocation" placeholder="Enter your current city" required>
+                        <div class="location-suggestions" id="currentLocationSuggestions"></div>
+                    </div>
+                    <small class="text-muted">This is used for transit calculations and collective calendars</small>
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-globe"></i> Timezone</label>
+                    <select class="form-control" id="timezone">
+                        <option value="America/New_York">Eastern Time</option>
+                        <option value="America/Chicago">Central Time</option>
+                        <option value="America/Denver">Mountain Time</option>
+                        <option value="America/Los_Angeles">Pacific Time</option>
+                        <option value="Asia/Kolkata">India Standard Time</option>
+                        <option value="Europe/London">GMT/London Time</option>
+                        <option value="UTC">UTC</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-calendar-alt"></i> Calendar Range Preference *</label>
+                    <div class="btn-group w-100" role="group" style="display: flex; gap: 10px; margin-top: 8px;">
+                        <input type="radio" class="btn-check" name="calendarRange" id="range30" value="30" style="display: none;">
+                        <label class="btn btn-outline-primary" for="range30" style="flex: 1; padding: 12px; text-align: center; border: 2px solid #dee2e6; border-radius: 8px; cursor: pointer; transition: all 0.3s;">
+                            <div style="font-weight: bold; color: #06b6d4;">30 Days</div>
+                            <small style="color: #666;">Short-term tactical</small>
+                        </label>
+
+                        <input type="radio" class="btn-check" name="calendarRange" id="range60" value="60" checked style="display: none;">
+                        <label class="btn btn-outline-primary" for="range60" style="flex: 1; padding: 12px; text-align: center; border: 2px solid #dee2e6; border-radius: 8px; cursor: pointer; transition: all 0.3s;">
+                            <div style="font-weight: bold; color: #06b6d4;">60 Days</div>
+                            <small style="color: #666;">Balanced planning</small>
+                        </label>
+
+                        <input type="radio" class="btn-check" name="calendarRange" id="range90" value="90" style="display: none;">
+                        <label class="btn btn-outline-primary" for="range90" style="flex: 1; padding: 12px; text-align: center; border: 2px solid #dee2e6; border-radius: 8px; cursor: pointer; transition: all 0.3s;">
+                            <div style="font-weight: bold; color: #06b6d4;">90 Days</div>
+                            <small style="color: #666;">Strategic long-term</small>
+                        </label>
+                    </div>
+                    <small class="text-muted">Choose how many days your calendars should cover. This affects all generated calendars and ICS exports.</small>
+                </div>
+
+                <div class="text-center">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="fas fa-save"></i> Save Profile & Continue
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let birthLocationData = {};
+        let currentLocationData = {};
+        
+        // Load existing profile data when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            loadExistingProfile();
+        });
+        
+        async function loadExistingProfile() {
+            try {
+                const response = await fetch('/profile/get');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.status === 'success' && data.profile) {
+                        const profile = data.profile;
+                        
+                        // Fill in the form with existing data
+                        if (profile.birth_date) {
+                            document.getElementById('birthDate').value = profile.birth_date;
+                        }
+                        if (profile.birth_time) {
+                            document.getElementById('birthTime').value = profile.birth_time;
+                        }
+                        if (profile.birth_location && profile.birth_location.name) {
+                            document.getElementById('birthLocation').value = profile.birth_location.name;
+                            birthLocationData = profile.birth_location;
+                        }
+                        if (profile.current_location && profile.current_location.name) {
+                            document.getElementById('currentLocation').value = profile.current_location.name;
+                            currentLocationData = profile.current_location;
+                        }
+                        if (profile.timezone) {
+                            document.getElementById('timezone').value = profile.timezone;
+                        }
+                        if (profile.calendar_range_days) {
+                            const rangeInput = document.getElementById('range' + profile.calendar_range_days);
+                            if (rangeInput) {
+                                rangeInput.checked = true;
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                console.log('No existing profile found, starting fresh');
+            }
+        }
+        
+        // Location search functionality
+        function setupLocationSearch(inputId, suggestionsId, dataObject) {
+            const input = document.getElementById(inputId);
+            const suggestions = document.getElementById(suggestionsId);
+            let searchTimeout;
+            
+            input.addEventListener('input', function() {
+                const query = this.value.trim();
+                
+                clearTimeout(searchTimeout);
+                
+                if (query.length < 3) {
+                    suggestions.style.display = 'none';
+                    return;
+                }
+                
+                searchTimeout = setTimeout(async () => {
+                    try {
+                        const response = await fetch(`/api/geocode?q=${encodeURIComponent(query)}`);
+                        const locations = await response.json();
+                        
+                        if (locations && locations.length > 0) {
+                            suggestions.innerHTML = '';
+                            locations.slice(0, 5).forEach(location => {
+                                const div = document.createElement('div');
+                                div.className = 'location-suggestion';
+                                div.textContent = location.display_name || location.name;
+                                div.onclick = function() {
+                                    input.value = location.display_name || location.name;
+                                    // Ensure both coordinate formats are available
+                                    dataObject.latitude = location.lat;
+                                    dataObject.longitude = location.lon;
+                                    dataObject.lat = location.lat;
+                                    dataObject.lon = location.lon;
+                                    dataObject.name = location.display_name || location.name;
+                                    suggestions.style.display = 'none';
+                                };
+                                suggestions.appendChild(div);
+                            });
+                            suggestions.style.display = 'block';
+                        } else {
+                            suggestions.style.display = 'none';
+                        }
+                    } catch (error) {
+                        console.error('Location search error:', error);
+                        suggestions.style.display = 'none';
+                    }
+                }, 300);
+            });
+            
+            // Hide suggestions when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!input.contains(e.target) && !suggestions.contains(e.target)) {
+                    suggestions.style.display = 'none';
+                }
+            });
+        }
+        
+        // Initialize location search for both fields
+        setupLocationSearch('birthLocation', 'birthLocationSuggestions', birthLocationData);
+        setupLocationSearch('currentLocation', 'currentLocationSuggestions', currentLocationData);
+
+        // Form submission
+        document.getElementById('profileForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            // Get selected calendar range
+            const calendarRange = document.querySelector('input[name="calendarRange"]:checked');
+            
+            const profileData = {
+                email: document.getElementById('userEmail').value,
+                birth_date: document.getElementById('birthDate').value,
+                birth_time: document.getElementById('birthTime').value,
+                birth_location: {
+                    name: document.getElementById('birthLocation').value,
+                    latitude: birthLocationData.latitude || birthLocationData.lat || 0,
+                    longitude: birthLocationData.longitude || birthLocationData.lon || 0
+                },
+                current_location: {
+                    name: document.getElementById('currentLocation').value,
+                    latitude: currentLocationData.latitude || currentLocationData.lat || 0,
+                    longitude: currentLocationData.longitude || currentLocationData.lon || 0
+                },
+                timezone: document.getElementById('timezone').value,
+                calendar_range_days: calendarRange ? parseInt(calendarRange.value) : 60
+            };
+
+            try {
+                const response = await fetch('/api/user-profile', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(profileData)
+                });
+
+                if (response.ok) {
+                    // After successful save, redirect to account dashboard
+                    window.location.href = '/account-dashboard';
+                } else {
+                    alert('Error saving profile. Please try again.');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error saving profile. Please try again.');
+            }
+        });
+
+        // Auto-detect timezone
+        const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        const timezoneSelect = document.getElementById('timezone');
+        for (let option of timezoneSelect.options) {
+            if (option.value === userTimezone) {
+                option.selected = true;
+                break;
+            }
+        }
+    </script>
+</body>
+</html>

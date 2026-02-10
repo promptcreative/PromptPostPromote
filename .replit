@@ -2,6 +2,7 @@ modules = ["python-3.11"]
 
 [nix]
 channel = "stable-24_05"
+packages = ["glibcLocales"]
 
 [workflows]
 runButton = "Project"
@@ -21,10 +22,11 @@ author = "agent"
 
 [workflows.workflow.metadata]
 agentRequireRestartOnSave = false
+outputType = "webview"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python main.py"
+args = "cd rebuild && python app.py"
 waitForPort = 5000
 
 [deployment]
@@ -38,3 +40,8 @@ externalPort = 80
 
 [agent]
 expertMode = true
+
+[userenv]
+
+[userenv.shared]
+SECRET_KEY = "59bbe3b08473e2b8c94a4d6686613ceedd16974724b5e252ce449519456b16a4"

@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Precision Timing Analysis</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #667eea;
+        }
+        
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: #7f8c8d;
+            font-size: 1.1rem;
+        }
+        
+        .selected-dates {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 30px;
+            justify-content: center;
+        }
+        
+        .date-chip {
+            background: #3498db;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+        
+        .timing-windows {
+            display: grid;
+            gap: 25px;
+        }
+        
+        .day-section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            border-left: 5px solid #e74c3c;
+        }
+        
+        .day-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #ecf0f1;
+        }
+        
+        .day-title {
+            font-size: 1.5rem;
+            color: #2c3e50;
+            font-weight: bold;
+        }
+        
+        .day-summary {
+            background: #3498db;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+        
+        .power-windows {
+            display: grid;
+            gap: 15px;
+        }
+        
+        .power-window {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            border-left: 4px solid;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .power-window.ultra { border-color: #8e44ad; background: linear-gradient(135deg, #f8f3ff, #ffffff); }
+        .power-window.super { border-color: #e74c3c; background: linear-gradient(135deg, #fff3f3, #ffffff); }
+        .power-window.enhanced { border-color: #f39c12; background: linear-gradient(135deg, #fff8f0, #ffffff); }
+        .power-window.good { border-color: #27ae60; background: linear-gradient(135deg, #f0fff4, #ffffff); }
+        
+        .window-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .window-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .power-level {
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            color: white;
+        }
+        
+        .power-level.ultra { background: #8e44ad; }
+        .power-level.super { background: #e74c3c; }
+        .power-level.enhanced { background: #f39c12; }
+        .power-level.good { background: #27ae60; }
+        
+        .time-range {
+            font-size: 1.1rem;
+            color: #2c3e50;
+            margin-bottom: 12px;
+            font-weight: bold;
+        }
+        
+        .alignments {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .alignment {
+            background: rgba(52, 152, 219, 0.1);
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            border-left: 3px solid #3498db;
+        }
+        
+        .alignment-type {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 4px;
+        }
+        
+        .alignment-details {
+            color: #7f8c8d;
+            font-size: 0.8rem;
+        }
+        
+        .no-data {
+            text-align: center;
+            padding: 50px;
+            color: #7f8c8d;
+            font-size: 1.1rem;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #3498db;
+            font-size: 1.2rem;
+        }
+        
+        .back-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .back-button:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <a href="/calendar-view" class="back-button">← Back to Calendar</a>
+    
+    <div class="container">
+        <div class="header">
+            <h1>🎯 Precision Timing Analysis</h1>
+            <p>Exact moments when multiple astrological systems align for optimal action</p>
+        </div>
+        
+        <div id="selected-dates-display" class="selected-dates">
+            <!-- Selected dates will be populated here -->
+        </div>
+        
+        <div id="timing-analysis" class="timing-windows">
+            <div class="loading">
+                ⏳ Analyzing precision timing windows...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Get URL parameters
+        function getURLParameters() {
+            const params = new URLSearchParams(window.location.search);
+            return {
+                selected_dates: params.get('dates') ? params.get('dates').split(',') : [],
+                birth_date: params.get('birth_date'),
+                birth_time: params.get('birth_time'),
+                birth_latitude: params.get('birth_latitude'),
+                birth_longitude: params.get('birth_longitude'),
+                birth_location: params.get('birth_location'),
+                current_latitude: params.get('current_latitude'),
+                current_longitude: params.get('current_longitude'),
+                current_location: params.get('current_location')
+            };
+        }
+
+        // Display selected dates
+        function displaySelectedDates(dates) {
+            const container = document.getElementById('selected-dates-display');
+            if (dates && dates.length > 0) {
+                container.innerHTML = dates.map(date => 
+                    `<div class="date-chip">${new Date(date).toLocaleDateString('en-US', {
+                        weekday: 'short', 
+                        month: 'short', 
+                        day: 'numeric'
+                    })}</div>`
+                ).join('');
+            } else {
+                container.innerHTML = '<div class="date-chip">No dates selected</div>';
+            }
+        }
+
+        // Generate timing analysis display
+        function displayTimingAnalysis(analysisData) {
+            const container = document.getElementById('timing-analysis');
+            
+            if (!analysisData || !analysisData.calendars) {
+                container.innerHTML = '<div class="no-data">No timing analysis data available</div>';
+                return;
+            }
+            
+            const { astrobatching, yogi_point, part_of_fortune } = analysisData.calendars;
+            
+            // Group data by date
+            const dateGroups = {};
+            
+            // Process astrobatching data
+            if (astrobatching && astrobatching.automation_moments) {
+                astrobatching.automation_moments.forEach(moment => {
+                    if (!dateGroups[moment.date]) {
+                        dateGroups[moment.date] = { astro: [], yogi: [], pof: [] };
+                    }
+                    dateGroups[moment.date].astro.push(moment);
+                });
+            }
+            
+            // Process yogi point data
+            if (yogi_point && yogi_point.transits) {
+                yogi_point.transits.forEach(transit => {
+                    const date = transit.date || transit.start_time?.split(' ')[0];
+                    if (date && !dateGroups[date]) {
+                        dateGroups[date] = { astro: [], yogi: [], pof: [] };
+                    }
+                    if (date) dateGroups[date].yogi.push(transit);
+                });
+            }
+            
+            // Process part of fortune data
+            if (part_of_fortune && part_of_fortune.transits) {
+                part_of_fortune.transits.forEach(transit => {
+                    const date = transit.date || transit.start_time?.split(' ')[0];
+                    if (date && !dateGroups[date]) {
+                        dateGroups[date] = { astro: [], yogi: [], pof: [] };
+                    }
+                    if (date) dateGroups[date].pof.push(transit);
+                });
+            }
+            
+            // Generate HTML for each date
+            const dateKeys = Object.keys(dateGroups).sort();
+            
+            if (dateKeys.length === 0) {
+                container.innerHTML = '<div class="no-data">No precision timing windows found for selected dates</div>';
+                return;
+            }
+            
+            container.innerHTML = dateKeys.map(date => {
+                const data = dateGroups[date];
+                const totalEvents = data.astro.length + data.yogi.length + data.pof.length;
+                
+                // Determine power windows based on overlaps
+                const powerWindows = findPowerWindows(data);
+                
+                return `
+                    <div class="day-section">
+                        <div class="day-header">
+                            <div class="day-title">
+                                ${new Date(date).toLocaleDateString('en-US', {
+                                    weekday: 'long',
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric'
+                                })}
+                            </div>
+                            <div class="day-summary">${totalEvents} Timing Events</div>
+                        </div>
+                        
+                        <div class="power-windows">
+                            ${powerWindows.length > 0 ? powerWindows.map(window => `
+                                <div class="power-window ${window.level}">
+                                    <div class="window-header">
+                                        <div class="window-title">${window.title}</div>
+                                        <div class="power-level ${window.level}">${window.power}</div>
+                                    </div>
+                                    <div class="time-range">🕒 ${window.timeRange}</div>
+                                    <div class="alignments">
+                                        ${window.alignments.map(alignment => `
+                                            <div class="alignment">
+                                                <div class="alignment-type">${alignment.type}</div>
+                                                <div class="alignment-details">${alignment.details}</div>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            `).join('') : '<div class="no-data">No overlapping timing windows found</div>'}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Find power windows where multiple systems align
+        function findPowerWindows(data) {
+            const windows = [];
+            
+            // Simple overlap detection - combine events within 1 hour windows
+            const allEvents = [
+                ...data.astro.map(e => ({...e, type: 'Astrobatching', time: new Date(e.start_time || e.time)})),
+                ...data.yogi.map(e => ({...e, type: 'Yogi Point', time: new Date(e.start_time || e.time)})),
+                ...data.pof.map(e => ({...e, type: 'Part of Fortune', time: new Date(e.start_time || e.time)}))
+            ].filter(e => e.time && !isNaN(e.time)).sort((a, b) => a.time - b.time);
+            
+            let i = 0;
+            while (i < allEvents.length) {
+                const windowStart = allEvents[i].time;
+                const windowEnd = new Date(windowStart.getTime() + 60 * 60 * 1000); // 1 hour window
+                
+                const eventsInWindow = [];
+                let j = i;
+                while (j < allEvents.length && allEvents[j].time <= windowEnd) {
+                    eventsInWindow.push(allEvents[j]);
+                    j++;
+                }
+                
+                if (eventsInWindow.length >= 2) {
+                    const types = [...new Set(eventsInWindow.map(e => e.type))];
+                    let level, power, title;
+                    
+                    if (types.length >= 3) {
+                        level = 'ultra';
+                        power = 'ULTRA POWER';
+                        title = 'Triple System Alignment';
+                    } else if (types.length === 2 && eventsInWindow.length >= 3) {
+                        level = 'super';
+                        power = 'SUPER POWER';
+                        title = 'Dual System Convergence';
+                    } else if (types.length === 2) {
+                        level = 'enhanced';
+                        power = 'ENHANCED';
+                        title = 'System Alignment';
+                    } else {
+                        level = 'good';
+                        power = 'FAVORABLE';
+                        title = 'Concentrated Activity';
+                    }
+                    
+                    windows.push({
+                        level,
+                        power,
+                        title,
+                        timeRange: `${windowStart.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})} - ${windowEnd.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}`,
+                        alignments: eventsInWindow.map(event => ({
+                            type: event.type,
+                            details: event.description || event.aspect || event.event_type || 'Timing event'
+                        }))
+                    });
+                }
+                
+                i = Math.max(i + 1, j);
+            }
+            
+            return windows;
+        }
+
+        // Main initialization
+        document.addEventListener('DOMContentLoaded', function() {
+            const params = getURLParameters();
+            
+            displaySelectedDates(params.selected_dates);
+            
+            if (params.selected_dates.length > 0 && params.birth_date && params.birth_time) {
+                // Fetch precision timing analysis
+                fetch('/generate-selected-day-analysis', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(params)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Precision timing data:', data);
+                    displayTimingAnalysis(data);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.getElementById('timing-analysis').innerHTML = 
+                        '<div class="no-data">Error loading precision timing analysis</div>';
+                });
+            } else {
+                document.getElementById('timing-analysis').innerHTML = 
+                    '<div class="no-data">Missing birth data or selected dates for analysis</div>';
+            }
+        });
+    </script>
+</body>
+</html>

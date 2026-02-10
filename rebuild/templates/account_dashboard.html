@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Dashboard - Astrobatching</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f8fafc;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .user-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 3px solid #64748b;
+        }
+        
+        .user-details h2 {
+            color: #1e293b;
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+        }
+        
+        .user-details p {
+            color: #475569;
+            font-size: 0.9rem;
+        }
+        
+        .account-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary { background: #64748b; color: white; }
+        .btn-success { background: #64748b; color: white; }
+        .btn-danger { background: #64748b; color: white; }
+        .btn-secondary { background: #64748b; color: white; }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .main-generate-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+        }
+        
+        .main-generate-btn:disabled {
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+        
+        .dashboard-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+        
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+            border-color: #64748b;
+            box-shadow: 0 10px 30px rgba(100, 116, 139, 0.15);
+        }
+        
+        .card-icon {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+            display: block;
+        }
+        
+        .card-title {
+            font-size: 1.3rem;
+            color: #333;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        
+        .card-description {
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        
+        .card-button {
+            background: #64748b;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            width: 100%;
+            transition: transform 0.3s ease;
+        }
+        
+        .card-button:hover {
+            transform: translateY(-2px);
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-connected { background: #64748b; }
+        .status-disconnected { background: #94a3b8; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="user-info">
+                <img id="user-avatar" class="user-avatar" src="" alt="Profile">
+                <div class="user-details">
+                    <h2 id="user-name">Loading...</h2>
+                    <p id="user-email">Loading...</p>
+                    <p><span class="status-indicator" id="connection-status"></span><span id="connection-text">Checking connection...</span></p>
+                </div>
+            </div>
+            <div class="account-actions">
+                <button class="btn btn-secondary" onclick="viewProfile()">👤 Profile</button>
+                <button class="btn btn-danger" onclick="clearProfile()">🗑️ Clear Data</button>
+                <button class="btn btn-secondary" onclick="logout()">🚪 Logout</button>
+            </div>
+        </div>
+
+        <!-- Profile Setup Notice (shown when profile incomplete) -->
+        <div id="profile-setup-notice" class="main-section" style="text-align: center; margin: 40px 0; display: none;">
+            <div class="setup-card" style="background: #64748b; border-radius: 20px; padding: 40px; color: white; max-width: 600px; margin: 0 auto; box-shadow: 0 15px 35px rgba(0,0,0,0.2);">
+                <span style="font-size: 4rem; display: block; margin-bottom: 20px;">👤</span>
+                <h2 style="font-size: 2rem; margin-bottom: 15px; font-weight: bold;">Complete Your Profile</h2>
+                <p style="font-size: 1.1rem; margin-bottom: 30px; opacity: 0.9; line-height: 1.6;">Please set up your birth information and current location to generate personalized astrological calendars.</p>
+                <button class="setup-btn" onclick="window.location.href='/profile-setup'" style="background: white; color: #64748b; border: none; padding: 18px 40px; border-radius: 12px; font-size: 1.2rem; font-weight: bold; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 5px 15px rgba(0,0,0,0.2);">Set Up Profile</button>
+            </div>
+        </div>
+
+        <!-- Saved Calendars Section (shown when calendars exist) -->
+        <div id="saved-calendars-section" class="main-section" style="margin: 40px 0; display: none;">
+            
+            <!-- TIER 1: Quick Downloads Section (Primary/Simple) -->
+            <div style="margin-bottom: 30px;">
+                <h2 style="text-align: center; color: #1e293b; margin-bottom: 8px; font-size: 1.8rem;">✨ Your Personalized Calendars</h2>
+                <p id="saved-calendar-info" style="text-align: center; color: #64748b; margin-bottom: 25px;">Your calendars are ready to download.</p>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; max-width: 900px; margin: 0 auto;">
+                    <!-- Power Days Download -->
+                    <div style="background: linear-gradient(135deg, #f3e8ff 0%, #fce7f3 100%); border: 2px solid #9333ea; border-radius: 16px; padding: 25px; text-align: center;">
+                        <span style="font-size: 3rem; display: block; margin-bottom: 10px;">⚡</span>
+                        <h3 style="color: #7c3aed; font-size: 1.3rem; margin-bottom: 10px;">Power Days Calendar</h3>
+                        <p style="color: #6b7280; font-size: 0.9rem; margin-bottom: 20px; line-height: 1.5;">Your best days: Double GO alignments, Personal Power Days, and top-tier BirdBatch periods.</p>
+                        <button onclick="downloadPowerDays()" style="background: #9333ea; color: white; border: none; padding: 14px 30px; border-radius: 10px; font-size: 1rem; font-weight: bold; cursor: pointer; width: 100%; transition: all 0.3s ease;">📥 Download Power Days</button>
+                    </div>
+                    
+                    <!-- BirdBatch Download -->
+                    <div style="background: linear-gradient(135deg, #dcfce7 0%, #d1fae5 100%); border: 2px solid #22c55e; border-radius: 16px; padding: 25px; text-align: center;">
+                        <span style="font-size: 3rem; display: block; margin-bottom: 10px;">🐦</span>
+                        <h3 style="color: #16a34a; font-size: 1.3rem; margin-bottom: 10px;">BirdBatch Calendar</h3>
+                        <p style="color: #6b7280; font-size: 0.9rem; margin-bottom: 20px; line-height: 1.5;">30 days of favorable bird periods with precise timing windows for each day.</p>
+                        <button onclick="downloadBirdBatch()" style="background: #22c55e; color: white; border: none; padding: 14px 30px; border-radius: 10px; font-size: 1rem; font-weight: bold; cursor: pointer; width: 100%; transition: all 0.3s ease;">📥 Download BirdBatch</button>
+                    </div>
+                    
+                    <!-- Calendar Feeds -->
+                    <div style="background: linear-gradient(135deg, #fff7ed 0%, #fef3c7 100%); border: 2px solid #f59e0b; border-radius: 16px; padding: 25px; text-align: center;">
+                        <span style="font-size: 3rem; display: block; margin-bottom: 10px;">📅</span>
+                        <h3 style="color: #d97706; font-size: 1.3rem; margin-bottom: 10px;">Calendar Feeds</h3>
+                        <p style="color: #6b7280; font-size: 0.9rem; margin-bottom: 20px; line-height: 1.5;">Subscribe to live ICS feeds for Google Calendar, Apple Calendar, or any app.</p>
+                        <button onclick="window.location.href='/calendar-feeds'" style="background: #f59e0b; color: white; border: none; padding: 14px 30px; border-radius: 10px; font-size: 1rem; font-weight: bold; cursor: pointer; width: 100%; transition: all 0.3s ease;">📱 Get Calendar Feeds</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- TIER 2: Advanced Calendar View (Secondary/Complex) -->
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 25px; max-width: 700px; margin: 30px auto 0; text-align: center;">
+                <div style="display: flex; align-items: center; justify-content: center; gap: 15px; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 200px; text-align: left;">
+                        <h4 style="color: #475569; font-size: 1.1rem; margin-bottom: 5px;">🔬 Advanced: Full Calendar Dashboard</h4>
+                        <p style="color: #94a3b8; font-size: 0.85rem; margin: 0;">Interactive 4-calendar view with detailed microtransit analysis and day-by-day breakdowns.</p>
+                    </div>
+                    <button onclick="window.location.href='/my-calendars'" style="background: #475569; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-size: 0.95rem; font-weight: bold; cursor: pointer; white-space: nowrap;">View Full Dashboard →</button>
+                </div>
+            </div>
+            
+        </div>
+
+        <!-- Main Calendar Generation Section (shown when NO calendars exist but profile complete) -->
+        <div id="calendar-generation-section" class="main-section" style="text-align: center; margin: 40px 0; display: none;">
+            <div class="generate-card" style="background: linear-gradient(135deg, #475569 0%, #334155 100%); border-radius: 20px; padding: 40px; color: white; max-width: 650px; margin: 0 auto; box-shadow: 0 15px 35px rgba(0,0,0,0.2);">
+                <span style="font-size: 4rem; display: block; margin-bottom: 20px;">✨</span>
+                <h2 style="font-size: 2rem; margin-bottom: 15px; font-weight: bold;">Generate Your Personalized Calendars</h2>
+                <p style="font-size: 1.1rem; margin-bottom: 30px; opacity: 0.9; line-height: 1.6;">We'll create your Power Days, BirdBatch periods, and full calendar analysis. This only takes a moment!</p>
+                <button id="generate-all-btn" class="main-generate-btn" onclick="generateCalendarsFirst()" style="background: white; color: #475569; border: none; padding: 18px 40px; border-radius: 12px; font-size: 1.2rem; font-weight: bold; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 5px 15px rgba(0,0,0,0.2);">🚀 Generate My Calendars</button>
+                <p style="font-size: 0.85rem; margin-top: 15px; opacity: 0.7;">One-time generation. Regenerate anytime from Profile settings.</p>
+            </div>
+        </div>
+
+        <!-- Account Settings Section -->
+        <div class="settings-section" style="margin-top: 50px;">
+            <h3 style="color: #64748b; margin-bottom: 20px; text-align: center; font-size: 1rem; text-transform: uppercase; letter-spacing: 1px;">Account Settings</h3>
+            <div class="dashboard-grid" style="grid-template-columns: repeat(3, 1fr); gap: 15px; max-width: 700px; margin: 0 auto; align-items: stretch;">
+                <div class="dashboard-card" style="padding: 20px; display: flex; flex-direction: column;">
+                    <span class="card-icon" style="font-size: 2rem;">👤</span>
+                    <h3 class="card-title" style="font-size: 1.1rem;">Edit Profile</h3>
+                    <p class="card-description" style="font-size: 0.85rem; flex: 1;">Update birth data and location. Calendars will regenerate.</p>
+                    <button class="card-button" onclick="viewProfile()" style="padding: 10px 20px;">Edit Profile</button>
+                </div>
+
+                <div class="dashboard-card" style="padding: 20px; display: flex; flex-direction: column;">
+                    <span class="card-icon" style="font-size: 2rem;">🗑️</span>
+                    <h3 class="card-title" style="font-size: 1.1rem;">Clear Data</h3>
+                    <p class="card-description" style="font-size: 0.85rem; flex: 1;">Remove profile data and start fresh.</p>
+                    <button class="card-button" onclick="clearProfile()" style="background: #94a3b8; padding: 10px 20px;">Clear Data</button>
+                </div>
+
+                <div class="dashboard-card" style="padding: 20px; display: flex; flex-direction: column;">
+                    <span class="card-icon" style="font-size: 2rem;">🚪</span>
+                    <h3 class="card-title" style="font-size: 1.1rem;">Logout</h3>
+                    <p class="card-description" style="font-size: 0.85rem; flex: 1;">Sign out of your session.</p>
+                    <button class="card-button" onclick="logout()" style="background: #6c757d; padding: 10px 20px;">Logout</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Load user info and connection status when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            loadUserInfo();
+        });
+
+        async function loadUserInfo() {
+            try {
+                const response = await fetch('/auth/status');
+                const data = await response.json();
+                
+                if (data.status === 'authenticated' && data.user_info) {
+                    const userInfo = data.user_info;
+                    
+                    // Update user information
+                    document.getElementById('user-name').textContent = userInfo.display_name || 'User';
+                    document.getElementById('user-email').textContent = userInfo.email || '';
+                    
+                    // Set avatar
+                    const avatarImg = document.getElementById('user-avatar');
+                    if (userInfo.photo_url) {
+                        avatarImg.src = userInfo.photo_url;
+                    } else {
+                        // Create initial avatar if no photo
+                        avatarImg.style.display = 'none';
+                        const initialDiv = document.createElement('div');
+                        initialDiv.className = 'user-avatar';
+                        initialDiv.style.background = '#64748b';
+                        initialDiv.style.color = 'white';
+                        initialDiv.style.display = 'flex';
+                        initialDiv.style.alignItems = 'center';
+                        initialDiv.style.justifyContent = 'center';
+                        initialDiv.style.fontSize = '24px';
+                        initialDiv.style.fontWeight = 'bold';
+                        initialDiv.textContent = userInfo.display_name ? userInfo.display_name.charAt(0).toUpperCase() : 'U';
+                        avatarImg.parentNode.replaceChild(initialDiv, avatarImg);
+                    }
+                    
+                    // Update connection status
+                    document.getElementById('connection-status').className = 'status-indicator status-connected';
+                    document.getElementById('connection-text').textContent = `Connected since ${new Date(data.authenticated_at).toLocaleDateString()}`;
+                    
+                    // Check profile completion and show appropriate section
+                    checkProfileCompletion();
+                } else {
+                    // Not authenticated - redirect to landing page
+                    window.location.href = '/';
+                }
+            } catch (error) {
+                console.error('Error loading user info:', error);
+                document.getElementById('connection-status').className = 'status-indicator status-disconnected';
+                document.getElementById('connection-text').textContent = 'Connection error';
+            }
+        }
+
+        // Check profile completion and saved calendars
+        async function checkProfileCompletion() {
+            try {
+                const profileResponse = await fetch('/profile/get');
+                const profileData = await profileResponse.json();
+                
+                if (profileData.profile && profileData.profile.birth_date && profileData.profile.birth_time) {
+                    // Profile complete - check for saved calendars
+                    document.getElementById('profile-setup-notice').style.display = 'none';
+                    
+                    // Check if saved calendars exist
+                    try {
+                        const savedCalResponse = await fetch('/get-saved-calendar');
+                        if (savedCalResponse.ok) {
+                            const savedData = await savedCalResponse.json();
+                            if (savedData.status === 'success' && savedData.data) {
+                                // Saved calendars exist - show saved section
+                                const generatedAt = savedData.data.generated_at ? new Date(savedData.data.generated_at) : null;
+                                const infoText = generatedAt 
+                                    ? `Last generated: ${generatedAt.toLocaleDateString()} at ${generatedAt.toLocaleTimeString()}`
+                                    : 'Your calendars are ready to view.';
+                                document.getElementById('saved-calendar-info').textContent = infoText;
+                                document.getElementById('saved-calendars-section').style.display = 'block';
+                                document.getElementById('calendar-generation-section').style.display = 'none';
+                                return;
+                            }
+                        }
+                    } catch (savedError) {
+                        console.log('No saved calendars found, showing generation option');
+                    }
+                    
+                    // No saved calendars - show generation section
+                    document.getElementById('saved-calendars-section').style.display = 'none';
+                    document.getElementById('calendar-generation-section').style.display = 'block';
+                } else {
+                    // Profile incomplete - show setup notice
+                    document.getElementById('profile-setup-notice').style.display = 'block';
+                    document.getElementById('saved-calendars-section').style.display = 'none';
+                    document.getElementById('calendar-generation-section').style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Error checking profile:', error);
+                // Default to showing setup notice if error
+                document.getElementById('profile-setup-notice').style.display = 'block';
+                document.getElementById('saved-calendars-section').style.display = 'none';
+                document.getElementById('calendar-generation-section').style.display = 'none';
+            }
+        }
+        
+        function regenerateCalendars() {
+            if (confirm('This will generate new calendars based on your current profile. Continue?')) {
+                window.location.href = '/my-calendars?regenerate=true';
+            }
+        }
+
+        function viewProfile() {
+            window.location.href = '/profile-setup';
+        }
+
+        // Account management functions
+        async function clearProfile() {
+            if (confirm('Are you sure you want to clear your profile? This will remove your birth data and location preferences.')) {
+                try {
+                    const response = await fetch('/clear-profile', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'}
+                    });
+                    const data = await response.json();
+                    
+                    if (data.status === 'success') {
+                        alert('Profile cleared successfully! You will be redirected to set up a new profile.');
+                        window.location.href = '/profile-setup';
+                    } else {
+                        alert('Error clearing profile: ' + data.message);
+                    }
+                } catch (error) {
+                    console.error('Clear profile error:', error);
+                    alert('Error clearing profile');
+                }
+            }
+        }
+
+        async function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                try {
+                    const response = await fetch('/auth/logout', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'}
+                    });
+                    const data = await response.json();
+                    alert('Logged out successfully!');
+                    window.location.href = '/';
+                } catch (error) {
+                    console.error('Logout error:', error);
+                    alert('Error during logout');
+                }
+            }
+        }
+        
+        async function downloadPowerDays() {
+            try {
+                const response = await fetch('/download-power-days');
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    alert(errorData.error || 'Error downloading Power Days');
+                    return;
+                }
+                
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'astrobatching-power-days.ics';
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                a.remove();
+                
+            } catch (error) {
+                console.error('Download error:', error);
+                alert('Error downloading Power Days calendar');
+            }
+        }
+        
+        async function downloadBirdBatch() {
+            try {
+                const response = await fetch('/download-birdbatch');
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    alert(errorData.error || 'Error downloading BirdBatch calendar');
+                    return;
+                }
+                
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'astrobatching-birdbatch.ics';
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                a.remove();
+                
+            } catch (error) {
+                console.error('Download error:', error);
+                alert('Error downloading BirdBatch calendar');
+            }
+        }
+        
+        async function generateCalendarsFirst() {
+            const btn = document.getElementById('generate-all-btn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '⏳ Generating...';
+            btn.disabled = true;
+            
+            try {
+                const response = await fetch('/generate-all-calendars', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'}
+                });
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    location.reload();
+                } else {
+                    alert('Error generating calendars: ' + (data.error || 'Unknown error'));
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
+            } catch (error) {
+                console.error('Generation error:', error);
+                alert('Error generating calendars');
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>

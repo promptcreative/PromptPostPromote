@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>30-Day Multi-Calendar View</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"], input[type="date"], input[type="time"], input[type="number"] {
+            width: 200px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .calendar-day {
+            border: 1px solid #ddd;
+            padding: 10px;
+            min-height: 120px;
+            background-color: #fafafa;
+        }
+        .day-header {
+            font-weight: bold;
+            text-align: center;
+            background-color: #e0e0e0;
+            padding: 10px;
+        }
+        .date-number {
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+        .system-result {
+            margin: 2px 0;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-size: 11px;
+        }
+        .electional { background-color: #e3f2fd; }
+        .goslowcollective { background-color: #f3e5f5; }
+        .personal { background-color: #e8f5e8; }
+        .magi { background-color: #fff3e0; }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            font-style: italic;
+        }
+        .error {
+            color: red;
+            padding: 10px;
+            background-color: #ffebee;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .select-checkbox {
+            margin-right: 5px;
+        }
+        .export-section {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>30-Day Multi-Calendar View</h1>
+        <p>Compare all four astrology systems: Electional, Personal Transit, Vedic Collective, and Magi Transit calendars side-by-side</p>
+
+        <form id="calendar-form">
+            <div class="form-group">
+                <label for="birth_date">Birth Date:</label>
+                <input type="date" id="birth_date" name="birth_date" value="1973-03-09" required>
+            </div>
+
+            <div class="form-group">
+                <label for="birth_time">Birth Time (24-hour format):</label>
+                <input type="time" id="birth_time" name="birth_time" value="16:56" required>
+            </div>
+
+            <div class="form-group">
+                <label for="location_name">Location (city, country) OR use coordinates below:</label>
+                <input type="text" id="location_name" name="location_name" placeholder="e.g., New York, NY or London, UK">
+                <small>Leave empty to use coordinates below</small>
+            </div>
+
+            <div class="form-group">
+                <label for="latitude">Latitude:</label>
+                <input type="number" id="latitude" name="latitude" value="29.2108" step="any">
+            </div>
+
+            <div class="form-group">
+                <label for="longitude">Longitude:</label>
+                <input type="number" id="longitude" name="longitude" value="-81.0228" step="any">
+            </div>
+
+            <div class="form-group">
+                <label for="timezone">Timezone Offset (hours from UTC):</label>
+                <input type="number" id="timezone" name="timezone" value="-5" step="any" required>
+            </div>
+
+            <button type="submit">Generate 30-Day Calendar</button>
+        </form>
+
+        <div id="loading" class="loading" style="display: none;">
+            Generating calendars... This may take a moment.
+        </div>
+
+        <div id="error-message" class="error" style="display: none;"></div>
+
+        <div id="calendar-results" style="display: none;">
+            <h2>Your 30-Day Calendar</h2>
+            <div class="calendar-grid">
+                <div class="day-header">Sunday</div>
+                <div class="day-header">Monday</div>
+                <div class="day-header">Tuesday</div>
+                <div class="day-header">Wednesday</div>
+                <div class="day-header">Thursday</div>
+                <div class="day-header">Friday</div>
+                <div class="day-header">Saturday</div>
+            </div>
+
+            <div class="export-section">
+                <h3>Export Selected Dates</h3>
+                <p>Check the boxes next to dates you want to include in your hand-picked calendar:</p>
+                <button onclick="exportSelectedDates()">Export Selected as CSV</button>
+                <button onclick="selectAll()">Select All</button>
+                <button onclick="selectNone()">Select None</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('calendar-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            generateCalendar();
+        });
+
+        function generateCalendar() {
+            const formData = new FormData(document.getElementById('calendar-form'));
+            const data = Object.fromEntries(formData);
+
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('error-message').style.display = 'none';
+            document.getElementById('calendar-results').style.display = 'none';
+
+            // Prepare data for 6-calendar dashboard endpoint
+            const dashboardData = {
+                birth_date: data.birth_date,
+                birth_time: data.birth_time,
+                birth_latitude: parseFloat(data.birth_latitude),
+                birth_longitude: parseFloat(data.birth_longitude),
+                location: `${data.birth_location || 'User Location'}`,
+                latitude: parseFloat(data.birth_latitude),
+                longitude: parseFloat(data.birth_longitude),
+                days: 30
+            };
+
+            fetch('/generate-dashboard-calendar', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(dashboardData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('loading').style.display = 'none';
+                if (data.error) {
+                    showError(data.error);
+                } else {
+                    displayCalendar(data);
+                }
+            })
+            .catch(error => {
+                document.getElementById('loading').style.display = 'none';
+                showError('Failed to generate calendar: ' + error.message);
+            });
+        }
+
+        function showError(message) {
+            document.getElementById('error-message').textContent = message;
+            document.getElementById('error-message').style.display = 'block';
+        }
+
+        function displayCalendar(data) {
+            const calendarGrid = document.querySelector('.calendar-grid');
+            const today = new Date();
+
+            // Clear existing calendar days (keep headers)
+            const headers = calendarGrid.querySelectorAll('.day-header');
+            calendarGrid.innerHTML = '';
+            headers.forEach(header => calendarGrid.appendChild(header));
+
+            // Generate 30 days starting from today
+            for (let i = 0; i < 30; i++) {
+                const date = new Date(today);
+                date.setDate(today.getDate() + i);
+                const dateStr = date.toISOString().split('T')[0];
+
+                const dayElement = document.createElement('div');
+                dayElement.className = 'calendar-day';
+                
+                let dayHTML = `
+                    <div class="date-number">
+                        <input type="checkbox" class="select-checkbox" data-date="${dateStr}">
+                        ${date.getDate()}
+                    </div>
+                `;
+
+                // Electional System
+                if (data.electional && !data.electional.error) {
+                    const electionalResult = data.electional[dateStr];
+                    if (electionalResult && electionalResult.evaluation) {
+                        const quality = electionalResult.evaluation.quality;
+                        const icon = getQualityIcon(quality, 'electional');
+                        dayHTML += `<div class="system-result electional">${icon} Electional: ${quality}</div>`;
+                    } else {
+                        dayHTML += `<div class="system-result electional">📅 Electional: neutral</div>`;
+                    }
+                } else {
+                    dayHTML += `<div class="system-result electional">📅 Electional: ${data.electional?.error || 'Loading...'}</div>`;
+                }
+
+                // Vedic Collective (GoSlow) System
+                if (data.goslowcollective && !data.goslowcollective.error && data.goslowcollective.days) {
+                    const vedicResult = data.goslowcollective.days[dateStr];
+                    if (vedicResult) {
+                        const classification = vedicResult.classification;
+                        const icon = getClassificationIcon(classification);
+                        dayHTML += `<div class="system-result goslowcollective">${icon} Vedic: ${classification}</div>`;
+                    } else {
+                        dayHTML += `<div class="system-result goslowcollective">🔮 Vedic: neutral</div>`;
+                    }
+                } else {
+                    dayHTML += `<div class="system-result goslowcollective">🔮 Vedic: ${data.goslowcollective?.error || 'Loading...'}</div>`;
+                }
+
+                // Personal System
+                if (data.personal && !data.personal.error) {
+                    const personalResult = data.personal[dateStr];
+                    if (personalResult && personalResult.personal_score) {
+                        const quality = personalResult.personal_score.quality;
+                        const moonHouse = personalResult.personal_score.moon_house;
+                        const icon = getQualityIcon(quality, 'personal');
+                        const subjectLine = personalResult.subject_line || quality;
+                        const houseDisplay = moonHouse ? ` (${moonHouse}H)` : '';
+                        dayHTML += `<div class="system-result personal">${icon} Personal: ${quality.toUpperCase()}${houseDisplay}</div>`;
+                    } else {
+                        dayHTML += `<div class="system-result personal">⭐ Personal: neutral</div>`;
+                    }
+                } else {
+                    dayHTML += `<div class="system-result personal">⭐ Personal: ${data.personal?.error || 'Loading...'}</div>`;
+                }
+
+                // Magi Transit System
+                if (data.magi_transit && !data.magi_transit.error && data.magi_transit.daily_results) {
+                    const magiResult = data.magi_transit.daily_results[dateStr];
+                    if (magiResult) {
+                        const icon = getMagiIcon(magiResult);
+                        const iconDisplay = icon ? `${icon} ` : '';
+                        dayHTML += `<div class="system-result magi">${iconDisplay}Magi: ${magiResult}</div>`;
+                    } else {
+                        dayHTML += `<div class="system-result magi">Magi: neutral</div>`;
+                    }
+                } else {
+                    dayHTML += `<div class="system-result magi">Magi: ${data.magi_transit?.error || 'Loading...'}</div>`;
+                }
+
+                dayElement.innerHTML = dayHTML;
+                calendarGrid.appendChild(dayElement);
+            }
+
+            document.getElementById('calendar-results').style.display = 'block';
+        }
+
+        function getQualityIcon(quality, systemType) {
+            const icons = {
+                'electional': {
+                    'best': '⭐',
+                    'good': '🟢', 
+                    'neutral': '⚫',
+                    'avoid': '🔴'
+                },
+                'personal': {
+                    'power': '🟢',        // Green circle for power
+                    'supportive': '🟢',   // Green circle for supportive  
+                    'good': '🔵',         // Blue circle for good
+                    'neutral': '⚪',      // White circle for neutral
+                    'challenging': '🟡',  // Yellow circle for challenging
+                    'aware': '🟠',        // Orange circle for aware (moon 6th/12th)
+                    'yellow': '🟠',       // Orange circle for yellow days
+                    'avoid': '🔴',        // Red circle for avoid
+                    'difficult': '🔴',    // Red circle for difficult
+                    'best': '🟢',         // Green circle for best
+                    'poor': '🔴',         // Red circle for poor
+                    'average': '🟡'       // Yellow circle for average
+                }
+            };
+            return icons[systemType]?.[quality] || '⚫';
+        }
+
+        function getClassificationIcon(classification) {
+            const icons = {
+                'GO': '🟢',         // Green circle for GO
+                'SLOW': '🟡',       // Yellow circle for SLOW  
+                'STOP': '🔴',       // Red circle for STOP
+                'FOCUS': '🔵',      // Blue circle for FOCUS
+                'NEUTRAL': '⚪',    // White circle for NEUTRAL
+                'CAUTION': '🟠'     // Orange circle for CAUTION
+            };
+            return icons[classification] || '⚫';
+        }
+
+        function getMagiIcon(classification) {
+            const icons = {
+                'Superb': '🟢',        // Best - green circle
+                'Great': '🟢',         // Great - green circle  
+                'Good': '🟢',          // Good - green circle
+                'Magi Go': '🟢',       // Magi Go - green circle
+                'Magi Best': '🟢',     // Magi Best - green circle
+                'Slow': '🟠',          // Slow - orange circle
+                'Magi Slow': '🟠',     // Magi Slow - orange circle
+                'Worst Magi Slow': '❌', // Worst Magi Slow - red X
+                'Normal': '',          // Normal - no icon
+                'Neutral': '',         // Neutral - no icon
+                'Difficult': '❌',     // Difficult - red X
+                'Poor': '❌',          // Poor - red X
+                'Worst': '❌'          // Worst - red X
+            };
+            return icons[classification] || '';
+        }
+
+        function exportSelectedDates() {
+            const selected = document.querySelectorAll('.select-checkbox:checked');
+            if (selected.length === 0) {
+                alert('Please select at least one date for targeted analysis.');
+                return;
+            }
+
+            // Get selected dates
+            const selectedDates = Array.from(selected).map(cb => cb.dataset.date);
+            
+            // Get birth data from form
+            const formData = new FormData(document.getElementById('calendar-form'));
+            const data = Object.fromEntries(formData);
+            
+            if (!data.birth_date || !data.birth_time) {
+                alert('Please fill in birth data first.');
+                return;
+            }
+            
+            // Show loading state
+            alert('🌟 Analyzing selected dates with Astrobatching, Yogi Point & Part of Fortune...');
+
+            // Call our targeted analysis endpoint
+            fetch('/generate-selected-day-analysis', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    selected_dates: selectedDates,
+                    birth_date: data.birth_date,
+                    birth_time: data.birth_time,
+                    birth_latitude: parseFloat(data.birth_latitude),
+                    birth_longitude: parseFloat(data.birth_longitude)
+                })
+            })
+            .then(response => response.json())
+            .then(results => {
+                // Display results in a popup
+                alert(`✅ Targeted Analysis Complete!\n\n🎯 Selected ${selectedDates.length} days\n\n⚡ Astrobatching: ${results.calendars?.astrobatching?.automation_moments?.length || 0} automation moments\n🧘 Yogi Point: ${results.calendars?.yogi_point?.total_transits || 0} transits\n🍀 Part of Fortune: ${results.calendars?.part_of_fortune?.total_transits || 0} transits\n\nDetailed results logged to browser console.`);
+                console.log('🎯 Complete Selected Day Analysis Results:', results);
+                
+                // Also create a simple CSV with the summary
+                let csv = 'Date,Astrobatching_Moments,Yogi_Point_Transits,Part_of_Fortune_Transits\n';
+                selectedDates.forEach(date => {
+                    const astroMoments = (results.calendars?.astrobatching?.automation_moments || [])
+                        .filter(m => m.date === date).length;
+                    const yogiTransits = (results.calendars?.yogi_point?.transits || [])
+                        .filter(t => t.datetime?.split('T')[0] === date).length;
+                    const pofTransits = (results.calendars?.part_of_fortune?.transits || [])
+                        .filter(t => t.datetime?.split('T')[0] === date).length;
+                    csv += `${date},${astroMoments},${yogiTransits},${pofTransits}\n`;
+                });
+                
+                const blob = new Blob([csv], { type: 'text/csv' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'selected-days-analysis.csv';
+                a.click();
+                window.URL.revokeObjectURL(url);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('❌ Error analyzing selected days. Please try again.');
+            });
+        }
+
+        function selectAll() {
+            document.querySelectorAll('.select-checkbox').forEach(cb => cb.checked = true);
+        }
+
+        function selectNone() {
+            document.querySelectorAll('.select-checkbox').forEach(cb => cb.checked = false);
+        }
+    </script>
+</body>
+</html>

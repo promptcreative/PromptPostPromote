@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Astrobatching</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f8fafc;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 900px;
+            width: 100%;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        .header {
+            margin-bottom: 40px;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            color: #1e293b;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+        
+        
+        .subtitle {
+            font-size: 1.1rem;
+            color: #475569;
+            line-height: 1.6;
+        }
+        
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            margin: 40px 0;
+        }
+        
+        .service-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            border: 1px solid #e2e8f0;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .service-card:hover {
+            transform: translateY(-5px);
+            border-color: #64748b;
+            box-shadow: 0 10px 30px rgba(100, 116, 139, 0.15);
+        }
+        
+        
+        .service-card h3 {
+            font-size: 1.4rem;
+            color: #1e293b;
+            margin-bottom: 15px;
+        }
+        
+        .service-card p {
+            color: #475569;
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+        
+        .cta-button {
+            background: #64748b;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.1rem;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 30px;
+        }
+        
+        .cta-button:hover {
+            background: #475569;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(100, 116, 139, 0.25);
+        }
+        
+        .feature-list {
+            text-align: left;
+            margin-top: 15px;
+        }
+        
+        .feature-list li {
+            color: #64748b;
+            margin: 8px 0;
+            padding-left: 20px;
+            position: relative;
+        }
+        
+        .feature-list li::before {
+            content: "✓";
+            color: #1e293b;
+            font-weight: bold;
+            position: absolute;
+            left: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Account Access Bar - Shows when logged in -->
+        <div id="account-bar" style="display: none; margin-bottom: 20px; padding: 15px; background: #f1f5f9; border-radius: 10px; border: 1px solid #e2e8f0;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                <div id="user-greeting" style="color: #475569; font-size: 0.95rem;">
+                    Welcome back!
+                </div>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button onclick="window.location.href='/account-dashboard'" style="background: #64748b; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 0.9rem; font-weight: 500;">
+                        My Account
+                    </button>
+                    <button onclick="window.location.href='/calendar-feeds'" style="background: #475569; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 0.9rem; font-weight: 500;">
+                        Calendar Feeds
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="header">
+            <h1>
+                Astrobatching
+            </h1>
+            <p class="subtitle">
+                Optimize Your Schedule, Boost Your Productivity, & Increase Results by aligning with cosmic rhythms.
+            </p>
+        </div>
+        
+        <div class="services-grid">
+            <div class="service-card" onclick="navigateWithAuth('/calendar-form?type=collective')">
+                <h3>Collective Calendar</h3>
+                <p>Universal timing guidance for any location. Perfect for business launches, important decisions, and strategic planning.</p>
+                <ul class="feature-list">
+                    <li>PTI Analysis</li>
+                    <li>GoSlow Timing</li>
+                    <li>Electional Astrology</li>
+                    <li>Combined Intelligence</li>
+                </ul>
+            </div>
+            
+            <div class="service-card" onclick="navigateWithAuth('/calendar-form?type=personal')">
+                <h3>Personal Calendar</h3>
+                <p>Individualized timing optimization based on your birth data. Get personalized auspicious periods for major decisions.</p>
+                <ul class="feature-list">
+                    <li>Birth Chart Analysis</li>
+                    <li>House Transit Timing</li>
+                    <li>Yogi/Avayogi Periods</li>
+                    <li>Personal Favorability</li>
+                </ul>
+            </div>
+            
+            <div class="service-card" onclick="navigateWithAuth('/calendar-form?type=batch')">
+                <h3>30-Day Batch Processing</h3>
+                <p>Complete microtransits analysis with bird filtering and astro detection. Comprehensive timing intelligence.</p>
+                <ul class="feature-list">
+                    <li>Astrobatching Analysis</li>
+                    <li>Yogi Point Transits</li>
+                    <li>Part of Fortune</li>
+                    <li>Automation Moments</li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Login Section for Unauthenticated Users -->
+        <div id="login-section" style="display: none; margin: 30px 0; padding: 30px; background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); border-radius: 15px; border: 1px solid #cbd5e1;">
+            <h3 style="color: #1e293b; margin-bottom: 15px; font-size: 1.3rem;">Login to Get Started</h3>
+            <p style="color: #475569; margin-bottom: 20px; line-height: 1.6;">
+                Enter your email to access personalized calendars and save your preferences.
+            </p>
+            <form id="quick-login-form" style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; align-items: center;">
+                <input type="email" id="quick-email" name="email" placeholder="your@email.com" required 
+                    style="padding: 15px 20px; font-size: 1rem; border: 2px solid #cbd5e1; border-radius: 10px; min-width: 250px; outline: none;">
+                <button type="submit" style="background: #64748b; color: white; border: none; padding: 15px 30px; border-radius: 10px; cursor: pointer; font-size: 1.1rem; font-weight: 500; transition: all 0.3s ease;">
+                    Continue
+                </button>
+            </form>
+            <p style="margin-top: 15px; font-size: 0.85rem; color: #94a3b8;">
+                No password required - Just your email to save your preferences
+            </p>
+        </div>
+
+        <!-- CTA Button - Hidden, replaced by login section for unauthenticated users -->
+        <button id="cta-button" class="cta-button" style="display: none;" onclick="window.location.href='/profile-setup'">
+            Get Started - Complete Your Profile
+        </button>
+        
+        <div style="margin-top: 30px; padding-top: 30px; border-top: 1px solid #eee; color: #888; font-size: 0.9rem;">
+            <p>Powered by Swiss Ephemeris • Authentic Vedic Astrology • Precision Astronomical Calculations</p>
+        </div>
+        
+        <!-- Debug Panel for Google Calendar Connection -->
+        <div id="debug-panel" style="display: none; margin-top: 40px; background: #f8f9fa; border-radius: 15px; padding: 20px; border: 2px dashed #dee2e6;">
+            <h3 style="color: #333; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                🔍 Google Calendar Debug Panel
+                <button id="hide-debug" style="margin-left: auto; background: #64748b; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer;">Hide</button>
+            </h3>
+            <div id="debug-content">
+                <div style="text-align: center; color: #666; padding: 20px;">
+                    Loading debug information...
+                </div>
+            </div>
+        </div>
+        
+        <!-- Debug Toggle Button -->
+        <div style="position: fixed; top: 20px; right: 20px; z-index: 1000;">
+            <button id="debug-toggle" style="background: #64748b; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-size: 14px; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
+                🔧 Debug
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Load Google integration status when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            loadGoogleStatus();
+            updateRedirectURI();
+            setInterval(loadGoogleStatus, 5000); // Refresh every 5 seconds
+        });
+
+        // Update current redirect URI display dynamically
+        async function updateRedirectURI() {
+            try {
+                const response = await fetch('/debug/oauth-comprehensive');
+                const data = await response.json();
+                
+                if (data.redirect_uri_tests && data.redirect_uri_tests.generated_uri) {
+                    const redirectUri = data.redirect_uri_tests.generated_uri;
+                    const displayElement = document.getElementById('redirect-uri-display');
+                    if (displayElement) {
+                        displayElement.textContent = redirectUri;
+                        
+                        // Hide config help if user is authenticated
+                        const authResponse = await fetch('/auth/status');
+                        const authData = await authResponse.json();
+                        
+                        if (authData.status === 'authenticated') {
+                            document.getElementById('oauth-config-help').style.display = 'none';
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Redirect URI update error:', error);
+                const displayElement = document.getElementById('redirect-uri-display');
+                if (displayElement) {
+                    displayElement.textContent = 'Error loading current domain';
+                }
+            }
+        }
+
+        // Google Integration Status Management
+        async function loadGoogleStatus() {
+            try {
+                const response = await fetch('/auth/status');
+                const data = await response.json();
+                updateGoogleStatusUI(data);
+            } catch (error) {
+                console.error('Error loading Google status:', error);
+                showGoogleError();
+            }
+        }
+
+        // Track authentication state globally
+        let isAuthenticated = false;
+
+        function updateGoogleStatusUI(authData) {
+            const statusDiv = document.getElementById('google-status');
+            const accountBar = document.getElementById('account-bar');
+            const userGreeting = document.getElementById('user-greeting');
+            const loginSection = document.getElementById('login-section');
+            const ctaButton = document.getElementById('cta-button');
+            
+            if (authData.status === 'authenticated') {
+                isAuthenticated = true;
+                // Auto-redirect authenticated users to account dashboard
+                console.log('User authenticated, redirecting to account dashboard...');
+                window.location.href = '/account-dashboard';
+                return;
+            } else {
+                isAuthenticated = false;
+                // Hide account bar for unauthenticated users
+                if (accountBar) {
+                    accountBar.style.display = 'none';
+                }
+                // Show login section for unauthenticated users
+                if (loginSection) {
+                    loginSection.style.display = 'block';
+                }
+                // Hide CTA button (replaced by login section)
+                if (ctaButton) {
+                    ctaButton.style.display = 'none';
+                }
+            }
+        }
+
+        // Navigate to a page only if authenticated, otherwise prompt login
+        function navigateWithAuth(targetUrl) {
+            if (isAuthenticated) {
+                window.location.href = targetUrl;
+            } else {
+                // Scroll to login section and highlight it
+                const loginSection = document.getElementById('login-section');
+                if (loginSection) {
+                    loginSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    loginSection.style.animation = 'pulse 0.5s ease-in-out 2';
+                    setTimeout(() => {
+                        loginSection.style.animation = '';
+                    }, 1000);
+                }
+                alert('Please sign in first to access this feature.');
+            }
+        }
+
+        function showGoogleError() {
+            const statusDiv = document.getElementById('google-status');
+            statusDiv.innerHTML = `
+                <div style="text-align: center; color: #475569;">
+                    <div style="font-size: 24px; margin-bottom: 10px;">⚠️</div>
+                    <p>Unable to check Google Calendar connection status.</p>
+                    <button onclick="loadGoogleStatus()" style="background: #64748b; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-top: 10px;">
+                        Try Again
+                    </button>
+                </div>
+            `;
+        }
+
+        // Google Integration Actions
+        // Email login form handler
+        document.addEventListener('DOMContentLoaded', function() {
+            const quickLoginForm = document.getElementById('quick-login-form');
+            if (quickLoginForm) {
+                quickLoginForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    const email = document.getElementById('quick-email').value.trim();
+                    
+                    if (!email || !email.includes('@') || !email.includes('.')) {
+                        alert('Please enter a valid email address');
+                        return;
+                    }
+                    
+                    try {
+                        const response = await fetch('/login', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ email: email })
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (data.status === 'success') {
+                            window.location.href = data.redirect || '/account-dashboard';
+                        } else {
+                            alert(data.message || 'Login failed. Please try again.');
+                        }
+                    } catch (error) {
+                        console.error('Login error:', error);
+                        alert('Error logging in. Please try again.');
+                    }
+                });
+            }
+        });
+
+        async function loginWithGoogle() {
+            // Redirect to email login instead
+            window.location.href = '/login';
+        }
+
+        async function setupGoogleCalendars() {
+            try {
+                const button = event.target;
+                button.innerHTML = '⏳ Creating Calendars...';
+                button.disabled = true;
+                
+                const response = await fetch('/google/setup-calendars');
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    alert(`✅ Success! Created ${Object.keys(data.calendars).length} personalized calendars in your Google Calendar.`);
+                    loadGoogleStatus(); // Refresh status
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (error) {
+                alert('Error setting up calendars: ' + error.message);
+            } finally {
+                const button = event.target;
+                button.innerHTML = '📅 Setup My Calendars';
+                button.disabled = false;
+            }
+        }
+
+        async function syncAllData() {
+            try {
+                const button = event.target;
+                button.innerHTML = '⏳ Syncing Data...';
+                button.disabled = true;
+                
+                // This would connect to a comprehensive sync endpoint
+                alert('🚧 Full sync feature coming soon! For now, use the calendar generation pages to create data, then sync specific periods.');
+                
+            } catch (error) {
+                alert('Error syncing data: ' + error.message);
+            } finally {
+                const button = event.target;
+                button.innerHTML = '🔄 Sync Calendar Data';
+                button.disabled = false;
+            }
+        }
+
+        async function logoutGoogle() {
+            try {
+                if (confirm('Are you sure you want to disconnect from Google Calendar?')) {
+                    const response = await fetch('/auth/logout');
+                    const data = await response.json();
+                    alert(data.message);
+                    loadGoogleStatus(); // Refresh status
+                }
+            } catch (error) {
+                alert('Error logging out: ' + error.message);
+            }
+        }
+
+        // Debug Panel Functionality
+        document.getElementById('debug-toggle').addEventListener('click', function() {
+            const panel = document.getElementById('debug-panel');
+            if (panel.style.display === 'none') {
+                panel.style.display = 'block';
+                loadDebugInfo();
+            } else {
+                panel.style.display = 'none';
+            }
+        });
+
+        document.getElementById('hide-debug').addEventListener('click', function() {
+            document.getElementById('debug-panel').style.display = 'none';
+        });
+
+        async function loadDebugInfo() {
+            try {
+                const debugContent = document.getElementById('debug-content');
+                debugContent.innerHTML = '<div style="text-align: center; color: #666; padding: 20px;">Loading debug information...</div>';
+
+                // Fetch auth status and debug info
+                const [authResponse, debugResponse] = await Promise.all([
+                    fetch('/auth/status'),
+                    fetch('/debug/google-connection')
+                ]);
+
+                const authData = await authResponse.json();
+                const debugData = await debugResponse.json();
+
+                // Build debug HTML
+                let html = '<div style="font-family: monospace; font-size: 12px;">';
+                
+                // Auth Status Section
+                html += `<div style="background: ${authData.status === 'authenticated' ? '#f1f5f9' : '#f8fafc'}; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid ${authData.status === 'authenticated' ? '#64748b' : '#94a3b8'};">`;
+                html += `<h4 style="margin: 0 0 10px 0; color: #333;">🔐 Authentication Status</h4>`;
+                html += `<p><strong>Status:</strong> ${authData.status === 'authenticated' ? '✅ Authenticated' : '❌ Not Authenticated'}</p>`;
+                if (authData.user_info && authData.user_info.display_name) {
+                    html += `<p><strong>User:</strong> ${authData.user_info.display_name} (${authData.user_info.email})</p>`;
+                    html += `<p><strong>Authenticated At:</strong> ${new Date(authData.authenticated_at).toLocaleString()}</p>`;
+                }
+                html += '</div>';
+
+                // Environment Section
+                html += '<div style="background: #e2e3e5; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #6c757d;">';
+                html += '<h4 style="margin: 0 0 10px 0; color: #333;">🔧 Environment</h4>';
+                html += `<p><strong>Google Client ID:</strong> ${debugData.debug_info.environment.google_client_id_exists ? '✅ Configured' : '❌ Missing'}</p>`;
+                html += `<p><strong>Google Client Secret:</strong> ${debugData.debug_info.environment.google_client_secret_exists ? '✅ Configured' : '❌ Missing'}</p>`;
+                html += `<p><strong>Token File:</strong> ${debugData.debug_info.environment.token_file_exists ? '✅ Exists' : '❌ Not Found'}</p>`;
+                html += '</div>';
+
+                // Google API Section
+                const apiActive = debugData.debug_info.google_api.calendar_service_active;
+                html += `<div style="background: ${apiActive ? '#f1f5f9' : '#f8fafc'}; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid ${apiActive ? '#64748b' : '#94a3b8'};">`;
+                html += '<h4 style="margin: 0 0 10px 0; color: #333;">🌐 Google API</h4>';
+                html += `<p><strong>Calendar Service:</strong> ${debugData.debug_info.google_api.calendar_service_active ? '✅ Active' : '❌ Inactive'}</p>`;
+                html += `<p><strong>People Service:</strong> ${debugData.debug_info.google_api.people_service_active ? '✅ Active' : '❌ Inactive'}</p>`;
+                html += `<p><strong>Credentials Valid:</strong> ${debugData.debug_info.google_api.credentials_valid ? '✅ Valid' : '❌ Invalid'}</p>`;
+                if (debugData.debug_info.google_api.error) {
+                    html += `<p><strong>Error:</strong> <span style="color: #475569;">${debugData.debug_info.google_api.error}</span></p>`;
+                }
+                html += '</div>';
+
+                // Calendar Section
+                html += '<div style="background: #f1f5f9; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #64748b;">';
+                html += '<h4 style="margin: 0 0 10px 0; color: #333;">📅 Calendars</h4>';
+                if (debugData.debug_info.calendars.error) {
+                    html += `<p><span style="color: #475569;">${debugData.debug_info.calendars.error}</span></p>`;
+                } else {
+                    html += `<p><strong>Total Calendars:</strong> ${debugData.debug_info.calendars.total_calendars}</p>`;
+                    html += `<p><strong>Panch Pakshi Calendars:</strong> ${debugData.debug_info.calendars.panch_pakshi_calendars}</p>`;
+                    if (debugData.debug_info.calendars.calendar_names && debugData.debug_info.calendars.calendar_names.length > 0) {
+                        html += '<p><strong>Calendar Names:</strong></p><ul>';
+                        debugData.debug_info.calendars.calendar_names.forEach(name => {
+                            html += `<li>${name}</li>`;
+                        });
+                        html += '</ul>';
+                    }
+                }
+                html += '</div>';
+
+                // Action Buttons
+                html += '<div style="margin-top: 20px; text-align: center;">';
+                if (authData.status !== 'authenticated') {
+                    html += '<button onclick="authenticateGoogle()" style="background: #64748b; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-right: 10px;">🔗 Authenticate with Google</button>';
+                } else {
+                    html += '<button onclick="setupCalendars()" style="background: #64748b; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-right: 10px;">📅 Setup Calendars</button>';
+                    html += '<button onclick="logoutUser()" style="background: #64748b; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-right: 10px;">🔓 Logout</button>';
+                }
+                html += '<button onclick="loadDebugInfo()" style="background: #64748b; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">🔄 Refresh</button>';
+                html += '</div>';
+
+                html += '</div>';
+                debugContent.innerHTML = html;
+
+            } catch (error) {
+                document.getElementById('debug-content').innerHTML = `<div style="color: #475569; padding: 20px;">Error loading debug info: ${error.message}</div>`;
+            }
+        }
+
+        // Debug Action Functions
+        async function authenticateGoogle() {
+            try {
+                window.location.href = '/auth/google';
+            } catch (error) {
+                alert('Error authenticating: ' + error.message);
+            }
+        }
+
+        async function setupCalendars() {
+            try {
+                const response = await fetch('/google/setup-calendars');
+                const data = await response.json();
+                alert(data.message);
+                loadDebugInfo(); // Refresh debug info
+            } catch (error) {
+                alert('Error setting up calendars: ' + error.message);
+            }
+        }
+
+        async function logoutUser() {
+            try {
+                const response = await fetch('/auth/logout');
+                const data = await response.json();
+                alert(data.message);
+                loadDebugInfo(); // Refresh debug info
+            } catch (error) {
+                alert('Error logging out: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>

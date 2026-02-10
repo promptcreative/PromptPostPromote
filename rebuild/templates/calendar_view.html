@@ -1,0 +1,2465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>4-Calendar Streamlined View</title>
+    <style>
+        body {
+            font-family: Inter, 'Helvetica Neue', sans-serif;
+            margin: 20px;
+            background-color: #F8F9FA;
+            color: #444444;
+        }
+        .calendar-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .calendar-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 1px;
+            background: #ddd;
+            border: 1px solid #ddd;
+        }
+        .day-cell {
+            background: white;
+            padding: 4px;
+            min-height: 120px;
+            border: 1px solid #eee;
+            font-size: 8px;
+            overflow: hidden;
+        }
+        .day-header {
+            font-weight: bold;
+            text-align: center;
+            padding: 10px;
+            background: #f8fafc;
+            border: 1px solid #ddd;
+        }
+        .date-number {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .calendar-row {
+            display: block;
+            margin: 1px 0;
+            font-size: 9px;
+            line-height: 1.1;
+            word-wrap: break-word;
+            overflow: hidden;
+        }
+        .calendar-icon {
+            margin-right: 3px;
+        }
+        .personal { color: #9B7FC1; }
+        .pti { color: #F89C5E; }
+        .goslow { color: #6FD3D6; }
+        .pti_collective { color: #F89C5E; }
+        .vedic_pti { color: #6FD3D6; }
+        .combined { color: #8A2BE2; }
+        
+        /* Combined calendar classification colors */
+        .combined-omni { color: #8A2BE2; background: linear-gradient(45deg, #8A2BE2, #FFD700); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .combined-double-go { color: #1E90FF; background: linear-gradient(45deg, #1E90FF, #00CED1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .combined-good { color: #32CD32; }
+        .combined-caution { color: #FF0000; }
+        .combined-slow { color: #FFD700; }
+        .combined-neutral { color: #808080; }
+        
+        /* DOUBLE GO standalone category styling */
+        .double-go-standalone {
+            background: linear-gradient(90deg, rgba(30,144,255,0.15), rgba(0,206,209,0.15));
+            border-left: 2px solid #1E90FF;
+            animation: double-go-pulse 2s ease-in-out infinite;
+        }
+        .double-go-standalone:hover {
+            background: linear-gradient(90deg, rgba(30,144,255,0.25), rgba(0,206,209,0.25));
+            transform: scale(1.02);
+        }
+        @keyframes double-go-pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.85; }
+        }
+        
+        /* Combined calendar hover effects */
+        .combined-entry:hover {
+            background-color: rgba(138, 43, 226, 0.1);
+            border-radius: 2px;
+            padding: 1px 2px;
+            cursor: pointer;
+        }
+        
+        .day-checkbox {
+            margin-bottom: 5px;
+        }
+        
+        .personal-entry:hover {
+            background-color: rgba(6, 182, 212, 0.1);
+            border-radius: 2px;
+            padding: 1px 2px;
+        }
+        
+        .breakdown-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.4);
+        }
+        
+        .breakdown-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            border-radius: 8px;
+            width: 60%;
+            max-width: 500px;
+            position: relative;
+        }
+        
+        .breakdown-close {
+            color: #aaa;
+            float: right;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            position: absolute;
+            right: 15px;
+            top: 10px;
+        }
+        
+        .breakdown-close:hover {
+            color: #000;
+        }
+        .selected-count {
+            margin: 20px 0;
+            text-align: center;
+            font-weight: bold;
+        }
+        .export-button {
+            display: block;
+            margin: 20px auto;
+            padding: 10px 20px;
+            background: #4FA3E3;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .export-button:hover {
+            background: #3a8bc7;
+        }
+        .export-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .calendar-status-card {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+        }
+        
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="calendar-container">
+        <div class="calendar-header" id="calendar-header">
+            <h1 id="calendar-main-header">🌟 4-Calendar Streamlined Dashboard</h1>
+            <p>Loading your personalized two-month timing analysis...</p>
+            
+            <!-- Navigation and Account Management -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <div>
+                    <button onclick="window.location.href='/account-dashboard'" style="background: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; margin-right: 10px; font-weight: bold;">
+                        🏠 Back to Dashboard
+                    </button>
+                    <button onclick="window.location.href='/profile'" style="background: #17a2b8; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; margin-right: 10px; font-weight: bold;">
+                        👤 View Profile
+                    </button>
+                    <button onclick="openCalendarFeedsModal()" style="background: #ff9800; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; margin-right: 10px; font-weight: bold;">
+                        📅 Calendar Feeds
+                    </button>
+                    <button onclick="clearAndRegenerate()" id="clear-regen-btn" style="background: #ffc107; color: #212529; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; margin-right: 10px; font-weight: bold;">
+                        🔄 Clear & Regenerate
+                    </button>
+                </div>
+                <div id="google-sync-section" style="display: none;">
+                    <button onclick="setupGoogleCalendars()" id="setup-calendars-btn" style="background: #4FA3E3; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; margin-right: 10px; font-weight: bold;">
+                        📅 Setup Google Calendars
+                    </button>
+                    <button onclick="syncCalendarData()" id="sync-data-btn" style="background: #4FA3E3; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; margin-right: 10px; font-weight: bold;">
+                        🔄 Sync All Data
+                    </button>
+                </div>
+                <div>
+                    <button onclick="clearProfile()" style="background: #ff6b6b; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-right: 10px;">
+                        🗑️ Clear Profile
+                    </button>
+                    <button onclick="logoutGoogle()" style="background: #6c757d; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
+                        🚪 Logout
+                    </button>
+                </div>
+            </div>
+            <h2 id="current-month-header" style="margin: 15px 0 10px 0; color: #333; text-align: center;"></h2>
+        </div>
+        
+        <!-- Quick Navigation & Help Box -->
+        <div style="background: linear-gradient(135deg, #e0f2fe 0%, #f0fdf4 100%); border: 2px solid #0ea5e9; border-radius: 12px; padding: 15px 20px; margin: 15px 0; display: flex; justify-content: space-between; align-items: center;">
+            <div style="flex: 1;">
+                <div style="font-weight: bold; color: #0369a1; font-size: 14px;">Viewing your calendars. Select days below for detailed microtransit analysis (optional).</div>
+                <div style="color: #64748b; font-size: 12px; margin-top: 4px;">Use the checkboxes to pick specific days, then click "Analyze Selected Days" for precise timing windows.</div>
+            </div>
+            <button onclick="window.location.href='/account-dashboard'" style="background: #0ea5e9; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 14px; white-space: nowrap; margin-left: 20px;">
+                ← Back to Dashboard
+            </button>
+        </div>
+
+        <div id="dashboard-status" style="background: #F6F0E6; padding: 20px; margin: 20px 0; border-radius: 8px;">
+            <h3>📊 Calendar System Status</h3>
+            <div class="status-grid" id="status-grid">
+                <div class="calendar-status-card">
+                    <div style="color: #9B7FC1; font-weight: bold;">👤 Personal Transit Calendar</div>
+                    <div style="font-size: 12px; color: #4CAF50;">✓ Generated</div>
+                    <div style="font-size: 10px; color: #888;" id="personal-periods">Yogi/Avayogi analysis</div>
+                </div>
+                <div class="calendar-status-card">
+                    <div style="color: #F89C5E; font-weight: bold;">🌟 PTI Collective Calendar</div>
+                    <div style="font-size: 12px; color: #4CAF50;">✓ Generated</div>
+                    <div style="font-size: 10px; color: #888;">High synergy, applying transits</div>
+                </div>
+                <div class="calendar-status-card">
+                    <div style="color: #6FD3D6; font-weight: bold;">🔮 Vedic PTI Calendar</div>
+                    <div style="font-size: 12px; color: #4CAF50;">✓ Generated</div>
+                    <div style="font-size: 10px; color: #888;">Enhanced scoring with conflict handling</div>
+                </div>
+                <div class="calendar-status-card">
+                    <div style="color: #8A2BE2; font-weight: bold;">🎆 Combined Calendar</div>
+                    <div style="font-size: 12px; color: #4CAF50;">✓ Generated</div>
+                    <div style="font-size: 10px; color: #888;">Smart classification & system alignment</div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="location-info" style="background: #CDEBF9; padding: 10px; margin: 15px 0; border-radius: 4px; display: none;">
+            <div id="birth-location-display"></div>
+            <div id="current-location-display"></div>
+        </div>
+        
+        <div class="calendar-grid" id="calendar-grid">
+            <!-- Day headers -->
+            <div class="day-header">Sun</div>
+            <div class="day-header">Mon</div>
+            <div class="day-header">Tue</div>
+            <div class="day-header">Wed</div>
+            <div class="day-header">Thu</div>
+            <div class="day-header">Fri</div>
+            <div class="day-header">Sat</div>
+            
+            <!-- Calendar days will be dynamically inserted by JavaScript -->
+        </div>
+        
+        <div class="selected-count">
+            Selected days: <span id="count">0</span>
+        </div>
+        
+        <button class="export-button" id="export-btn" onclick="exportSelected()" disabled>
+            🎯 Show Precision Timing Windows
+        </button>
+        
+        <!-- Precision Timing Panel (shows automatically after analysis) -->
+        <div id="precision-timing-panel" style="display: none; margin-top: 30px; 
+                                                 background: #f8f9fa; 
+                                                 border-radius: 15px; padding: 25px; border: 2px solid #0B3D91;">
+            <div style="background: #0B3D91; 
+                        color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; text-align: center;">
+                <h3 style="margin: 0 0 8px 0; font-size: 1.4rem;">🎯 Precision Timing Windows</h3>
+                <p style="margin: 0; opacity: 0.9; font-size: 1rem;">Exact moments when multiple systems align for optimal action</p>
+            </div>
+            <div id="timing-windows-display">
+                <div style="text-align: center; padding: 30px; color: #6c757d;">
+                    <div style="font-size: 1.1rem; margin-bottom: 15px;">⏳ Analyzing precision timing...</div>
+                    <div id="progress-tracker" style="font-size: 0.9rem; margin-bottom: 15px;">
+                        <div>🔄 Initializing analysis...</div>
+                        <div style="background: #e9ecef; border-radius: 10px; height: 8px; margin: 10px 0;">
+                            <div id="progress-bar" style="background: #4FA3E3; height: 100%; border-radius: 10px; width: 0%; transition: width 0.3s ease;"></div>
+                        </div>
+                        <div id="transit-count" style="color: #495057; font-weight: bold;">0 transits found</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Score Breakdown Modal -->
+    <div id="breakdownModal" class="breakdown-modal">
+        <div class="breakdown-content">
+            <span class="breakdown-close" onclick="closeBreakdownModal()">&times;</span>
+            <h3 id="breakdown-title">Personal Score Breakdown</h3>
+            <div id="breakdown-details"></div>
+        </div>
+    </div>
+
+    <!-- Calendar Feeds Modal -->
+    <div id="calendarFeedsModal" class="breakdown-modal">
+        <div class="breakdown-content" style="max-width: 700px; max-height: 80vh; overflow-y: auto;">
+            <span class="breakdown-close" onclick="closeCalendarFeedsModal()">&times;</span>
+            <h3 style="color: #e65100; margin-bottom: 20px; text-align: center;">📅 Your Calendar Subscription URLs</h3>
+            
+            <!-- Main 3 Calendars with Secure Tokens -->
+            <div id="main-calendar-feeds" style="margin-bottom: 25px; padding: 15px; background: #e8f5e9; border-radius: 8px; border: 2px solid #4CAF50;">
+                <h4 style="color: #2e7d32; margin-bottom: 15px; text-align: center;">🔐 Your Personal Subscription Links</h4>
+                <p style="text-align: center; color: #666; font-size: 0.85rem; margin-bottom: 15px;">
+                    Copy these secure URLs to subscribe in your calendar app
+                </p>
+                <div id="secure-feeds-container" style="display: grid; gap: 12px;">
+                    <!-- Will be populated by JavaScript -->
+                    <div style="text-align: center; color: #888; padding: 20px;">
+                        Loading your secure subscription links...
+                    </div>
+                </div>
+            </div>
+            
+            <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+            
+            <h4 style="color: #666; margin-bottom: 15px; text-align: center;">📋 Additional Calendar Feeds</h4>
+            <p style="text-align: center; color: #666; font-size: 0.9rem; margin-bottom: 20px;">
+                These feeds contain ALL events (not filtered to background days).
+            </p>
+            <div style="display: grid; gap: 15px;">
+                <div style="background: #f8f9fa; border-radius: 8px; padding: 15px; border-left: 4px solid #3498db;">
+                    <div style="font-weight: bold; color: #3498db; margin-bottom: 8px;">🐦 Bird Calendar</div>
+                    <div style="font-size: 0.85rem; color: #666; margin-bottom: 10px;">All bird periods with tier classifications (Double Boost, Boost, Build) - 360 events</div>
+                    <div style="display: flex; gap: 8px;">
+                        <button onclick="copyFeedUrl('/calendar/bird_batch.ics', this)" style="flex: 1; background: #3498db; color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer;">Copy URL</button>
+                        <a href="/calendar/bird_batch.ics" download style="flex: 1; background: #2980b9; color: white; padding: 10px; border-radius: 4px; text-align: center; text-decoration: none;">Download</a>
+                    </div>
+                </div>
+                <div style="background: #f8f9fa; border-radius: 8px; padding: 15px; border-left: 4px solid #e74c3c;">
+                    <div style="font-weight: bold; color: #e74c3c; margin-bottom: 8px;">🎯 MicroBird Calendar</div>
+                    <div style="font-size: 0.85rem; color: #666; margin-bottom: 10px;">Bird-filtered transits (only Ruling/Eating favorable combos) - 127 events</div>
+                    <div style="display: flex; gap: 8px;">
+                        <button onclick="copyFeedUrl('/calendar/microbird.ics', this)" style="flex: 1; background: #e74c3c; color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer;">Copy URL</button>
+                        <a href="/calendar/microbird.ics" download style="flex: 1; background: #c0392b; color: white; padding: 10px; border-radius: 4px; text-align: center; text-decoration: none;">Download</a>
+                    </div>
+                </div>
+                <div style="background: #f8f9fa; border-radius: 8px; padding: 15px; border-left: 4px solid #27ae60;">
+                    <div style="font-weight: bold; color: #27ae60; margin-bottom: 8px;">🍀 Enhanced Part of Fortune</div>
+                    <div style="font-size: 0.85rem; color: #666; margin-bottom: 10px;">VB1, VB2, WB3, Yogi Point transits (deduplicated) - 202 events</div>
+                    <div style="display: flex; gap: 8px;">
+                        <button onclick="copyFeedUrl('/calendar/enhanced_pof.ics', this)" style="flex: 1; background: #27ae60; color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer;">Copy URL</button>
+                        <a href="/calendar/enhanced_pof.ics" download style="flex: 1; background: #1e8449; color: white; padding: 10px; border-radius: 4px; text-align: center; text-decoration: none;">Download</a>
+                    </div>
+                </div>
+                <div style="background: #f8f9fa; border-radius: 8px; padding: 15px; border-left: 4px solid #8e44ad;">
+                    <div style="font-weight: bold; color: #8e44ad; margin-bottom: 8px;">🧘 Yogi Point Only</div>
+                    <div style="font-size: 0.85rem; color: #666; margin-bottom: 10px;">Pure Yogi Point transits (no filtering) - 196 events</div>
+                    <div style="display: flex; gap: 8px;">
+                        <button onclick="copyFeedUrl('/calendar/yp_only.ics', this)" style="flex: 1; background: #8e44ad; color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer;">Copy URL</button>
+                        <a href="/calendar/yp_only.ics" download style="flex: 1; background: #6c3483; color: white; padding: 10px; border-radius: 4px; text-align: center; text-decoration: none;">Download</a>
+                    </div>
+                </div>
+            </div>
+            <div style="margin-top: 20px; padding: 15px; background: #fff3e0; border-radius: 8px; text-align: center;">
+                <strong>How to Subscribe:</strong><br>
+                <span style="font-size: 0.85rem; color: #666;">
+                    Google Calendar: Settings → Add Calendar → From URL<br>
+                    Apple Calendar: File → New Calendar Subscription → Paste URL
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Load dashboard data from sessionStorage and display the 6 calendars
+        let selectedDays = [];
+        let dashboardData = null;
+        let birthData = null;
+        
+        // 🚫 CRITICAL ANTI-REDIRECT PROTECTION for /my-calendars page
+        if (window.location.pathname === '/my-calendars') {
+            console.log('🛡️ Activating anti-redirect protection for calendar page');
+            
+            // Set global flag to prevent redirects
+            window.CALENDAR_PAGE_ACTIVE = true;
+            
+            // Monitor for redirect attempts via MutationObserver
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.type === 'childList') {
+                        // Check for any redirect attempts in DOM changes
+                        const nodes = Array.from(mutation.addedNodes);
+                        nodes.forEach(node => {
+                            if (node.nodeType === 1 && (node.innerHTML || '').includes('account-dashboard')) {
+                                console.warn('🚫 DETECTED potential redirect attempt in DOM');
+                            }
+                        });
+                    }
+                });
+            });
+            
+            if (document.body) {
+                observer.observe(document.body, { childList: true, subtree: true });
+            }
+        }
+        
+        // Load data when page loads - use server-provided data instead of sessionStorage
+        window.addEventListener('DOMContentLoaded', function() {
+            // Get data from template context (passed from server)
+            dashboardData = {{ dashboard_data | tojson }} || {};
+            birthData = {{ birth_data | tojson }} || {};
+            // 🎯 FIX: Store session_id for background days persistence
+            window.currentSessionId = "{{ session_id }}" || null;
+            // Subscription URLs with secure tokens for ICS feeds
+            window.subscriptionUrls = dashboardData.subscription_urls || {};
+            
+            console.log('📊 Calendar page loaded, dashboardData:', !!dashboardData, 'calendars:', !!dashboardData.calendars);
+            
+            if (!dashboardData.calendars) {
+                console.warn('No calendar data found, but NOT replacing entire page');
+                document.querySelector('#calendar-header').innerHTML = `
+                    <h1>❌ No Calendar Data Found</h1>
+                    <p>Your calendar data may be loading. Please wait or generate calendars first.</p>
+                    <button onclick="window.location.href='/account-dashboard'" style="padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;">Back to Dashboard</button>
+                `;
+                return;
+            }
+            
+            displayDashboard();
+        });
+        
+        // Hydrate saved precision timing after grid is rendered
+        function hydrateSavedPrecisionTiming() {
+            if (!dashboardData.precision_timing || !dashboardData.precision_timing.calendars) {
+                return;
+            }
+            
+            console.log('📋 Found saved precision timing, displaying...');
+            
+            // Restore selectedDays from saved precision timing dates
+            const savedDates = dashboardData.precision_timing.selected_dates || [];
+            savedDates.forEach(dateStr => {
+                if (!selectedDays.includes(dateStr)) {
+                    selectedDays.push(dateStr);
+                }
+                // Also check the checkbox if it exists
+                const checkbox = document.querySelector(`input[data-date="${dateStr}"]`);
+                if (checkbox) {
+                    checkbox.checked = true;
+                    const dayCard = checkbox.closest('.day-card');
+                    if (dayCard) {
+                        dayCard.classList.add('selected-day');
+                    }
+                }
+            });
+            
+            // Update the selection count and enable the button
+            updateSelectedCount();
+            
+            // Show the panel and display saved results
+            const panel = document.getElementById('precision-timing-panel');
+            if (panel) {
+                panel.style.display = 'block';
+            }
+            // Reconstruct the analysis data format expected by displayPrecisionTiming
+            const savedAnalysis = {
+                analysis_type: dashboardData.precision_timing.analysis_type || 'Selected_Day_Targeted_Analysis',
+                selected_dates: savedDates,
+                birth_info: dashboardData.precision_timing.birth_info || {},
+                calendars: dashboardData.precision_timing.calendars,
+                precision_timing_saved: true,
+                generated_at: dashboardData.precision_timing.generated_at
+            };
+            displayPrecisionTiming(savedAnalysis);
+            
+            // Update button text to indicate regeneration option
+            const exportBtn = document.getElementById('export-btn');
+            if (exportBtn) {
+                exportBtn.disabled = false;
+                exportBtn.textContent = '🔄 Regenerate Precision Timing';
+            }
+        }
+        
+        function displayDashboard() {
+            console.log('📊 displayDashboard called with dashboardData:', dashboardData);
+            console.log('📊 Calendar data available:', !!dashboardData?.calendars);
+            console.log('📊 Calendar keys:', dashboardData?.calendars ? Object.keys(dashboardData.calendars) : 'none');
+            
+            if (!dashboardData || !dashboardData.calendars) {
+                console.warn('⚠️ No dashboard data found - showing error message');
+                document.querySelector('#calendar-header').innerHTML = `
+                    <h1>❌ No Dashboard Data</h1>
+                    <p>Please generate your dashboard first.</p>
+                    <p><a href="/calendar-form">← Generate New Dashboard</a></p>
+                `;
+                return;
+            }
+            
+            console.log('✅ Dashboard calendars found:', Object.keys(dashboardData.calendars));
+            
+            // Show Google Calendar integration immediately for authenticated users
+            console.log('🔗 Setting up Google Calendar integration...');
+            checkAuthenticationStatus();
+            
+            // Update header with dashboard info
+            const header = document.querySelector('#calendar-header');
+            if (header) {
+                header.innerHTML = `
+                    <h1>🌟 Streamlined 4-Calendar Dashboard</h1>
+                    <p>Generated on: ${new Date(dashboardData.period?.generated_at || new Date()).toLocaleDateString()}</p>
+                    <p>Covering: Two complete months | Select favorable days below for detailed analysis</p>
+                `;
+            }
+            
+            // Display location information if available
+            if (birthData) {
+                const locationInfo = document.querySelector('#location-info');
+                const birthLocationDisplay = document.querySelector('#birth-location-display');
+                const currentLocationDisplay = document.querySelector('#current-location-display');
+                
+                if (locationInfo && birthLocationDisplay && currentLocationDisplay) {
+                    birthLocationDisplay.innerHTML = `🏠 <strong>Birth Location:</strong> ${birthData.birth_location || 'Not specified'}`;
+                    currentLocationDisplay.innerHTML = `📍 <strong>Current Location:</strong> ${birthData.current_location || birthData.location || 'Not specified'}`;
+                    locationInfo.style.display = 'block';
+                }
+            }
+            
+            // Display calendar results summary
+            const calendars = dashboardData.calendars || {};
+            const statusGrid = document.querySelector('#status-grid');
+            const dashboardStatus = document.querySelector('#dashboard-status');
+            
+            if (statusGrid && dashboardStatus) {
+                // Helper function to get month name from calendar period
+                const getMonthDisplay = (calendar) => {
+                    if (!calendar || !calendar.period || !calendar.period.start_date) {
+                        return '';
+                    }
+                    const date = new Date(calendar.period.start_date);
+                    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                        'July', 'August', 'September', 'October', 'November', 'December'];
+                    const month = monthNames[date.getMonth()];
+                    const year = date.getFullYear();
+                    return ` - ${month} ${year}`;
+                };
+                
+                const calendarNames = {
+                    personal: '👤 Personal Transit' + getMonthDisplay(calendars.personal),
+                    pti_collective: '🌟 PTI Collective' + getMonthDisplay(calendars.pti_collective), 
+                    vedic_pti: '🔮 Vedic PTI' + getMonthDisplay(calendars.vedic_pti),
+                    combined: '🎆 Combined' + getMonthDisplay(calendars.combined)
+                };
+                
+                statusGrid.innerHTML = '';
+                Object.entries(calendarNames).forEach(([key, name]) => {
+                    const calendar = calendars[key];
+                    let status, bgColor, details;
+                    
+                    if (!calendar) {
+                        status = '⚠️ Missing';
+                        bgColor = '#fff3cd';
+                        details = 'Not generated';
+                    } else if (calendar.error) {
+                        status = '❌ Error';
+                        bgColor = '#f8d7da';
+                        details = calendar.error;
+                    } else {
+                        status = '✅ Generated';
+                        bgColor = '#d4edda';
+                        details = 'Successfully generated';
+                        
+                        // Add specific details for each calendar type  
+                        if (key === 'personal' && calendar.total_periods) {
+                            details = `${calendar.total_periods} personal periods`;
+                        } else if (key === 'bird_batch' && calendar.data && calendar.data.total_periods) {
+                            details = `${calendar.data.total_periods} bird periods`;
+                        }
+                    }
+                    
+                    const statusDiv = document.createElement('div');
+                    statusDiv.style.backgroundColor = bgColor;
+                    statusDiv.style.padding = '8px';
+                    statusDiv.style.borderRadius = '4px';
+                    statusDiv.innerHTML = `<strong>${name}</strong><br><small>${status}<br>${details}</small>`;
+                    statusGrid.appendChild(statusDiv);
+                });
+                
+                dashboardStatus.style.display = 'block';
+            }
+            
+            // Generate two-month calendar grid
+            console.log('🗓️ About to call generateCalendarGrid...');
+            console.log('📊 Dashboard calendars available:', dashboardData?.calendars ? Object.keys(dashboardData.calendars) : 'none');
+            generateCalendarGrid();
+            console.log('✅ generateCalendarGrid completed');
+        }
+        
+        function generateCalendarGrid() {
+            console.log('🔧 generateCalendarGrid() starting...');
+            const calendarGrid = document.querySelector('#calendar-grid');
+            console.log('📍 calendarGrid element found:', !!calendarGrid);
+            console.log('📍 dashboardData available:', !!dashboardData);
+            console.log('📍 dashboardData.calendars available:', !!dashboardData?.calendars);
+            
+            if (!calendarGrid || !dashboardData || !dashboardData.calendars) {
+                console.warn('⚠️ generateCalendarGrid early return - missing data');
+                return;
+            }
+            
+            const calendars = Object.fromEntries(
+              Object.entries(dashboardData.calendars || {}).filter(
+                ([key]) => !['bird_batch', 'bird', 'microbird'].includes(key)
+              )
+            );
+            console.log('📊 Available calendar types:', Object.keys(calendars));
+            console.log('📊 Personal calendar structure:', calendars.personal ? Object.keys(calendars.personal) : 'none');
+            console.log('📊 PTI Collective structure:', calendars.pti_collective ? Object.keys(calendars.pti_collective) : 'none');
+            console.log('📊 Vedic PTI structure:', calendars.vedic_pti ? Object.keys(calendars.vedic_pti) : 'none');
+            const today = new Date();
+            
+            // Dynamically determine calendar range from actual data
+            const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                'July', 'August', 'September', 'October', 'November', 'December'];
+            const currentMonth = monthNames[today.getMonth()];
+            const currentYear = today.getFullYear();
+            
+            // Calculate calendar range based on actual data from backend
+            const calendarRangeDays = dashboardData?.calendar_range_days || 60;
+            const startDate = new Date(currentYear, today.getMonth(), 1); // 1st of current month
+            const endDate = new Date(startDate);
+            endDate.setDate(endDate.getDate() + calendarRangeDays - 1);
+            
+            const endMonth = monthNames[endDate.getMonth()];
+            const endYear = endDate.getFullYear();
+            
+            const monthHeader = document.getElementById('current-month-header');
+            if (monthHeader) {
+                // Single month view (30 days stays within one month)
+                if (startDate.getMonth() === endDate.getMonth() && startDate.getFullYear() === endDate.getFullYear()) {
+                    monthHeader.textContent = `${currentMonth} ${currentYear}`;
+                } 
+                // Multi-month view (60 or 90 days spans multiple months)
+                else if (currentYear === endYear) {
+                    monthHeader.textContent = `${currentMonth} - ${endMonth} ${currentYear}`;
+                } else {
+                    monthHeader.textContent = `${currentMonth} ${currentYear} - ${endMonth} ${endYear}`;
+                }
+            }
+            
+            // Clear and rebuild calendar grid with proper month structure starting from 1st of month
+            calendarGrid.innerHTML = `
+                <!-- Day headers -->
+                <div class="day-header">Sun</div>
+                <div class="day-header">Mon</div>
+                <div class="day-header">Tue</div>
+                <div class="day-header">Wed</div>
+                <div class="day-header">Thu</div>
+                <div class="day-header">Fri</div>
+                <div class="day-header">Sat</div>
+            `;
+            
+            // Generate calendar grid using dynamic date range
+            const currentMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+            
+            // Use the calculated endDate from user's calendar range preference
+            const calendarEndDate = new Date(endDate); // Already calculated above
+            
+            // Helper function to get local date string (avoid UTC timezone issues)
+            function getLocalDateString(date) {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            }
+            
+            // Add empty cells for days before the first day of current month
+            const firstDayOfWeek = currentMonthStart.getDay(); // 0 = Sunday
+            for (let i = 0; i < firstDayOfWeek; i++) {
+                const emptyCell = document.createElement('div');
+                emptyCell.className = 'day-cell empty-cell';
+                emptyCell.style.backgroundColor = '#f5f5f5';
+                emptyCell.style.border = '1px dashed #ccc';
+                calendarGrid.appendChild(emptyCell);
+            }
+            
+            // Generate all days from current month through calendar end date
+            const currentDate = new Date(currentMonthStart);
+            let lastMonthDisplayed = currentMonthStart.getMonth();
+            
+            while (currentDate <= calendarEndDate) {
+                const dateStr = getLocalDateString(currentDate); // Use local date string
+                
+                // Add month separator when transitioning to a new month
+                if (currentDate.getMonth() !== lastMonthDisplayed) {
+                    const newMonth = monthNames[currentDate.getMonth()];
+                    const newYear = currentDate.getFullYear();
+                    
+                    // Add a visual separator row for the new month
+                    const monthSeparator = document.createElement('div');
+                    monthSeparator.className = 'month-separator';
+                    monthSeparator.style.gridColumn = '1 / 8'; // Span all 7 days
+                    monthSeparator.style.backgroundColor = '#e3f2fd';
+                    monthSeparator.style.border = '2px solid #2196F3';
+                    monthSeparator.style.padding = '10px';
+                    monthSeparator.style.textAlign = 'center';
+                    monthSeparator.style.fontWeight = 'bold';
+                    monthSeparator.style.fontSize = '1.1em';
+                    monthSeparator.style.color = '#1565C0';
+                    monthSeparator.innerHTML = `${newMonth} ${newYear}`;
+                    calendarGrid.appendChild(monthSeparator);
+                    lastMonthDisplayed = currentDate.getMonth();
+                }
+                
+                const dayCell = document.createElement('div');
+                dayCell.className = 'day-cell';
+                
+                // Highlight today's date using local date comparison
+                const todayStr = getLocalDateString(today);
+                if (dateStr === todayStr) {
+                    dayCell.style.border = '2px solid #2196F3';
+                    dayCell.style.backgroundColor = '#e3f2fd';
+                }
+                
+                let dayContent = `
+                    <div class="day-checkbox">
+                        <input type="checkbox" id="day-${dateStr}" value="${dateStr}">
+                        <label for="day-${dateStr}" class="date-number">${currentDate.getDate()}</label>
+                    </div>
+                `;
+                
+                
+                // Add Personal calendar data - SOPHISTICATED SCORING with moon house analysis
+                if (calendars.personal && calendars.personal.data) {
+                    const personalData = calendars.personal.data;
+                    
+                    // 🎯 USE SOPHISTICATED SCORING DATA if available (includes moon house, quality, etc.)
+                    let dayQuality = null;
+                    let moonHouse = null;
+                    let subjectLine = '';
+                    let personalScore = 0;
+                    let factors = [];
+                    let yogiEnhancement = '';
+                    
+                    if (personalData.daily_scores && personalData.daily_scores[dateStr]) {
+                        const dayScore = personalData.daily_scores[dateStr];
+                        dayQuality = dayScore.quality;
+                        moonHouse = dayScore.moon_house;
+                        subjectLine = dayScore.subject_line || '';
+                        personalScore = dayScore.score || 0;
+                        factors = dayScore.factors || [];
+                        yogiEnhancement = dayScore.yogi_enhancement || '';
+                    }
+                    
+                    // Display sophisticated personal analysis with moon house
+                    if (dayQuality && moonHouse) {
+                        let icon, label, color;
+                        
+                        switch (dayQuality.toLowerCase()) {
+                            case 'power':
+                                icon = '💜⚡'; label = 'POWER DAY'; color = '#9C27B0';
+                                break;
+                            case 'supportive':
+                                icon = '💚✨'; label = 'SUPPORTIVE'; color = '#4CAF50';
+                                break;
+                            case 'neutral':
+                                icon = '⚪🌑'; label = 'NEUTRAL'; color = '#9E9E9E';
+                                break;
+                            case 'aware':
+                                icon = '🟡⚠️'; label = 'AWARENESS'; color = '#FF9800';
+                                break;
+                            case 'avoid':
+                                icon = '🔴🚫'; label = 'CAUTION'; color = '#F44336';
+                                break;
+                            default:
+                                icon = '🔮'; label = 'Personal'; color = '#795548';
+                        }
+                        
+                        // Create sophisticated tooltip with moon house and scoring details
+                        const moonHouseInfo = moonHouse ? `Moon in ${moonHouse}th House` : '';
+                        const scoreInfo = `Quality: ${dayQuality.toUpperCase()} (Score: ${personalScore.toFixed(1)})`;
+                        const factorInfo = factors.length > 0 ? `Factors: ${factors.slice(0, 2).join(', ')}${factors.length > 2 ? '...' : ''}` : '';
+                        const yogiInfo = yogiEnhancement ? `\\nYogi: ${yogiEnhancement}` : '';
+                        
+                        const tooltip = `${subjectLine}\\n${scoreInfo}\\n${moonHouseInfo}\\n${factorInfo}${yogiInfo}`;
+                        
+                        dayContent += `
+                            <div class="calendar-row personal-entry" 
+                                 style="color: ${color}; font-size: 8px; font-weight: bold; line-height: 1.1;"
+                                 title="${tooltip}">
+                                ${icon} ${label}
+                            </div>
+                        `;
+                    } else if (personalData.daily_periods) {
+                        // Fallback to bird period counting if sophisticated data unavailable
+                        const personalDay = personalData.daily_periods.find(day => day.date === dateStr);
+                        if (personalDay && personalDay.periods && personalDay.periods.length > 0) {
+                            let goodCount = 0;
+                            let badCount = 0;
+                            personalDay.periods.forEach(period => {
+                                if (period.rating === 'good' || period.rating === 'very good') {
+                                    goodCount++;
+                                } else if (period.rating === 'bad' || period.rating === 'very bad') {
+                                    badCount++;
+                                }
+                            });
+                            
+                            let icon, label, color;
+                            if (goodCount > badCount) {
+                                icon = '🟢'; label = `Personal GOOD`; color = '#2E7D32';
+                            } else if (badCount > goodCount) {
+                                icon = '🔴'; label = `Personal AVOID`; color = '#D32F2F';
+                            } else {
+                                icon = '🟡'; label = `Personal MIXED`; color = '#F57C00';
+                            }
+                            
+                            const tooltip = `Personal Calendar - ${personalDay.periods.length} periods (using bird period fallback)\\nUpgrade to get sophisticated moon house analysis`;
+                            
+                            dayContent += `
+                                <div class="calendar-row personal-entry" 
+                                     style="color: ${color}; font-size: 8px; font-weight: bold; line-height: 1.1;"
+                                     title="${tooltip}">
+                                    ${icon} ${label}
+                                </div>
+                            `;
+                        }
+                    }
+                }
+                
+                // Add PTI Collective data - Simplified reason display from setpmagi.py
+                // DEBUG: Log PTI structure for first date only
+                if (dateStr === currentMonthStart.toISOString().split('T')[0]) {
+                    console.log('🔍 PTI DEBUG for', dateStr, ':', {
+                        has_pti: !!calendars.pti_collective,
+                        has_data: !!(calendars.pti_collective && calendars.pti_collective.data),
+                        data_keys: calendars.pti_collective && calendars.pti_collective.data ? Object.keys(calendars.pti_collective.data) : [],
+                        timing_data_count: calendars.pti_collective && calendars.pti_collective.data && calendars.pti_collective.data.timing_data ? calendars.pti_collective.data.timing_data.length : 0,
+                        first_item: calendars.pti_collective && calendars.pti_collective.data && calendars.pti_collective.data.timing_data && calendars.pti_collective.data.timing_data[0] ? calendars.pti_collective.data.timing_data[0] : null
+                    });
+                }
+                
+                // Support multiple data structures: pti_collective.data.timing_data OR pti.results
+                const ptiData = (calendars.pti_collective && calendars.pti_collective.data && calendars.pti_collective.data.timing_data) 
+                    || (calendars.pti && calendars.pti.results)
+                    || [];
+                
+                if (ptiData && ptiData.length > 0) {
+                    // Get ALL PTI Collective entries for this specific date (not just first one)
+                    const dayEntries = ptiData.filter(d => d.date === dateStr);
+                    
+                    // Render each PTI entry for this day
+                    dayEntries.forEach((dayData, index) => {
+                        if (dayData && dayData.magi_classification) {
+                            const classification = dayData.magi_classification;
+                            let icon, label, color;
+                            
+                            // Map PTI classifications to user-friendly display format
+                            switch (classification) {
+                                case 'BEST':
+                                case 'PTI Best': 
+                                    icon = '⭐'; label = 'PTI: Best'; color = '#4CAF50'; 
+                                    break;
+                                case 'MAYBE':
+                                case 'PTI Go': 
+                                    icon = '🟢'; label = 'PTI: Go'; color = '#8BC34A'; 
+                                    break;
+                                case 'NO':
+                                case 'PTI Slow': 
+                                    icon = '🟡'; label = 'PTI: Slow'; color = '#FF9800'; 
+                                    break;
+                                case 'PTI Worst': 
+                                    icon = '🔴'; label = 'PTI: Worst'; color = '#D32F2F'; 
+                                    break;
+                                case 'Normal': 
+                                    icon = '⚪'; label = 'PTI: Normal'; color = '#607D8B'; 
+                                    break;
+                                default: 
+                                    icon = '⚪'; label = 'PTI: Neutral'; color = '#9E9E9E';
+                            }
+                            
+                            // Build tooltip with simplified reasons from setpmagi.py
+                            const simplifiedReason = dayData.classification_reason || 'High synergy, applying transits';
+                            const saturnWarning = dayData.saturn_warning ? '\\n⚠️ Saturn Warning: Disqualified by hard aspects' : '';
+                            const ptiTooltip = `PTI Collective Calendar\\nClassification: ${classification}\\nReason: ${simplifiedReason}${saturnWarning}`;
+                            
+                            // Add entry number if multiple entries per day
+                            const entryLabel = dayEntries.length > 1 ? `${label} (${index + 1})` : label;
+                            
+                            dayContent += `
+                                <div class="calendar-row pti-entry" 
+                                     style="color: ${color}; font-size: 8px; font-weight: bold; line-height: 1.1;"
+                                     title="${ptiTooltip}">
+                                    ${icon} ${entryLabel}
+                                </div>
+                            `;
+                        }
+                    });
+                } else {
+                    // Only show fallback when data truly unavailable
+                    dayContent += `
+                        <div class="calendar-row pti-entry" 
+                             style="color: #9C27B0; font-size: 8px; font-weight: bold; line-height: 1.1;"
+                             title="PTI Collective Calendar\\nNo timing data available">
+                            🔮 PTI: No data
+                        </div>
+                    `;
+                }
+                
+                // Add Vedic PTI data - Read from actual Vedic results data
+                // Support multiple data structures: vedic_pti.data.results OR goslow.results
+                const vedicResults = (calendars.vedic_pti && calendars.vedic_pti.data && calendars.vedic_pti.data.results)
+                    || (calendars.goslow && calendars.goslow.results)
+                    || [];
+                
+                if (vedicResults && vedicResults.length > 0) {
+                    // PRIMARY SOURCE: Get actual Vedic classification from results array
+                    let recommendation = 'NEUTRAL';
+                    let vedicNote = '';
+                    
+                    const vedicDayData = vedicResults.find(r => r.date === dateStr);
+                    if (vedicDayData && vedicDayData.classification) {
+                        recommendation = vedicDayData.classification.toUpperCase();
+                        vedicNote = vedicDayData.note || vedicDayData.description || '';
+                    }
+                    
+                    let icon, label, color;
+                    // Use authentic script classifications and icons
+                    if (recommendation === 'GO') {
+                        icon = '🟢'; label = 'Vedic GO'; color = '#2E7D32'; // Green - Best energy
+                    } else if (recommendation === 'FOCUS') {
+                        icon = '🔥'; label = 'Vedic FOCUS'; color = '#FF5722'; // Deep orange - High action  
+                    } else if (recommendation === 'BUILD') {
+                        icon = '🔷'; label = 'Vedic BUILD'; color = '#1976D2'; // Blue - Foundation work
+                    } else if (recommendation === 'SLOW') {
+                        icon = '🟡'; label = 'Vedic SLOW'; color = '#FFC107'; // Yellow - Caution
+                    } else if (recommendation === 'STOP') {
+                        icon = '🔴'; label = 'Vedic STOP'; color = '#D32F2F'; // Red - Rest needed
+                    } else if (recommendation === 'MEGA_STOP') {
+                        icon = '⚫'; label = 'Vedic MEGA'; color = '#424242'; // Black - Eclipse day
+                    } else {
+                        icon = '⚪'; label = 'Vedic NEUTRAL'; color = '#9E9E9E'; // Gray - Standard
+                    }
+                    
+                    const vedicPtiTooltip = `Vedic PTI Calendar\\nClassification: ${recommendation}${vedicNote ? '\\n' + vedicNote : ''}`;
+                    
+                    dayContent += `
+                        <div class="calendar-row" style="color: ${color}; font-size: 8px; font-weight: bold; line-height: 1.1;"
+                             title="${vedicPtiTooltip}">
+                            ${icon} ${label}
+                        </div>
+                    `;
+                    
+                    // Store vedic recommendation for Double Go check
+                    window._vedicRecommendation = window._vedicRecommendation || {};
+                    window._vedicRecommendation[dateStr] = recommendation;
+                }
+                
+                // Add Combined calendar data - Smart classification with system alignment
+                // DEBUG: Log Combined structure for first date only
+                if (dateStr === currentMonthStart.toISOString().split('T')[0]) {
+                    console.log('🔍 COMBINED DEBUG for', dateStr, ':', {
+                        has_combined: !!calendars.combined,
+                        has_data: !!(calendars.combined && calendars.combined.data),
+                        data_keys: calendars.combined && calendars.combined.data ? Object.keys(calendars.combined.data) : [],
+                        has_daily_classifications: !!(calendars.combined && calendars.combined.data && calendars.combined.data.daily_classifications),
+                        daily_classifications_keys: calendars.combined && calendars.combined.data && calendars.combined.data.daily_classifications ? Object.keys(calendars.combined.data.daily_classifications).slice(0, 3) : [],
+                        first_classification: calendars.combined && calendars.combined.data && calendars.combined.data.daily_classifications && calendars.combined.data.daily_classifications[dateStr] ? calendars.combined.data.daily_classifications[dateStr] : null
+                    });
+                }
+                
+                // Support multiple data structures: combined.data or combined at top level
+                const combinedCalData = (calendars.combined && calendars.combined.data) || calendars.combined || {};
+                
+                if (combinedCalData && !combinedCalData.error) {
+                    let dayClassification = null;
+                    let systemsAligned = [];
+                    let classificationReason = '';
+                    let dayData = null;  // Declare at function scope so DOUBLE GO check can access it
+                    
+                    // Check for day-specific classification in combined calendar data
+                    if (combinedCalData.daily_classifications && combinedCalData.daily_classifications[dateStr]) {
+                        dayData = combinedCalData.daily_classifications[dateStr];
+                        dayClassification = dayData.classification;
+                        systemsAligned = dayData.systems_aligned || [];
+                        classificationReason = dayData.reason || '';
+                    } else if (combinedCalData.results && Array.isArray(combinedCalData.results)) {
+                        // Check for results array format
+                        dayData = combinedCalData.results.find(r => r.date === dateStr);
+                        if (dayData) {
+                            dayClassification = dayData.classification;
+                            systemsAligned = dayData.details?.systems_aligned || dayData.systems_aligned || [];
+                            classificationReason = dayData.details?.reason || dayData.reason || '';
+                            
+                            // Debug for first date
+                            if (dateStr === currentMonthStart.toISOString().split('T')[0]) {
+                                console.log('✅ COMBINED FOUND in results array:', {
+                                    date: dateStr,
+                                    classification: dayClassification,
+                                    systemsAligned: systemsAligned,
+                                    reason: classificationReason
+                                });
+                            }
+                        } else if (dateStr === currentMonthStart.toISOString().split('T')[0]) {
+                            console.log('❌ COMBINED NOT FOUND for', dateStr, 'in', combinedCalData.results.length, 'results');
+                        }
+                    } else if (combinedCalData[dateStr]) {
+                        // Fallback to direct date key lookup
+                        dayData = combinedCalData[dateStr];
+                        dayClassification = dayData.classification;
+                        systemsAligned = dayData.systems_aligned || [];
+                        classificationReason = dayData.reason || '';
+                    }
+                    
+                    if (dayClassification) {
+                        let icon, label, color, cssClass;
+                        
+                        switch (dayClassification.toLowerCase()) {
+                            case 'omni':
+                                icon = '⚡'; label = 'OMNI'; color = '#8A2BE2'; cssClass = 'combined-omni';
+                                break;
+                            case 'double_go':
+                            case 'double go':
+                                icon = '🚀'; label = 'DOUBLE GO'; color = '#1E90FF'; cssClass = 'combined-double-go';
+                                break;
+                            case 'good':
+                                icon = '💚'; label = 'GOOD'; color = '#32CD32'; cssClass = 'combined-good';
+                                break;
+                            case 'caution':
+                                icon = '🔴'; label = 'CAUTION'; color = '#FF0000'; cssClass = 'combined-caution';
+                                break;
+                            case 'slow':
+                                icon = '🟡'; label = 'SLOW'; color = '#FFD700'; cssClass = 'combined-slow';
+                                break;
+                            case 'neutral':
+                            default:
+                                icon = '⚪'; label = 'NEUTRAL'; color = '#808080'; cssClass = 'combined-neutral';
+                                break;
+                        }
+                        
+                        const systemsText = systemsAligned.length > 0 ? systemsAligned.join(', ') : 'None aligned';
+                        const combinedTooltip = `Combined Calendar\\nClassification: ${dayClassification}\\nSystems Aligned: ${systemsText}\\nReason: ${classificationReason}`;
+                        
+                        dayContent += `
+                            <div class="calendar-row combined-entry ${cssClass}" 
+                                 style="color: ${color}; font-size: 8px; font-weight: bold; line-height: 1.1; cursor: pointer;"
+                                 title="${combinedTooltip}"
+                                 onclick="showCombinedBreakdown('${dateStr}', '${dayClassification}', '${systemsText}', '${classificationReason}')">
+                                ${icon} ${label}
+                            </div>
+                        `;
+                        // Note: DOUBLE GO is shown as line 5 after Combined when qualifying (PTI Best/Go + Vedic GO/BUILD)
+                    } else {
+                        // Show neutral when no classification available
+                        dayContent += `
+                            <div class="calendar-row combined-entry combined-neutral" 
+                                 style="color: #808080; font-size: 8px; font-weight: bold; line-height: 1.1;"
+                                 title="Combined Calendar\\nNo classification available">
+                                ⚪ NEUTRAL
+                            </div>
+                        `;
+                    }
+                } else {
+                    // Show placeholder for missing combined data
+                    dayContent += `
+                        <div class="calendar-row combined-entry" style="color: #8A2BE2; font-size: 8px; font-weight: bold; line-height: 1.1;"
+                             title="Combined Calendar\\nNo data available">
+                            🌆 Combined: No data
+                        </div>
+                    `;
+                }
+                
+                // Add DOUBLE GO as 5th line (only when qualifying)
+                // Shows when PTI (Best/Go) + Vedic (GO/BUILD) align, regardless of Personal day
+                // Support multiple data structures: combined.data.results OR combined.results
+                const combinedResultsForDoubleGo = (calendars.combined && calendars.combined.data && calendars.combined.data.results)
+                    || (calendars.combined && calendars.combined.results)
+                    || [];
+                
+                if (combinedResultsForDoubleGo.length > 0) {
+                    const dayDataForDoubleGo = combinedResultsForDoubleGo.find(r => r.date === dateStr);
+                    
+                    if (dayDataForDoubleGo && dayDataForDoubleGo.is_double_go) {
+                        // Get the system breakdown for tooltip details
+                        const systemBreakdown = dayDataForDoubleGo.system_breakdown || {};
+                        const ptiQuality = systemBreakdown.pti_collective?.quality || 'N/A';
+                        const vedicQuality = systemBreakdown.vedic_pti?.quality || 'N/A';
+                        
+                        const doubleGoTooltip = `🚀 DOUBLE GO\\nPTI + Vedic Alignment\\nPTI: ${ptiQuality}\\nVedic: ${vedicQuality}\\n\\nShows when PTI is Best/Go AND Vedic is GO/BUILD.`;
+                        
+                        dayContent += `
+                            <div class="calendar-row double-go-standalone" 
+                                 style="color: #1E90FF; font-size: 9px; font-weight: bold; line-height: 1.2; background: linear-gradient(90deg, rgba(30,144,255,0.15), rgba(0,206,209,0.15)); border-radius: 3px; padding: 2px 4px; margin: 2px 0;"
+                                 title="${doubleGoTooltip}">
+                                🚀 DOUBLE GO
+                            </div>
+                        `;
+                    }
+                }
+                
+                dayCell.innerHTML = dayContent;
+                calendarGrid.appendChild(dayCell);
+                
+                // Move to next day
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+            
+            // Add remaining empty cells to complete the last week (if needed)
+            // Calculate how many total cells we've filled including leading empty cells
+            const totalDaysGenerated = (calendarEndDate.getTime() - currentMonthStart.getTime()) / (1000 * 60 * 60 * 24) + 1;
+            const totalCells = firstDayOfWeek + totalDaysGenerated;
+            const remainingCells = totalCells % 7;
+            if (remainingCells > 0) {
+                for (let i = remainingCells; i < 7; i++) {
+                    const emptyCell = document.createElement('div');
+                    emptyCell.className = 'day-cell empty-cell';
+                    emptyCell.style.backgroundColor = '#f5f5f5';
+                    emptyCell.style.border = '1px dashed #ccc';
+                    calendarGrid.appendChild(emptyCell);
+                }
+            }
+            
+            // Initialize checkbox event listeners AFTER all checkboxes are created
+            initializeCheckboxListeners();
+            
+            // Restore previously saved background days
+            restoreBackgroundDays();
+            
+            // Hydrate saved precision timing AFTER grid is fully rendered
+            hydrateSavedPrecisionTiming();
+        }
+        
+        function initializeCheckboxListeners() {
+            // Add event listeners to all checkboxes
+            document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                checkbox.addEventListener('change', updateSelection);
+            });
+        }
+        
+        // Update selection count and enable/disable export button
+        function updateSelection() {
+            const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+            selectedDays = Array.from(checkboxes)
+                .filter(cb => cb.checked)
+                .map(cb => cb.value);
+            
+            const countEl = document.getElementById('count');
+            if (countEl) countEl.textContent = selectedDays.length;
+            
+            const exportBtn = document.getElementById('export-btn');
+            if (exportBtn) exportBtn.disabled = selectedDays.length === 0;
+            
+            // Auto-save background days to database
+            saveBackgroundDays(selectedDays);
+        }
+        
+        // Save background days to database for persistence
+        function saveBackgroundDays(days) {
+            // 🎯 FIX: Include session_id for JSON file storage persistence
+            const payload = { 
+                background_days: days,
+                session_id: window.currentSessionId 
+            };
+            
+            fetch('/save-background-days', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    console.log('✅ Background days saved:', data.saved_count, 'session:', window.currentSessionId?.slice(0,8));
+                }
+            })
+            .catch(err => console.log('⚠️ Could not save background days:', err));
+        }
+        
+        // Restore checkbox selections from saved background days
+        function restoreBackgroundDays() {
+            const savedDays = dashboardData?.background_days || [];
+            if (savedDays.length === 0) return;
+            
+            console.log('🔄 Restoring', savedDays.length, 'saved background days');
+            savedDays.forEach(dateStr => {
+                const checkbox = document.getElementById('day-' + dateStr);
+                if (checkbox) {
+                    checkbox.checked = true;
+                }
+            });
+            
+            // Update the selection count
+            updateSelectionCount();
+        }
+        
+        // Update count without triggering save (for restore)
+        function updateSelectionCount() {
+            const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+            selectedDays = Array.from(checkboxes)
+                .filter(cb => cb.checked)
+                .map(cb => cb.value);
+            
+            const countEl = document.getElementById('count');
+            if (countEl) countEl.textContent = selectedDays.length;
+            
+            const exportBtn = document.getElementById('export-btn');
+            if (exportBtn) exportBtn.disabled = selectedDays.length === 0;
+        }
+        
+        // Export selected days - connect to our selected-day-analysis endpoint
+        function exportSelected() {
+            console.log('🎯 exportSelected called, selectedDays:', selectedDays.length, 'birthData:', birthData);
+            
+            if (selectedDays.length === 0) {
+                console.warn('❌ No days selected');
+                return;
+            }
+            
+            // Validate birthData has required fields
+            if (!birthData || !birthData.birth_date || !birthData.birth_time) {
+                console.error('❌ Missing birth data:', birthData);
+                const panel = document.getElementById('precision-timing-panel');
+                panel.style.display = 'block';
+                document.getElementById('timing-windows-display').innerHTML = 
+                    '<div style="text-align: center; padding: 30px; color: #dc3545;">❌ Missing birth data. Please ensure your profile has birth date and time set.</div>';
+                return;
+            }
+            
+            // Show the precision timing panel immediately
+            const panel = document.getElementById('precision-timing-panel');
+            panel.style.display = 'block';
+            panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            
+            // Show loading message
+            const exportBtn = document.getElementById('export-btn');
+            if (exportBtn) {
+                exportBtn.disabled = true;
+                exportBtn.textContent = 'Generating Precision Timing...';
+            }
+            
+            console.log("Generating precision timing analysis for:", selectedDays);
+            console.log("Using birth data:", {
+                birth_date: birthData.birth_date,
+                birth_time: birthData.birth_time,
+                birth_latitude: birthData.birth_latitude,
+                birth_longitude: birthData.birth_longitude
+            });
+            
+            // Show progress during calculation
+            updateProgress(0, '🎯 Analyzing bird periods for microtransits...', 0);
+            
+            // Show initial progress while API processes
+            updateProgress(10, '🎯 Calculating bird periods and microtransits...', 0);
+            
+            // Send selected dates to our targeted analysis endpoint
+            fetch('/generate-selected-day-analysis', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    selected_dates: selectedDays,
+                    birth_date: birthData.birth_date,
+                    birth_time: birthData.birth_time,
+                    birth_latitude: birthData.birth_latitude || 25.76,
+                    birth_longitude: birthData.birth_longitude || -80.19
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => {
+                        throw new Error(err.error || `Server error: ${response.status}`);
+                    }).catch(() => {
+                        throw new Error(`Server error: ${response.status} ${response.statusText}`);
+                    });
+                }
+                return response.json();
+            })
+            .then(selectedDayResults => {
+                console.log('Precision timing analysis:', selectedDayResults);
+                
+                // Extract REAL transit counts from the API response
+                let astroMoments = 0, yogiTransits = 0, pofTransits = 0, totalEvents = 0;
+                
+                if (selectedDayResults.calendars) {
+                    const { astrobatching, yogi_point, part_of_fortune } = selectedDayResults.calendars;
+                    
+                    // Get real counts from astrobatching
+                    astroMoments = astrobatching?.automation_moments?.length || 0;
+                    totalEvents = astrobatching?.metadata?.total_transit_events || 0;
+                    
+                    // Get real counts from yogi point 
+                    yogiTransits = yogi_point?.transits?.length || yogi_point?.total_transits || 0;
+                    
+                    // Get real counts from part of fortune
+                    pofTransits = part_of_fortune?.transits?.length || part_of_fortune?.total_transits || 0;
+                }
+                
+                // Show the REAL numbers that were calculated
+                const realTotalTransits = totalEvents || (astroMoments + yogiTransits + pofTransits);
+                updateProgress(100, '✅ Analysis complete!', realTotalTransits);
+                
+                // Show breakdown of what was actually found
+                if (realTotalTransits > 0) {
+                    setTimeout(() => {
+                        updateProgress(100, `🎯 Found ${astroMoments} astrobatching moments, ${yogiTransits} yogi transits, ${pofTransits} fortune transits`, realTotalTransits);
+                    }, 800);
+                }
+                
+                // Wait a moment to show completion, then display results
+                setTimeout(() => {
+                    displayPrecisionTiming(selectedDayResults);
+                }, 2000);
+            })
+            .catch(error => {
+                console.error('❌ Precision timing error:', error);
+                console.error('❌ Error details:', error.message, error.stack);
+                updateProgress(0, '❌ Error during calculation', 0);
+                setTimeout(() => {
+                    document.getElementById('timing-windows-display').innerHTML = 
+                        `<div style="text-align: center; padding: 30px; color: #dc3545;">
+                            ❌ Error generating precision timing analysis.<br>
+                            <small style="color: #666;">${error.message || 'Check console for details'}</small>
+                        </div>`;
+                }, 1000);
+            })
+            .finally(() => {
+                if (exportBtn) {
+                    exportBtn.disabled = false;
+                    exportBtn.textContent = '🎯 Show Precision Timing Windows';
+                }
+            });
+        }
+        
+        function updateProgress(percent, text, count) {
+            const progressBar = document.getElementById('progress-bar');
+            const progressText = document.querySelector('#progress-tracker > div:first-child');
+            const transitCount = document.getElementById('transit-count');
+            
+            if (progressBar) progressBar.style.width = percent + '%';
+            if (progressText) progressText.textContent = text;
+            
+            // Show authentic transit counts from the actual calculations
+            if (transitCount) {
+                if (count > 0) {
+                    transitCount.style.color = '#28a745';
+                    transitCount.style.fontWeight = 'bold';
+                    transitCount.textContent = `🎯 ${count} transits discovered`;
+                } else {
+                    transitCount.textContent = 'Calculating transits...';
+                }
+            }
+        }
+        
+        let currentAnalysis = null; // Store current analysis globally for export functions
+        
+        function displayPrecisionTiming(analysisData) {
+            currentAnalysis = analysisData; // Store globally for export access
+            const container = document.getElementById('timing-windows-display');
+            
+            if (!analysisData || !analysisData.calendars) {
+                container.innerHTML = '<div style="text-align: center; padding: 30px; color: #6c757d;">No timing analysis available</div>';
+                return;
+            }
+            
+            const { astrobatching, yogi_point, part_of_fortune } = analysisData.calendars;
+            
+            // Group timing events by date
+            const dateGroups = {};
+            
+            // Process astrobatching automation moments
+            if (astrobatching && astrobatching.automation_moments) {
+                astrobatching.automation_moments.forEach(moment => {
+                    if (!dateGroups[moment.date]) {
+                        dateGroups[moment.date] = { astro: [], yogi: [], pof: [] };
+                    }
+                    dateGroups[moment.date].astro.push(moment);
+                });
+            }
+            
+            // Process yogi point transits
+            if (yogi_point && yogi_point.transits) {
+                yogi_point.transits.forEach(transit => {
+                    const date = transit.date || (transit.start_time ? transit.start_time.split(' ')[0] : null);
+                    if (date) {
+                        if (!dateGroups[date]) {
+                            dateGroups[date] = { astro: [], yogi: [], pof: [] };
+                        }
+                        dateGroups[date].yogi.push(transit);
+                    }
+                });
+            }
+            
+            // Process part of fortune transits  
+            if (part_of_fortune && part_of_fortune.transits) {
+                part_of_fortune.transits.forEach(transit => {
+                    const date = transit.date || (transit.start_time ? transit.start_time.split(' ')[0] : null);
+                    if (date) {
+                        if (!dateGroups[date]) {
+                            dateGroups[date] = { astro: [], yogi: [], pof: [] };
+                        }
+                        dateGroups[date].pof.push(transit);
+                    }
+                });
+            }
+            
+            const dateKeys = Object.keys(dateGroups).sort();
+            
+            if (dateKeys.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 30px;">
+                        <div style="color: #6c757d; font-size: 1.1rem; margin-bottom: 15px;">🔍 No precision timing events found</div>
+                        <div style="color: #6c757d; font-size: 0.9rem;">
+                            Analysis complete for ${selectedDays.length} selected days<br>
+                            Try selecting days with stronger astrological activity
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Generate display for each date with timing windows
+            container.innerHTML = dateKeys.map(date => {
+                const data = dateGroups[date];
+                const totalEvents = data.astro.length + data.yogi.length + data.pof.length;
+                
+                const formatDate = new Date(date).toLocaleDateString('en-US', {
+                    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+                });
+                
+                return `
+                    <div style="background: white; border-radius: 12px; margin-bottom: 20px; 
+                               border-left: 4px solid #4FA3E3; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+                        <div style="padding: 20px; border-bottom: 1px solid #e9ecef;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <h4 style="margin: 0; color: #2c3e50; font-size: 1.2rem;">${formatDate}</h4>
+                                <div style="background: #0B3D91; color: white; padding: 4px 12px; border-radius: 15px; font-size: 0.8rem; font-weight: bold;">
+                                    ${totalEvents} Events
+                                </div>
+                            </div>
+                        </div>
+                        <div style="padding: 20px;">
+                            ${data.astro.length > 0 ? `
+                                <div style="margin-bottom: 15px;">
+                                    <div style="font-weight: bold; color: #e74c3c; margin-bottom: 8px; font-size: 0.9rem;">
+                                        🎯 ASTROBATCHING - Microtransit Timing (${data.astro.length} moments)
+                                    </div>
+                                    ${data.astro.map(moment => {
+                                        // Show individual microtransit events, not the full bird period
+                                        if (moment.micro_transits && Array.isArray(moment.micro_transits)) {
+                                            return moment.micro_transits.map(transit => {
+                                                // Calculate start and end times for iCal compatibility
+                                                const transitTime = transit.time || '00:00:00';
+                                                const [hours, minutes, seconds] = transitTime.split(':').map(Number);
+                                                const startTime = new Date(moment.date);
+                                                startTime.setHours(hours, minutes, seconds || 0, 0);
+                                                
+                                                // Add 3-minute window for practical calendar use
+                                                const endTime = new Date(startTime.getTime() + (3 * 60 * 1000));
+                                                
+                                                const startStr = startTime.toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit', hour12: false});
+                                                const endStr = endTime.toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit', hour12: false});
+                                                
+                                                return `
+                                                    <div style="background: rgba(231,76,60,0.1); padding: 8px 12px; border-radius: 6px; margin-bottom: 4px; font-size: 0.8rem;" 
+                                                         data-event-start="${startTime.toISOString()}" 
+                                                         data-event-end="${endTime.toISOString()}" 
+                                                         data-event-title="${transit.type || 'Microtransit'}"
+                                                         data-event-description="During ${moment.bird_combination || moment.bird_period || 'bird period'}"
+                                                         class="microtransit-event">
+                                                        <strong>${startStr}-${endStr}</strong> - 
+                                                        ${transit.type || 'Microtransit'}
+                                                        <div style="font-size: 0.7rem; color: #666; margin-top: 2px;">
+                                                            During ${moment.bird_combination || moment.bird_period || 'bird period'}
+                                                        </div>
+                                                    </div>
+                                                `;
+                                            }).join('');
+                                        } else {
+                                            // Fallback for moments without micro_transits data
+                                            return `
+                                                <div style="background: rgba(231,76,60,0.1); padding: 8px 12px; border-radius: 6px; margin-bottom: 4px; font-size: 0.8rem;">
+                                                    <strong>${moment.time || 'Time TBD'}</strong> - 
+                                                    ${moment.description || moment.bird_combination || 'Microtransit alignment'}
+                                                </div>
+                                            `;
+                                        }
+                                    }).join('')}
+                                </div>
+                            ` : ''}
+                            
+                            ${data.yogi.length > 0 ? `
+                                <div style="margin-bottom: 15px;">
+                                    <div style="font-weight: bold; color: #f39c12; margin-bottom: 8px; font-size: 0.9rem;">
+                                        🧘 YOGI POINT - Vedic Spiritual Timing (${data.yogi.length} transits)
+                                    </div>
+                                    ${data.yogi.slice(0, 5).map((transit, index) => {
+                                        // Calculate 3-minute window for Yogi Point events
+                                        const transitTime = transit.time || '00:00:00';
+                                        const [hours, minutes, seconds] = transitTime.split(':').map(Number);
+                                        const startTime = new Date(date); // Use date from parent scope
+                                        startTime.setHours(hours, minutes, seconds || 0, 0);
+                                        const endTime = new Date(startTime.getTime() + (3 * 60 * 1000));
+                                        
+                                        return `
+                                            <div style="background: rgba(243,156,18,0.1); padding: 8px 12px; border-radius: 6px; margin-bottom: 4px; font-size: 0.8rem;"
+                                                 data-yogi-start="${isNaN(startTime.getTime()) ? new Date().toISOString() : startTime.toISOString()}"
+                                                 data-yogi-end="${isNaN(endTime.getTime()) ? new Date().toISOString() : endTime.toISOString()}"
+                                                 data-yogi-title="${transit.aspect || transit.description || 'Yogi Point activation'}"
+                                                 data-yogi-description="Vedic Spiritual Timing"
+                                                 class="yogi-event">
+                                                <strong>${transit.time || 'Time TBD'}</strong> - 
+                                                ${transit.aspect || transit.description || 'Yogi Point activation'}
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                    ${data.yogi.length > 5 ? `<div style="font-size: 0.8rem; color: #6c757d; text-align: center; margin-top: 8px;">...and ${data.yogi.length - 5} more</div>` : ''}
+                                </div>
+                            ` : ''}
+                            
+                            ${data.pof.length > 0 ? `
+                                <div>
+                                    <div style="font-weight: bold; color: #27ae60; margin-bottom: 8px; font-size: 0.9rem;">
+                                        🍀 PART OF FORTUNE - Prosperity Timing (${data.pof.length} transits)
+                                    </div>
+                                    ${data.pof.slice(0, 5).map((transit, index) => {
+                                        // Calculate 3-minute window for Part of Fortune events  
+                                        const transitTime = transit.time || '00:00:00';
+                                        const [hours, minutes, seconds] = transitTime.split(':').map(Number);
+                                        const startTime = new Date(date); // Use date from parent scope
+                                        startTime.setHours(hours, minutes, seconds || 0, 0);
+                                        const endTime = new Date(startTime.getTime() + (3 * 60 * 1000));
+                                        
+                                        return `
+                                            <div style="background: rgba(39,174,96,0.1); padding: 8px 12px; border-radius: 6px; margin-bottom: 4px; font-size: 0.8rem;"
+                                                 data-pof-start="${isNaN(startTime.getTime()) ? new Date().toISOString() : startTime.toISOString()}"
+                                                 data-pof-end="${isNaN(endTime.getTime()) ? new Date().toISOString() : endTime.toISOString()}"
+                                                 data-pof-title="${transit.aspect || transit.description || 'Fortune alignment'}"
+                                                 data-pof-description="Prosperity Timing"
+                                                 class="pof-event">
+                                                <strong>${transit.time || 'Time TBD'}</strong> - 
+                                                ${transit.aspect || transit.description || 'Fortune alignment'}
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                    ${data.pof.length > 5 ? `<div style="font-size: 0.8rem; color: #6c757d; text-align: center; margin-top: 8px;">...and ${data.pof.length - 5} more</div>` : ''}
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+        // Build Export + Google Sync bar and PREPEND it above the results
+        if (dateKeys.length > 0) {
+          const exportBar = `
+            <div style="text-align: center; margin-bottom: 20px;">
+              <button onclick="window.print()" style="background: #34495e; color: white; border: none; padding: 10px 12px; border-radius: 5px; cursor: pointer;">
+                🖨️ Print Results
+              </button>
+            </div>
+
+            <div style="margin-top: 25px; padding: 20px; background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); border-radius: 12px; border: 1px solid #81c784;">
+              <h4 style="color: #2e7d32; margin-bottom: 15px; text-align: center;">
+                📅 Download Filtered Calendars (Background Days Only)
+              </h4>
+              <p style="text-align: center; color: #666; font-size: 0.85rem; margin-bottom: 15px;">
+                These downloads contain only events on your selected background days
+              </p>
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px;">
+                <div style="background: white; border-radius: 8px; padding: 15px; border: 1px solid #e74c3c;">
+                  <div style="font-weight: bold; color: #e74c3c; margin-bottom: 8px;">🎯 MicroBird (Filtered)</div>
+                  <div style="font-size: 0.8rem; color: #666; margin-bottom: 10px;">Bird-filtered transits for your selected days only</div>
+                  <div style="display: flex; gap: 5px;">
+                    <button onclick="exportMicroBirdToICal()" style="flex: 1; background: #e74c3c; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">Download .ics</button>
+                  </div>
+                </div>
+                <div style="background: white; border-radius: 8px; padding: 15px; border: 1px solid #8e44ad;">
+                  <div style="font-weight: bold; color: #8e44ad; margin-bottom: 8px;">🧘 Yogi Point (Filtered)</div>
+                  <div style="font-size: 0.8rem; color: #666; margin-bottom: 10px;">Yogi Point transits for your selected days only</div>
+                  <div style="display: flex; gap: 5px;">
+                    <button onclick="exportYogiToICal()" style="flex: 1; background: #8e44ad; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">Download .ics</button>
+                  </div>
+                </div>
+                <div style="background: white; border-radius: 8px; padding: 15px; border: 1px solid #27ae60;">
+                  <div style="font-weight: bold; color: #27ae60; margin-bottom: 8px;">🍀 Part of Fortune (Filtered)</div>
+                  <div style="font-size: 0.8rem; color: #666; margin-bottom: 10px;">Fortune transits for your selected days only</div>
+                  <div style="display: flex; gap: 5px;">
+                    <button onclick="exportPofToICal()" style="flex: 1; background: #27ae60; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">Download .ics</button>
+                  </div>
+                </div>
+              </div>
+              <p style="text-align: center; color: #666; font-size: 0.75rem; margin-top: 15px;">
+                For all events (unfiltered), visit the <a href="/my-calendars" style="color: #2e7d32;">Calendar Feeds</a> page
+              </p>
+            </div>
+
+            <div style="margin-top: 25px; padding: 20px; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 12px; border: 1px solid #dee2e6;">
+              <h4 style="color: #4285f4; margin-bottom: 15px; text-align: center;">
+                🔗 Google Calendar Sync
+              </h4>
+              <div style="text-align: center;">
+                <button onclick="authenticateGoogle()" style="background: #4285f4; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; margin: 5px; font-size: 0.9rem;">
+                  🔐 Connect Google
+                </button>
+                <button onclick="setupGoogleCalendars()" style="background: #34a853; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; margin: 5px; font-size: 0.9rem;">
+                  📁 Create Calendars
+                </button>
+                <button onclick="syncToGoogle()" style="background: #ea4335; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; margin: 5px; font-size: 0.9rem;">
+                  🔄 Sync All Data
+                </button>
+              </div>
+              <div id="google-sync-status" style="text-align: center; margin-top: 10px; font-size: 0.9rem; color: #6c757d;"></div>
+            </div>
+
+            <div id="subscription-urls-section" style="margin-top: 25px; padding: 20px; background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%); border-radius: 12px; border: 2px solid #ff9800;">
+              <h4 style="color: #e65100; margin-bottom: 15px; text-align: center;">
+                📅 Your ICS Subscription URLs
+              </h4>
+              <p style="text-align: center; color: #666; font-size: 0.85rem; margin-bottom: 15px;">
+                Copy these secure URLs to subscribe in Apple Calendar, Outlook, or any calendar app
+              </p>
+              <div style="display: grid; gap: 12px;">
+                ${generateSubscriptionUrlsHtml()}
+              </div>
+            </div>
+          `;
+
+          // Prepend the export bar (don’t append)
+          container.innerHTML = exportBar + container.innerHTML;
+        }
+        }
+
+        
+        function exportMicroBirdToICal() {
+            const events = document.querySelectorAll('.microtransit-event');
+            if (events.length === 0) {
+                alert('No microtransit events found to export');
+                return;
+            }
+            
+            let icalContent = [
+                'BEGIN:VCALENDAR',
+                'VERSION:2.0',
+                'PRODID:-//Astrobatch Calendar//Microtransit Events//EN',
+                'CALSCALE:GREGORIAN',
+                'METHOD:PUBLISH'
+            ];
+            
+            events.forEach((event, index) => {
+                const startTime = event.getAttribute('data-event-start');
+                const endTime = event.getAttribute('data-event-end');
+                const title = event.getAttribute('data-event-title');
+                const description = event.getAttribute('data-event-description');
+                
+                if (startTime && endTime && title) {
+                    // Convert to iCal format (YYYYMMDDTHHMMSSZ) with proper UTC handling
+                    const startDate = new Date(startTime);
+                    const endDate = new Date(endTime);
+                    const start = startDate.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+                    const end = endDate.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+                    const uid = `microtransit-${index}-${Date.now()}@astrobatch.local`;
+                    const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+                    
+                    // Clean title and description for iCal compatibility
+                    const cleanTitle = title.replace(/[^\w\s-]/g, '').replace(/\s+/g, ' ').trim();
+                    const cleanDescription = `Astrobatch Microtransit: ${cleanTitle}. ${description}`.replace(/\n/g, '\\n');
+                    
+                    icalContent.push(
+                        'BEGIN:VEVENT',
+                        `UID:${uid}`,
+                        `DTSTART:${start}`,
+                        `DTEND:${end}`,
+                        `DTSTAMP:${timestamp}`,
+                        `SUMMARY:${cleanTitle}`,
+                        `DESCRIPTION:${cleanDescription}`,
+                        'CATEGORIES:ASTROLOGY,MICROTRANSITS',
+                        'STATUS:CONFIRMED',
+                        'TRANSP:OPAQUE',
+                        'END:VEVENT'
+                    );
+                }
+            });
+            
+            icalContent.push('END:VCALENDAR');
+            
+            // Create and download the iCal file with proper line endings
+            const blob = new Blob([icalContent.join('\r\n')], { type: 'text/calendar;charset=utf-8' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `microbird-transits-${new Date().toISOString().split('T')[0]}.ics`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            console.log(`Exported ${events.length} MicroBird events to iCal format`);
+        }
+        
+        function exportYogiToICal() {
+            // Debug: Log the entire data structure
+            console.log('Debug - currentAnalysis:', currentAnalysis);
+            console.log('Debug - calendars:', currentAnalysis?.calendars);
+            console.log('Debug - yogi_point:', currentAnalysis?.calendars?.yogi_point);
+            
+            // Access Yogi Point data from the correct API structure
+            const yogiData = currentAnalysis?.calendars?.yogi_point;
+            
+            if (!yogiData || !yogiData.transits || yogiData.transits.length === 0) {
+                alert(`No Yogi Point events found. Debug info: ${JSON.stringify({
+                    hasYogiData: !!yogiData,
+                    hasTransits: !!(yogiData && yogiData.transits),
+                    transitCount: yogiData?.transits?.length || 0,
+                    availableKeys: Object.keys(currentAnalysis?.calendars || {})
+                })}`);
+                return;
+            }
+            
+            let allYogiEvents = [];
+            
+            // Process all Yogi Point transits
+            yogiData.transits.forEach((transit, index) => {
+                // Parse datetime from the transit data
+                const datetime = new Date(transit.datetime || transit.start_time);
+                const endTime = new Date(datetime.getTime() + (3 * 60 * 1000)); // 3-minute window
+                
+                allYogiEvents.push({
+                    startTime: datetime.toISOString(),
+                    endTime: endTime.toISOString(),
+                    title: transit.aspect || transit.description || transit.transit_code || 'Yogi Point activation',
+                    description: 'Vedic Spiritual Timing'
+                });
+            });
+            
+            if (allYogiEvents.length === 0) {
+                alert('No Yogi Point events found to export');
+                return;
+            }
+            
+            let icalContent = [
+                'BEGIN:VCALENDAR',
+                'VERSION:2.0',
+                'PRODID:-//Astrobatch Calendar//Yogi Point Events//EN',
+                'CALSCALE:GREGORIAN',
+                'METHOD:PUBLISH'
+            ];
+            
+            allYogiEvents.forEach((event, index) => {
+                const startDate = new Date(event.startTime);
+                const endDate = new Date(event.endTime);
+                const start = startDate.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+                const end = endDate.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+                const uid = `yogi-${index}-${Date.now()}@astrobatch.local`;
+                const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+                
+                const cleanTitle = event.title.replace(/[^\w\s-]/g, '').replace(/\s+/g, ' ').trim();
+                const cleanDescription = `Yogi Point Transit: ${cleanTitle}. ${event.description}`.replace(/\n/g, '\\n');
+                
+                icalContent.push(
+                    'BEGIN:VEVENT',
+                    `UID:${uid}`,
+                    `DTSTART:${start}`,
+                    `DTEND:${end}`,
+                    `DTSTAMP:${timestamp}`,
+                    `SUMMARY:${cleanTitle}`,
+                    `DESCRIPTION:${cleanDescription}`,
+                    'CATEGORIES:ASTROLOGY,YOGI-POINT',
+                    'STATUS:CONFIRMED',
+                    'TRANSP:OPAQUE',
+                    'END:VEVENT'
+                );
+            });
+            
+            icalContent.push('END:VCALENDAR');
+            
+            const blob = new Blob([icalContent.join('\r\n')], { type: 'text/calendar;charset=utf-8' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `yogi-point-transits-${new Date().toISOString().split('T')[0]}.ics`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            console.log(`Exported ${allYogiEvents.length} Yogi Point events to iCal format`);
+        }
+        
+        function exportPofToICal() {
+            // Debug: Log the entire data structure
+            console.log('Debug POF - currentAnalysis:', currentAnalysis);
+            console.log('Debug POF - calendars:', currentAnalysis?.calendars);
+            console.log('Debug POF - part_of_fortune:', currentAnalysis?.calendars?.part_of_fortune);
+            
+            // Access Part of Fortune data from the correct API structure
+            const pofData = currentAnalysis?.calendars?.part_of_fortune;
+            
+            if (!pofData || !pofData.transits || pofData.transits.length === 0) {
+                alert(`No Part of Fortune events found. Debug info: ${JSON.stringify({
+                    hasPofData: !!pofData,
+                    hasTransits: !!(pofData && pofData.transits),
+                    transitCount: pofData?.transits?.length || 0,
+                    availableKeys: Object.keys(currentAnalysis?.calendars || {})
+                })}`);
+                return;
+            }
+            
+            let allPofEvents = [];
+            
+            // Process all Part of Fortune transits
+            pofData.transits.forEach((transit, index) => {
+                // Parse datetime from the transit data
+                const datetime = new Date(transit.datetime || transit.start_time);
+                
+                // Validate the date before proceeding
+                if (isNaN(datetime.getTime())) {
+                    console.warn('Invalid date for transit:', transit);
+                    return; // Skip this transit
+                }
+                
+                const endTime = new Date(datetime.getTime() + (3 * 60 * 1000)); // 3-minute window
+                
+                allPofEvents.push({
+                    startTime: datetime.toISOString(),
+                    endTime: endTime.toISOString(),
+                    title: transit.aspect || transit.description || transit.transit_code || 'Fortune alignment',
+                    description: 'Prosperity Timing'
+                });
+            });
+            
+            if (allPofEvents.length === 0) {
+                alert('No Part of Fortune events found to export');
+                return;
+            }
+            
+            let icalContent = [
+                'BEGIN:VCALENDAR',
+                'VERSION:2.0',
+                'PRODID:-//Astrobatch Calendar//Part of Fortune Events//EN',
+                'CALSCALE:GREGORIAN',
+                'METHOD:PUBLISH'
+            ];
+            
+            allPofEvents.forEach((event, index) => {
+                const startDate = new Date(event.startTime);
+                const endDate = new Date(event.endTime);
+                const start = startDate.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+                const end = endDate.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+                const uid = `pof-${index}-${Date.now()}@astrobatch.local`;
+                const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+                
+                const cleanTitle = event.title.replace(/[^\w\s-]/g, '').replace(/\s+/g, ' ').trim();
+                const cleanDescription = `Part of Fortune Transit: ${cleanTitle}. ${event.description}`.replace(/\n/g, '\\n');
+                
+                icalContent.push(
+                    'BEGIN:VEVENT',
+                    `UID:${uid}`,
+                    `DTSTART:${start}`,
+                    `DTEND:${end}`,
+                    `DTSTAMP:${timestamp}`,
+                    `SUMMARY:${cleanTitle}`,
+                    `DESCRIPTION:${cleanDescription}`,
+                    'CATEGORIES:ASTROLOGY,PART-OF-FORTUNE',
+                    'STATUS:CONFIRMED',
+                    'TRANSP:OPAQUE',
+                    'END:VEVENT'
+                );
+            });
+            
+            icalContent.push('END:VCALENDAR');
+            
+            const blob = new Blob([icalContent.join('\r\n')], { type: 'text/calendar;charset=utf-8' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `part-of-fortune-transits-${new Date().toISOString().split('T')[0]}.ics`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            console.log(`Exported ${allPofEvents.length} Part of Fortune events to iCal format`);
+        }
+        
+        // Google Calendar Integration Functions
+        function authenticateGoogle() {
+            updateGoogleStatus('🔄 Connecting to Google Calendar...');
+            
+            fetch('/auth/google')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        updateGoogleStatus('✅ Connected to Google Calendar successfully!');
+                    } else {
+                        updateGoogleStatus('❌ Failed to connect: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    updateGoogleStatus('❌ Connection error: ' + error.message);
+                    console.error('Google auth error:', error);
+                });
+        }
+        
+        
+        function syncToGoogle() {
+            if (!birthData || !dashboardData) {
+                updateGoogleStatus('❌ Missing data for sync. Please generate calendars first.');
+                return;
+            }
+            
+            updateGoogleStatus('🔄 Syncing all calendars to Google Calendar...');
+            
+            const syncData = {
+                date_range: 30,
+                start_date: new Date().toISOString().split('T')[0],
+                latitude: birthData.current_latitude || 40.7128,
+                longitude: birthData.current_longitude || -74.006,
+                birth_date: birthData.birth_date,
+                birth_time: birthData.birth_time,
+                birth_latitude: birthData.birth_latitude,
+                birth_longitude: birthData.birth_longitude
+            };
+            
+            fetch('/google/sync-dashboard-calendars', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({dashboard_data: dashboardData})
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        updateGoogleStatus(`✅ Successfully synced ${data.total_events} events across ${Object.keys(data.sync_results).length} calendars!`);
+                        
+                        // Show detailed sync results
+                        let detailsHtml = '<br><strong>Sync Details:</strong><br>';
+                        Object.entries(data.sync_results).forEach(([calendar, eventCount]) => {
+                            detailsHtml += `📅 ${calendar.charAt(0).toUpperCase() + calendar.slice(1)}: ${eventCount} events<br>`;
+                        });
+                        
+                        const statusDiv = document.querySelector('#google-sync-status');
+                        if (statusDiv) {
+                            statusDiv.innerHTML = updateGoogleStatus(`✅ Successfully synced ${data.total_events} events!`) + detailsHtml;
+                        }
+                        
+                        console.log('Sync results:', data.sync_results);
+                        console.log('Calendar IDs:', data.calendar_ids);
+                    } else {
+                        updateGoogleStatus('❌ Sync failed: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    updateGoogleStatus('❌ Sync error: ' + error.message);
+                    console.error('Sync error:', error);
+                });
+        }
+        
+        function updateGoogleStatus(message) {
+            const statusDiv = document.querySelector('#google-sync-status');
+            if (statusDiv) {
+                statusDiv.textContent = message;
+                statusDiv.style.color = message.includes('✅') ? '#28a745' : 
+                                      message.includes('❌') ? '#dc3545' : '#6c757d';
+            }
+        }
+        
+        // Personal Score Breakdown Modal Functions
+        function showPersonalBreakdown(dateStr, scoreBreakdown, houseOfDay) {
+            const modal = document.getElementById('breakdownModal');
+            const title = document.getElementById('breakdown-title');
+            const details = document.getElementById('breakdown-details');
+            
+            title.textContent = `Personal Score Breakdown - ${dateStr}`;
+            
+            let detailsHTML = '';
+            
+            if (scoreBreakdown) {
+                let awarenessTag = scoreBreakdown.awareness_day ? ' <span style="background: #fff3cd; color: #856404; padding: 2px 8px; border-radius: 4px; font-size: 0.8em;">⚠️ Awareness Day</span>' : '';
+                detailsHTML += `<h4>Score: ${scoreBreakdown.total_score.toFixed(1)} (Mode: ${scoreBreakdown.scoring_mode})${awarenessTag}</h4>`;
+                detailsHTML += `<div style="margin: 15px 0;">`;
+                detailsHTML += `<div><strong>Components:</strong></div>`;
+                detailsHTML += `<div style="margin-left: 10px;">`;
+                detailsHTML += `<div>\u2022 ${scoreBreakdown.house_component}</div>`;
+                detailsHTML += `<div>\u2022 ${scoreBreakdown.nakshatra_component}</div>`;
+                
+                // Enhanced Tithi display with Vedic classification
+                if (scoreBreakdown.tithi_type && scoreBreakdown.tithi_name) {
+                    detailsHTML += `<div>\u2022 <strong>Tithi:</strong> ${scoreBreakdown.tithi_name} - ${scoreBreakdown.tithi_type} (${scoreBreakdown.tithi_score > 0 ? '+' : ''}${scoreBreakdown.tithi_score})</div>`;
+                } else {
+                    detailsHTML += `<div>\u2022 ${scoreBreakdown.tithi_component}</div>`;
+                }
+                
+                detailsHTML += `<div>\u2022 ${scoreBreakdown.aspect_component}</div>`;
+                detailsHTML += `<div>\u2022 ${scoreBreakdown.yogi_component}</div>`;
+                
+                // Add Moon dignity if present
+                if (scoreBreakdown.moon_dignity_component && scoreBreakdown.moon_dignity_score !== 0) {
+                    detailsHTML += `<div>\u2022 ${scoreBreakdown.moon_dignity_component}</div>`;
+                }
+                
+                detailsHTML += `</div></div>`;
+            }
+            
+            // Add detailed Tithi information for education
+            if (scoreBreakdown && scoreBreakdown.tithi_type && scoreBreakdown.tithi_name) {
+                detailsHTML += `<div style="border-top: 1px solid #eee; padding-top: 15px; margin-top: 15px; background: #f8f9fa; padding: 15px; border-radius: 5px;">`;
+                detailsHTML += `<h4 style="color: #495057;">📅 Tithi of the Day: ${scoreBreakdown.tithi_name}</h4>`;
+                detailsHTML += `<p style="margin: 8px 0;"><strong>Classification:</strong> ${scoreBreakdown.tithi_type}</p>`;
+                
+                // Add Tithi-specific guidance
+                let tithiGuidance = '';
+                if (scoreBreakdown.tithi_type.includes('Poorna')) {
+                    tithiGuidance = 'Perfect for completing projects, harvesting results, and celebrating achievements. Energy of fulfillment and completion.';
+                } else if (scoreBreakdown.tithi_type.includes('Nanda')) {
+                    tithiGuidance = 'Excellent for new beginnings, fresh starts, and joyful activities. Optimistic and uplifting energy.';
+                } else if (scoreBreakdown.tithi_type.includes('Bhadra')) {
+                    tithiGuidance = 'Great for learning, growth, creativity, and skill development. Graceful and educational energy.';
+                } else if (scoreBreakdown.tithi_type.includes('Jaya')) {
+                    tithiGuidance = 'Success comes through effort and perseverance. Victory after struggle. Good for challenging tasks.';
+                } else if (scoreBreakdown.tithi_type.includes('Rikta')) {
+                    tithiGuidance = 'Avoid starting new projects. Good for endings, letting go, and spiritual practices. Empty yet purifying energy.';
+                } else if (scoreBreakdown.tithi_type.includes('Amavasya')) {
+                    tithiGuidance = 'New Moon - most powerful for spiritual practices, meditation, and inner work. Avoid material launches.';
+                }
+                
+                if (tithiGuidance) {
+                    detailsHTML += `<p style="margin: 8px 0; color: #6c757d; font-style: italic;">${tithiGuidance}</p>`;
+                }
+                detailsHTML += `</div>`;
+            }
+            
+            if (houseOfDay) {
+                detailsHTML += `<div style="border-top: 1px solid #eee; padding-top: 15px; margin-top: 15px;">`;
+                detailsHTML += `<h4>🏠 House of the Day: ${houseOfDay.house_theme}</h4>`;
+                detailsHTML += `<p style="margin: 10px 0;"><strong>Moon in ${houseOfDay.house_number}th House</strong></p>`;
+                detailsHTML += `<p style="margin: 10px 0; font-style: italic;">${houseOfDay.house_message}</p>`;
+                if (houseOfDay.positive_potential) {
+                    detailsHTML += `<p style="margin: 10px 0; color: #2E7D32;"><strong>Today's Potential:</strong> ${houseOfDay.positive_potential}</p>`;
+                }
+                detailsHTML += `</div>`;
+            }
+            
+            details.innerHTML = detailsHTML;
+            modal.style.display = 'block';
+        }
+        
+        function showCombinedBreakdown(dateStr, classification, systemsAligned, reason) {
+            const modal = document.getElementById('breakdownModal');
+            const title = document.getElementById('breakdown-title');
+            const details = document.getElementById('breakdown-details');
+            
+            title.textContent = `Combined Calendar Breakdown - ${dateStr}`;
+            
+            let classificationColor;
+            switch (classification.toLowerCase()) {
+                case 'omni':
+                    classificationColor = '#8A2BE2';
+                    break;
+                case 'double_go':
+                case 'double go':
+                    classificationColor = '#1E90FF';
+                    break;
+                case 'good':
+                    classificationColor = '#32CD32';
+                    break;
+                case 'caution':
+                    classificationColor = '#FF0000';
+                    break;
+                case 'slow':
+                    classificationColor = '#FFD700';
+                    break;
+                case 'neutral':
+                default:
+                    classificationColor = '#808080';
+                    break;
+            }
+            
+            details.innerHTML = `
+                <div style="padding: 15px;">
+                    <div style="margin-bottom: 15px;">
+                        <strong>Combined Classification:</strong>
+                        <div style="color: ${classificationColor}; font-size: 1.2rem; font-weight: bold; margin: 5px 0;">
+                            ${classification.toUpperCase()}
+                        </div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <strong>Systems Aligned:</strong>
+                        <div style="color: #666; margin: 5px 0;">
+                            ${systemsAligned === 'None aligned' ? 'No systems aligned for this day' : systemsAligned}
+                        </div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <strong>Classification Reason:</strong>
+                        <div style="color: #666; margin: 5px 0; line-height: 1.4;">
+                            ${reason || 'No specific reason provided'}
+                        </div>
+                    </div>
+                    
+                    <div style="border-top: 1px solid #eee; padding-top: 10px; margin-top: 15px;">
+                        <small style="color: #999;">
+                            The Combined calendar synthesizes data from all calendar systems to provide smart classifications and alignment insights.
+                        </small>
+                    </div>
+                </div>
+            `;
+            
+            modal.style.display = 'block';
+        }
+
+        function closeBreakdownModal() {
+            const modal = document.getElementById('breakdownModal');
+            modal.style.display = 'none';
+        }
+        
+        // Calendar Feeds Modal functions
+        function openCalendarFeedsModal() {
+            const modal = document.getElementById('calendarFeedsModal');
+            modal.style.display = 'block';
+        }
+        
+        function closeCalendarFeedsModal() {
+            const modal = document.getElementById('calendarFeedsModal');
+            modal.style.display = 'none';
+        }
+        
+        function copyFeedUrl(path, button) {
+            const fullUrl = window.location.origin + path;
+            navigator.clipboard.writeText(fullUrl).then(() => {
+                const originalText = button.textContent;
+                const originalBg = button.style.background;
+                button.textContent = 'Copied!';
+                button.style.background = '#28a745';
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.style.background = originalBg;
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy URL:', err);
+                prompt('Copy this URL:', fullUrl);
+            });
+        }
+        
+        function copySubscriptionUrl(url, button) {
+            // URL is already absolute from the server, use as-is
+            navigator.clipboard.writeText(url).then(() => {
+                const originalText = button.textContent;
+                const originalBg = button.style.background;
+                button.textContent = 'Copied!';
+                button.style.background = '#28a745';
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.style.background = originalBg;
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy URL:', err);
+                prompt('Copy this URL:', url);
+            });
+        }
+        
+        function generateSubscriptionUrlsHtml() {
+            const urls = window.subscriptionUrls || dashboardData?.subscription_urls || {};
+            let html = '';
+            
+            const calendars = [
+                { key: 'personal', name: '👤 Personal Transit Calendar', color: '#9B7FC1' },
+                { key: 'pti_collective', name: '🌟 PTI Collective Calendar', color: '#F89C5E' },
+                { key: 'vedic_pti', name: '🔮 Vedic PTI Calendar', color: '#6FD3D6' }
+            ];
+            
+            let hasUrls = false;
+            calendars.forEach(cal => {
+                if (urls[cal.key]) {
+                    hasUrls = true;
+                    // URLs are already absolute from the server
+                    const fullUrl = urls[cal.key];
+                    html += '<div style="background: white; border-radius: 8px; padding: 12px; border-left: 4px solid ' + cal.color + ';">';
+                    html += '<div style="font-weight: bold; color: ' + cal.color + '; margin-bottom: 6px;">' + cal.name + '</div>';
+                    html += '<div style="display: flex; gap: 8px; align-items: center;">';
+                    html += '<input type="text" value="' + fullUrl + '" readonly style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.75rem; background: #f9f9f9;">';
+                    html += '<button onclick="copySubscriptionUrl(\'' + fullUrl + '\', this)" style="background: ' + cal.color + '; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; white-space: nowrap;">Copy</button>';
+                    html += '</div></div>';
+                }
+            });
+            
+            if (!hasUrls) {
+                html = '<div style="text-align: center; color: #888; padding: 15px;">Subscription URLs not available. Please visit the <a href="/calendar-feeds" style="color: #e65100;">Calendar Feeds</a> page to get your subscription links.</div>';
+            }
+            
+            return html;
+        }
+        
+        // Copy calendar URL to clipboard
+        function copyToClipboard(path, button) {
+            const fullUrl = window.location.origin + path;
+            navigator.clipboard.writeText(fullUrl).then(() => {
+                const originalText = button.textContent;
+                button.textContent = 'Copied!';
+                button.style.background = '#28a745';
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.style.background = '';
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy URL:', err);
+                prompt('Copy this URL:', fullUrl);
+            });
+        }
+        
+        // Close modals when clicking outside of them
+        window.onclick = function(event) {
+            const breakdownModal = document.getElementById('breakdownModal');
+            const feedsModal = document.getElementById('calendarFeedsModal');
+            if (event.target == breakdownModal) {
+                breakdownModal.style.display = 'none';
+            }
+            if (event.target == feedsModal) {
+                feedsModal.style.display = 'none';
+            }
+        }
+        
+        
+        // Function to clear and regenerate calendars
+        async function clearAndRegenerate() {
+            if (confirm('Clear current calendar data and generate fresh calendars? This will replace all existing timing data with new calculations.')) {
+                const button = document.getElementById('clear-regen-btn');
+                if (!button) {
+                    console.error('Clear & Regenerate button not found');
+                    return;
+                }
+                
+                const originalText = button.innerHTML;
+                
+                try {
+                    button.innerHTML = '⏳ Clearing & Regenerating...';
+                    button.disabled = true;
+                    
+                    const response = await fetch('/calendars/clear-and-regenerate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (response.status === 401) {
+                        throw new Error('Please log in first to clear calendar data');
+                    }
+                    
+                    if (data.status === 'success') {
+                        button.innerHTML = '✅ Cleared! Redirecting...';
+                        button.style.background = '#28a745';
+                        
+                        // Redirect to calendar generation form to regenerate calendars
+                        setTimeout(() => {
+                            window.location.href = '/calendar-form';
+                        }, 1500);
+                    } else {
+                        throw new Error(data.message || 'Failed to clear calendar data');
+                    }
+                } catch (error) {
+                    button.innerHTML = originalText;
+                    button.style.background = '#ffc107';
+                    button.disabled = false;
+                    alert('❌ Error: ' + error.message);
+                }
+            }
+        }
+        
+        function clearProfile() {
+            if (confirm('Are you sure you want to clear your profile? This will remove your birth data and location preferences.')) {
+                fetch('/clear-profile', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'}
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        alert('Profile cleared successfully! You will be redirected to set up a new profile.');
+                        window.location.href = '/profile-setup';
+                    } else {
+                        alert('Error clearing profile: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Clear profile error:', error);
+                    alert('Error clearing profile');
+                });
+            }
+        }
+        
+        function logoutGoogle() {
+            if (confirm('Are you sure you want to logout and disconnect from Google?')) {
+                fetch('/auth/logout', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'}
+                })
+                .then(response => response.json())
+                .then(data => {
+                    alert('Logged out successfully!');
+                    window.location.href = '/';
+                })
+                .catch(error => {
+                    console.error('Logout error:', error);
+                    alert('Error during logout');
+                });
+            }
+        }
+        
+        // Check authentication status and show sync options
+        async function checkAuthenticationStatus() {
+            try {
+                const response = await fetch('/auth/status');
+                const authData = await response.json();
+                
+                console.log('🔍 Auth check result:', authData);
+                
+                // Use global flag to prevent redirects on calendar page
+                if (window.CALENDAR_PAGE_ACTIVE) {
+                    console.log('🔒 Calendar page active - only handling sync display, NO redirects');
+                    if (authData.status === 'authenticated') {
+                        const syncSection = document.getElementById('google-sync-section');
+                        if (syncSection) {
+                            console.log('🔗 Showing Google sync section');
+                            syncSection.style.display = 'block';
+                            updateSyncStatus();
+                        }
+                    }
+                    return; // Exit early to prevent any further logic
+                }
+                
+                if (authData.status === 'authenticated') {
+                    const syncSection = document.getElementById('google-sync-section');
+                    if (syncSection) {
+                        syncSection.style.display = 'block';
+                        updateSyncStatus();
+                    }
+                }
+            } catch (error) {
+                console.error('Auth check error:', error);
+            }
+        }
+        
+        async function updateSyncStatus() {
+            // Check if calendars are already set up
+            try {
+                const response = await fetch('/google/check-calendars');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.calendars_exist) {
+                        const setupBtn = document.getElementById('setup-calendars-btn');
+                        if (setupBtn) {
+                            setupBtn.innerHTML = '✅ Calendars Ready';
+                            setupBtn.style.background = '#28a745';
+                        }
+                    }
+                }
+            } catch (error) {
+                console.log('Calendar check not available:', error);
+            }
+        }
+        
+        async function setupGoogleCalendars() {
+            const button = document.getElementById('setup-calendars-btn');
+            if (!button) {
+                console.error('Setup calendars button not found');
+                return;
+            }
+            const originalText = button.innerHTML;
+            
+            try {
+                button.innerHTML = '⏳ Creating Calendars...';
+                button.disabled = true;
+                
+                const response = await fetch('/google/setup-calendars');
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    button.innerHTML = '✅ Calendars Created!';
+                    button.style.background = '#28a745';
+                    
+                    // Show success message with calendar names
+                    const calendarNames = Object.keys(data.calendars || {});
+                    alert(`🎉 Success! Created ${calendarNames.length} personalized calendars:\n\n${calendarNames.join('\n')}\n\nYou can now sync your data to Google Calendar!`);
+                } else {
+                    throw new Error(data.message || 'Failed to create calendars');
+                }
+            } catch (error) {
+                button.innerHTML = originalText;
+                button.style.background = '#4285f4';
+                alert('Error creating calendars: ' + error.message);
+            } finally {
+                button.disabled = false;
+            }
+        }
+        
+        async function syncCalendarData() {
+            const button = document.getElementById('sync-data-btn');
+            if (!button) {
+                console.error('Sync data button not found');
+                return;
+            }
+            const originalText = button.innerHTML;
+            
+            try {
+                button.innerHTML = '⏳ Syncing Data...';
+                button.disabled = true;
+                
+                // Get dashboard data from sessionStorage
+                const dashboardData = JSON.parse(sessionStorage.getItem('dashboardData') || '{}');
+                const birthData = JSON.parse(sessionStorage.getItem('birthData') || '{}');
+                
+                if (!dashboardData.calendars) {
+                    throw new Error('No calendar data found. Please generate calendars first.');
+                }
+                
+                const response = await fetch('/google/sync-dashboard-data', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        dashboard_data: dashboardData,
+                        birth_data: birthData
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    button.innerHTML = '✅ Data Synced!';
+                    button.style.background = '#28a745';
+                    
+                    alert(`🎉 Success! Synced ${data.total_events_created} events across ${data.calendars_created.length} calendars!\n\nCheck your Google Calendar to see your personalized Panch Pakshi timing data.`);
+                } else {
+                    throw new Error(data.message || 'Failed to sync data');
+                }
+            } catch (error) {
+                button.innerHTML = originalText;
+                button.style.background = '#34a853';
+                alert('Error syncing data: ' + error.message);
+            } finally {
+                button.disabled = false;
+            }
+        }
+        
+        // Call authentication check when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAuthenticationStatus();
+        });
+        
+    </script>
+</body>
+</html>

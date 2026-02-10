@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendar Feeds - Astrobatching</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .header h1 {
+            color: #e65100;
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: #666;
+            font-size: 1rem;
+        }
+        
+        .nav-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+        
+        .nav-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+        
+        .nav-btn-primary {
+            background: #28a745;
+            color: white;
+        }
+        
+        .nav-btn-secondary {
+            background: #64748b;
+            color: white;
+        }
+        
+        .nav-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .feed-grid {
+            display: grid;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .feed-card {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            border-left: 5px solid;
+            transition: transform 0.3s ease;
+        }
+        
+        .feed-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+        
+        .feed-card.bird { border-color: #3498db; }
+        .feed-card.microbird { border-color: #e74c3c; }
+        .feed-card.pof { border-color: #27ae60; }
+        .feed-card.yogi { border-color: #8e44ad; }
+        .feed-card.nogo { border-color: #e67e22; }
+        .feed-card.allmicro { border-color: #9b59b6; }
+        
+        .feed-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        
+        .feed-card.bird .feed-title { color: #3498db; }
+        .feed-card.microbird .feed-title { color: #e74c3c; }
+        .feed-card.pof .feed-title { color: #27ae60; }
+        .feed-card.yogi .feed-title { color: #8e44ad; }
+        .feed-card.nogo .feed-title { color: #e67e22; }
+        .feed-card.allmicro .feed-title { color: #9b59b6; }
+        
+        .feed-description {
+            color: #666;
+            font-size: 0.95rem;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+        
+        .feed-stats {
+            display: inline-block;
+            background: #e9ecef;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 0.85rem;
+            color: #495057;
+            margin-bottom: 15px;
+        }
+        
+        .feed-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .feed-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: bold;
+            text-align: center;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        
+        .feed-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .feed-card.bird .feed-btn-copy { background: #3498db; color: white; }
+        .feed-card.bird .feed-btn-download { background: #2980b9; color: white; }
+        .feed-card.microbird .feed-btn-copy { background: #e74c3c; color: white; }
+        .feed-card.microbird .feed-btn-download { background: #c0392b; color: white; }
+        .feed-card.pof .feed-btn-copy { background: #27ae60; color: white; }
+        .feed-card.pof .feed-btn-download { background: #1e8449; color: white; }
+        .feed-card.yogi .feed-btn-copy { background: #8e44ad; color: white; }
+        .feed-card.yogi .feed-btn-download { background: #6c3483; color: white; }
+        .feed-card.nogo .feed-btn-copy { background: #e67e22; color: white; }
+        .feed-card.nogo .feed-btn-download { background: #d35400; color: white; }
+        .feed-card.allmicro .feed-btn-copy { background: #9b59b6; color: white; }
+        .feed-card.allmicro .feed-btn-download { background: #8e44ad; color: white; }
+        
+        .instructions {
+            background: #fff3e0;
+            border-radius: 12px;
+            padding: 25px;
+            margin-top: 20px;
+        }
+        
+        .instructions h3 {
+            color: #e65100;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+        
+        .instruction-step {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #ffe0b2;
+        }
+        
+        .instruction-step:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+        
+        .step-icon {
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+        
+        .step-content h4 {
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .step-content p {
+            color: #666;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+        
+        .copy-feedback {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #28a745;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 8px;
+            font-weight: bold;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            display: none;
+            z-index: 1000;
+        }
+        
+        .info-box {
+            display: flex;
+            gap: 15px;
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            border: 1px solid #90caf9;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+            align-items: flex-start;
+        }
+        
+        .info-icon {
+            font-size: 1.8rem;
+            flex-shrink: 0;
+        }
+        
+        .info-content {
+            color: #1565c0;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+        
+        .info-content strong {
+            color: #0d47a1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📅 Calendar Subscription Feeds</h1>
+            <p>Subscribe to these calendar feeds in Google Calendar, Apple Calendar, or any calendar app that supports ICS subscriptions.</p>
+            <p style="color: #e74c3c; font-weight: bold; margin-top: 10px; font-size: 0.95rem;">These calendars do not screen background dates - they show all astrology events for every day</p>
+        </div>
+        
+        <div class="nav-buttons">
+            <a href="/account-dashboard" class="nav-btn nav-btn-primary">🏠 Back to Dashboard</a>
+            <a href="/my-calendars" class="nav-btn nav-btn-secondary">📊 View My Calendars</a>
+        </div>
+        
+        <div class="info-box">
+            <div class="info-icon">⏱️</div>
+            <div class="info-content">
+                <strong>First-time setup:</strong> Calendar generation takes about 3-5 minutes on first use while we calculate your personalized transits. After that, your calendars are saved and load instantly. Subscription URLs stay the same, so any calendar app you connect will automatically receive updates.
+            </div>
+        </div>
+        
+        <div class="feed-grid">
+            <div class="feed-card personal" style="border-color: #9c27b0;">
+                <div class="feed-title" style="color: #9c27b0;">🌙 Personal Nakshatra Calendar</div>
+                <div class="feed-description">
+                    Your personalized Moon transit calendar based on your birth chart. Shows timed nakshatra events with house transits, personal scores, and quality ratings (Power, Supportive, Caution, Avoid).
+                </div>
+                <div class="feed-stats">Daily nakshatra periods with precise timing</div>
+                <div class="feed-actions">
+                    {% if personal_calendar_url %}
+                    <button class="feed-btn feed-btn-copy" onclick="copyUrl('{{ personal_calendar_url }}', this)">Copy URL</button>
+                    <a href="{{ personal_calendar_url }}" download class="feed-btn feed-btn-download">Download ICS</a>
+                    {% elif is_authenticated %}
+                    <a href="/profile-setup" class="feed-btn" style="background: #9c27b0; color: white;">Complete Profile</a>
+                    {% else %}
+                    <a href="/login" class="feed-btn" style="background: #9c27b0; color: white;">Sign In to Access</a>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="feed-card bird">
+                <div class="feed-title">🐦 Bird Calendar</div>
+                <div class="feed-description">
+                    All bird periods with tier classifications (Double Boost, Boost, Build). See when each bird is ruling and what activities are favored throughout each day.
+                </div>
+                <div class="feed-stats">360 events per two months</div>
+                <div class="feed-actions">
+                    <button class="feed-btn feed-btn-copy" onclick="copyUrl('/calendar/bird_batch.ics', this)">Copy URL</button>
+                    <a href="/calendar/bird_batch.ics" download class="feed-btn feed-btn-download">Download ICS</a>
+                </div>
+            </div>
+            
+            <div class="feed-card microbird">
+                <div class="feed-title">🎯 MicroBird Calendar</div>
+                <div class="feed-description">
+                    Bird-filtered microtransits showing only the most favorable moments. Transits are filtered to Ruling/Eating and Eating/Ruling combinations for optimal timing.
+                </div>
+                <div class="feed-stats">~127 events per two months</div>
+                <div class="feed-actions">
+                    <button class="feed-btn feed-btn-copy" onclick="copyUrl('/calendar/microbird.ics', this)">Copy URL</button>
+                    <a href="/calendar/microbird.ics" download class="feed-btn feed-btn-download">Download ICS</a>
+                </div>
+            </div>
+            
+            <div class="feed-card pof">
+                <div class="feed-title">🍀 Enhanced Part of Fortune</div>
+                <div class="feed-description">
+                    Combined VB1, VB2, WB3, and Yogi Point transits. Fortune alignments are deduplicated so you get clean, actionable timing windows without overlap.
+                </div>
+                <div class="feed-stats">~202 events per two months</div>
+                <div class="feed-actions">
+                    <button class="feed-btn feed-btn-copy" onclick="copyUrl('/calendar/enhanced_pof.ics', this)">Copy URL</button>
+                    <a href="/calendar/enhanced_pof.ics" download class="feed-btn feed-btn-download">Download ICS</a>
+                </div>
+            </div>
+            
+            <div class="feed-card yogi">
+                <div class="feed-title">🧘 Yogi Point Only</div>
+                <div class="feed-description">
+                    Pure Yogi Point transits based on your birth chart. These are personalized moments when the transiting Moon aligns with your natal Yogi Point for spiritual and material gains.
+                </div>
+                <div class="feed-stats">~196 events per two months</div>
+                <div class="feed-actions">
+                    <button class="feed-btn feed-btn-copy" onclick="copyUrl('/calendar/yp_only.ics', this)">Copy URL</button>
+                    <a href="/calendar/yp_only.ics" download class="feed-btn feed-btn-download">Download ICS</a>
+                </div>
+            </div>
+            
+            <div class="feed-card nogo">
+                <div class="feed-title">🚫 NO GO - Rahu Kalam</div>
+                <div class="feed-description">
+                    Daily Rahu Kalam periods - inauspicious times to avoid starting new activities. Based on traditional Vedic calculations dividing daylight into 8 segments. Approximately 80 minutes each day.
+                </div>
+                <div class="feed-stats">~60 events per two months</div>
+                <div class="feed-actions">
+                    <button class="feed-btn feed-btn-copy" onclick="copyUrl('/calendar/nogo.ics', this)">Copy URL</button>
+                    <a href="/calendar/nogo.ics" download class="feed-btn feed-btn-download">Download ICS</a>
+                </div>
+            </div>
+            
+            <div class="feed-card allmicro">
+                <div class="feed-title">✨ All Microtransits</div>
+                <div class="feed-description">
+                    Every microtransit from all 6 scripts (VB1, VB2, WB1, WB2, WB3, YP). Each event shows exact minute-level timing with script name and aspect type. No filtering or deduplication - every detected transit stands on its own.
+                </div>
+                <div class="feed-stats">~800+ events per two months</div>
+                <div class="feed-actions">
+                    <button class="feed-btn feed-btn-copy" onclick="copyUrl('/calendar/all_microtransits.ics', this)">Copy URL</button>
+                    <a href="/calendar/all_microtransits.ics" download class="feed-btn feed-btn-download">Download ICS</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="instructions">
+            <h3>How to Subscribe</h3>
+            
+            <div class="instruction-step">
+                <div class="step-icon">📱</div>
+                <div class="step-content">
+                    <h4>Google Calendar</h4>
+                    <p>Go to Settings (gear icon) → Add Calendar → From URL → Paste the copied URL → Add Calendar. The events will sync automatically.</p>
+                </div>
+            </div>
+            
+            <div class="instruction-step">
+                <div class="step-icon">🍎</div>
+                <div class="step-content">
+                    <h4>Apple Calendar (Mac/iPhone/iPad)</h4>
+                    <p>File → New Calendar Subscription → Paste URL → Subscribe. On iPhone: Settings → Calendar → Accounts → Add Account → Other → Add Subscribed Calendar.</p>
+                </div>
+            </div>
+            
+            <div class="instruction-step">
+                <div class="step-icon">📥</div>
+                <div class="step-content">
+                    <h4>Download ICS File</h4>
+                    <p>Click "Download ICS" to get a file you can import into any calendar application. Note: Downloaded files are static snapshots - use subscription URLs for automatic updates.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="copy-feedback" id="copyFeedback">URL Copied!</div>
+    
+    <script>
+        function copyUrl(path, button) {
+            const fullUrl = window.location.origin + path;
+            navigator.clipboard.writeText(fullUrl).then(() => {
+                const originalText = button.textContent;
+                const originalBg = button.style.background;
+                button.textContent = 'Copied!';
+                
+                const feedback = document.getElementById('copyFeedback');
+                feedback.style.display = 'block';
+                
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    feedback.style.display = 'none';
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy URL:', err);
+                prompt('Copy this URL:', fullUrl);
+            });
+        }
+    </script>
+</body>
+</html>

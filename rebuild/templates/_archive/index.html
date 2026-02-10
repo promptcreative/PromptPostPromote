@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fortuitous Timing Calculator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .header h1 {
+            color: #333;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: #666;
+            font-size: 1.2rem;
+        }
+        
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        
+        .calendar-card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .calendar-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        }
+        
+        .calendar-card h3 {
+            color: #333;
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .calendar-card p {
+            color: #666;
+            margin-bottom: 20px;
+        }
+        
+        .calendar-form {
+            display: none;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+        
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .results {
+            margin-top: 40px;
+            padding: 30px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            display: none;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            display: none;
+        }
+        
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 2s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .result-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        .result-table th, .result-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .result-table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .status-best { color: #28a745; font-weight: bold; }
+        .status-go { color: #17a2b8; font-weight: bold; }
+        .status-slow { color: #ffc107; font-weight: bold; }
+        .status-avoid { color: #dc3545; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌟 Fortuitous Timing Calculator</h1>
+            <p>Discover the optimal moments for success with precision astronomical timing</p>
+        </div>
+        
+        <div class="calendar-grid">
+            <div class="calendar-card" onclick="showForm('collective')">
+                <h3>🏛️ Collective Calendar</h3>
+                <p>Universal timing guidance for any location. Perfect for business launches, important decisions, and strategic planning.</p>
+                
+                <div id="collective-form" class="calendar-form">
+                    <div class="form-group">
+                        <label for="collective-latitude">Latitude:</label>
+                        <input type="number" id="collective-latitude" step="0.0001" value="40.7128" placeholder="40.7128">
+                    </div>
+                    <div class="form-group">
+                        <label for="collective-longitude">Longitude:</label>
+                        <input type="number" id="collective-longitude" step="0.0001" value="-74.0060" placeholder="-74.0060">
+                    </div>
+                    <div class="form-group">
+                        <label for="collective-days">Number of Days:</label>
+                        <select id="collective-days">
+                            <option value="7">7 days</option>
+                            <option value="14">14 days</option>
+                            <option value="30" selected>30 days</option>
+                        </select>
+                    </div>
+                    <button class="btn" onclick="generateCollectiveCalendar()">Generate Collective Calendar</button>
+                </div>
+            </div>
+            
+            <div class="calendar-card" onclick="showForm('personal')">
+                <h3>👤 Personal Calendar</h3>
+                <p>Individualized timing optimization based on your birth data. Get personalized auspicious periods for major decisions.</p>
+                
+                <div id="personal-form" class="calendar-form">
+                    <div class="form-group">
+                        <label for="birth-date">Birth Date:</label>
+                        <input type="date" id="birth-date" value="1985-03-15">
+                    </div>
+                    <div class="form-group">
+                        <label for="birth-time">Birth Time:</label>
+                        <input type="time" id="birth-time" value="14:30">
+                    </div>
+                    <div class="form-group">
+                        <label for="birth-latitude">Birth Latitude:</label>
+                        <input type="number" id="birth-latitude" step="0.0001" value="40.7128" placeholder="40.7128">
+                    </div>
+                    <div class="form-group">
+                        <label for="birth-longitude">Birth Longitude:</label>
+                        <input type="number" id="birth-longitude" step="0.0001" value="-74.0060" placeholder="-74.0060">
+                    </div>
+                    <div class="form-group">
+                        <label for="personal-days">Number of Days:</label>
+                        <select id="personal-days">
+                            <option value="7">7 days</option>
+                            <option value="14">14 days</option>
+                            <option value="30" selected>30 days</option>
+                        </select>
+                    </div>
+                    <button class="btn" onclick="generatePersonalCalendar()">Generate Personal Calendar</button>
+                </div>
+            </div>
+            
+            <div class="calendar-card" onclick="showForm('batch')">
+                <h3>🔄 30-Day Batch Processing</h3>
+                <p>Complete microtransits analysis with bird filtering and astro detection. Comprehensive timing intelligence.</p>
+                
+                <div id="batch-form" class="calendar-form">
+                    <div class="form-group">
+                        <label for="batch-date">Start Date:</label>
+                        <input type="date" id="batch-date">
+                    </div>
+                    <div class="form-group">
+                        <label for="batch-days">Processing Days:</label>
+                        <select id="batch-days">
+                            <option value="7">7 days</option>
+                            <option value="14">14 days</option>
+                            <option value="30" selected>30 days</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="max-periods">Max Periods:</label>
+                        <select id="max-periods">
+                            <option value="3">3 periods</option>
+                            <option value="6" selected>6 periods</option>
+                            <option value="10">10 periods</option>
+                        </select>
+                    </div>
+                    <button class="btn" onclick="generateBatchProcessing()">Start Batch Processing</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="loading" id="loading">
+            <div class="loading-spinner"></div>
+            <p>Calculating fortuitous timing... Please wait.</p>
+        </div>
+        
+        <div class="results" id="results">
+            <h2>Your Fortuitous Timing Results</h2>
+            <div id="results-content"></div>
+        </div>
+    </div>
+
+    <script>
+        function showForm(type) {
+            // Hide all forms first
+            document.querySelectorAll('.calendar-form').forEach(form => {
+                form.style.display = 'none';
+            });
+            
+            // Show selected form
+            document.getElementById(type + '-form').style.display = 'block';
+        }
+        
+        // Set today's date as default
+        document.getElementById('batch-date').value = new Date().toISOString().split('T')[0];
+        
+        function showLoading() {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('results').style.display = 'none';
+        }
+        
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+        
+        function showResults(data) {
+            hideLoading();
+            const resultsDiv = document.getElementById('results');
+            const contentDiv = document.getElementById('results-content');
+            
+            let html = '<div class="result-summary">';
+            
+            if (data.calendar_type) {
+                html += `<h3>📅 ${data.calendar_type.replace(/_/g, ' ')}</h3>`;
+            }
+            
+            if (data.analysis && data.analysis.summary) {
+                html += '<h4>📊 Summary:</h4><ul>';
+                Object.entries(data.analysis.summary).forEach(([key, value]) => {
+                    html += `<li><strong>${key}:</strong> ${value} days</li>`;
+                });
+                html += '</ul>';
+                
+                if (data.analysis.daily_results) {
+                    html += '<h4>📋 Daily Forecast:</h4>';
+                    html += '<table class="result-table"><thead><tr><th>Date</th><th>Classification</th><th>Guidance</th></tr></thead><tbody>';
+                    
+                    Object.entries(data.analysis.daily_results).forEach(([date, classification]) => {
+                        const statusClass = classification.toLowerCase().replace(/[^a-z]/g, '');
+                        html += `<tr><td>${date}</td><td class="status-${statusClass}">${classification}</td><td>Optimal timing guidance</td></tr>`;
+                    });
+                    html += '</tbody></table>';
+                }
+            }
+            
+            if (data.bird_periods && data.bird_periods.periods) {
+                html += `<h4>🐦 Favorable Bird Periods: ${data.bird_periods.periods.length} found</h4>`;
+            }
+            
+            if (data.astro_transits) {
+                html += `<h4>🌟 Astro Transits: ${data.astro_transits.length} events</h4>`;
+            }
+            
+            html += '</div>';
+            contentDiv.innerHTML = html;
+            resultsDiv.style.display = 'block';
+        }
+        
+        function showError(error) {
+            hideLoading();
+            const resultsDiv = document.getElementById('results');
+            const contentDiv = document.getElementById('results-content');
+            contentDiv.innerHTML = `<div style="color: #dc3545;"><h3>❌ Error</h3><p>${error}</p></div>`;
+            resultsDiv.style.display = 'block';
+        }
+        
+        async function generateCollectiveCalendar() {
+            showLoading();
+            
+            const latitude = parseFloat(document.getElementById('collective-latitude').value);
+            const longitude = parseFloat(document.getElementById('collective-longitude').value);
+            const days = parseInt(document.getElementById('collective-days').value);
+            
+            try {
+                const response = await fetch('/generate-collective-calendar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        coordinates: [latitude, longitude],
+                        days: days
+                    })
+                });
+                
+                const data = await response.json();
+                if (response.ok) {
+                    showResults(data);
+                } else {
+                    showError(data.error || 'Failed to generate collective calendar');
+                }
+            } catch (error) {
+                showError('Network error: ' + error.message);
+            }
+        }
+        
+        async function generatePersonalCalendar() {
+            showLoading();
+            
+            const birthDate = document.getElementById('birth-date').value;
+            const birthTime = document.getElementById('birth-time').value;
+            const birthLatitude = parseFloat(document.getElementById('birth-latitude').value);
+            const birthLongitude = parseFloat(document.getElementById('birth-longitude').value);
+            const days = parseInt(document.getElementById('personal-days').value);
+            
+            try {
+                const response = await fetch('/generate-personal-calendar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        birth_date: birthDate,
+                        birth_time: birthTime,
+                        birth_latitude: birthLatitude,
+                        birth_longitude: birthLongitude,
+                        days: days
+                    })
+                });
+                
+                const data = await response.json();
+                if (response.ok) {
+                    showResults(data);
+                } else {
+                    showError(data.error || 'Failed to generate personal calendar');
+                }
+            } catch (error) {
+                showError('Network error: ' + error.message);
+            }
+        }
+        
+        async function generateBatchProcessing() {
+            showLoading();
+            
+            const startDate = document.getElementById('batch-date').value;
+            const days = parseInt(document.getElementById('batch-days').value);
+            const maxPeriods = parseInt(document.getElementById('max-periods').value);
+            
+            try {
+                const response = await fetch('/batch', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        date: startDate,
+                        days: days,
+                        max_periods: maxPeriods,
+                        include_transits: true
+                    })
+                });
+                
+                const data = await response.json();
+                if (response.ok) {
+                    showResults(data);
+                } else {
+                    showError(data.error || 'Failed to process batch request');
+                }
+            } catch (error) {
+                showError('Network error: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>
