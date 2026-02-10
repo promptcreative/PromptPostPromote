@@ -22,6 +22,9 @@ CALENDAR_DISPLAY_NAMES = {
     'microbird': 'ABmicrotimes - MicroBird',
     'enhanced_pof': 'ABmicrotimes - Enhanced POF',
     'all_microtransits': 'ABmicrotimes - All Microtransits',
+    'bg_bird_batch': 'ABmicrotimes - Bird Batch (Background)',
+    'bg_yogi_point': 'ABmicrotimes - Yogi Point (Background)',
+    'bg_pof': 'ABmicrotimes - PoF (Background)',
 }
 
 
@@ -682,12 +685,412 @@ def nogo_calendar_feed():
         return f"Error generating NO GO calendar: {str(e)}", 500
 
 
+def _get_background_dates(user_id):
+    saved_data = db_manager.get_calendar_data(user_id)
+    if not saved_data:
+        return set(), None
+    calendars = saved_data.get('calendars', {})
+    combined_cal = calendars.get('combined', {})
+    combined_results = (
+        combined_cal.get('data', {}).get('results', [])
+        or combined_cal.get('results', [])
+    )
+    bg_dates = set()
+    for day in combined_results:
+        if not isinstance(day, dict):
+            continue
+        classification = day.get('classification', '')
+        is_bg = day.get('is_background', False)
+        date_str = day.get('date', '')
+        if not date_str:
+            continue
+        if classification in ('OMNI', 'DOUBLE GO', 'GOOD') or is_bg:
+            bg_dates.add(date_str)
+    return bg_dates, saved_data
+
+
+@ics_bp.route('/calendar/bg_bird_batch.ics')
+def bg_bird_batch_calendar_feed():
+    user_id, err = _verify_subscription('bird_batch')
+    if err:
+        return err
+
+    try:
+        bg_dates, saved_data = _get_background_dates(user_id)
+        if not saved_data:
+            return 'No calendar data found. Please generate calendars first.', 404
+        if not bg_dates:
+            return create_ics_response('bg_bird_batch', [], cal_name_override='ABmicrotimes - Bird Batch (Background)')
+
+        calendars = saved_data.get('calendars', {})
+        bird_cal = calendars.get('bird_batch', {})
+        daily_results = bird_cal.get('daily_results', [])
+        if not daily_results and isinstance(bird_cal.get('data'), dict):
+            daily_results = bird_cal['data'].get('daily_results', [])
+
+        events = []
+        for day_data in daily_results:
+            day_date_str = day_data.get('date')
+            if not day_date_str or day_date_str not in bg_dates:
+                continue
+            periods = day_data.get('periods', [])
+            for period in periods:
+                bird = period.get('main_bird', '')
+                activity = period.get('sub_activity', period.get('main_activity', ''))
+                tier = period.get('tier', '')
+                rating = period.get('rating', '')
+
+                bird_emojis = {'Crow': '🐦', 'Cock': '🐓', 'Peacock': '🦚', 'Vulture': '🦅', 'Owl': '🦉'}
+                activity_emojis = {'Ruling': '👑', 'Eating': '🍽️', 'Walking': '🚶', 'Sleeping': '💤', 'Dying': '💀'}
+                tier_emojis = {'Double Boost': '⚡⚡', 'Boost': '⚡', 'Build': '🔨'}
+
+                activity_icon = activity_emojis.get(activity, '')
+                tier_icon = tier_emojis.get(tier, '')
+                title = f"{activity_icon} {activity}"
+                if tier_icon and tier:
+                    title = f"{tier_icon} {tier} {title}"
+
+                description = f"🎯 BIRD BATCH PERIOD (BG)\\n"
+                description += f"📊 Rating: {rating}\\n"
+                description += f"🏆 Tier: {tier}\\n"
+                description += f"⏱️ Duration: {period.get('duration_minutes', 0)} minutes"
+
+                try:
+                    day_date_obj = datetime.strptime(day_date_str, '%Y-%m-%d').date()
+                except ValueError:
+                    continue
+
+                start_time_str = period.get('start_time', '00:00')
+                end_time_str = period.get('end_time', '23:59')
+
+                try:
+                    start_dt = _parse_time_to_datetime(day_date_obj, start_time_str)
+                    end_dt = _parse_time_to_datetime(day_date_obj, end_time_str)
+                    if end_dt <= start_dt:
+                        end_dt += timedelta(days=1)
+                except ValueError:
+                    start_dt = datetime.combine(day_date_obj, time(0, 0))
+                    end_dt = datetime.combine(day_date_obj, time(23, 59))
+
+                events.append({
+                    'id': f"bg_bird_{day_date_str}_{start_time_str.replace(':', '').replace(' ', '')}",
+                    'title': title,
+                    'description': description,
+                    'start': start_dt,
+                    'end': end_dt,
+                })
+
+        return create_ics_response('bg_bird_batch', events, cal_name_override='ABmicrotimes - Bird Batch (Background)')
+
+    except Exception as e:
+        return f"Error generating Background Bird Batch calendar: {str(e)}", 500
+
+
+@ics_bp.route('/calendar/bg_yogi_point.ics')
+def bg_yogi_point_calendar_feed():
+    user_id, err = _verify_subscription('yogi_point')
+    if err:
+        return err
+
+    try:
+        bg_dates, saved_data = _get_background_dates(user_id)
+        if not saved_data:
+            return 'No calendar data found. Please generate calendars first.', 404
+        if not bg_dates:
+            return create_ics_response('bg_yogi_point', [], cal_name_override='ABmicrotimes - Yogi Point (Background)')
+
+        calendars = saved_data.get('calendars', {})
+        yp_cal = calendars.get('yogi_point', {})
+        transits = yp_cal.get('transits', []) or yp_cal.get('results', [])
+
+        events = []
+        for idx, transit in enumerate(transits):
+            start_time_raw = transit.get('start_time') or transit.get('start')
+            end_time_raw = transit.get('end_time') or transit.get('end')
+
+            try:
+                if start_time_raw and end_time_raw:
+                    s_str = str(start_time_raw).replace('Z', '+00:00') if isinstance(start_time_raw, str) else None
+                    e_str = str(end_time_raw).replace('Z', '+00:00') if isinstance(end_time_raw, str) else None
+                    start_dt = datetime.fromisoformat(s_str) if s_str else start_time_raw
+                    end_dt = datetime.fromisoformat(e_str) if e_str else end_time_raw
+                else:
+                    continue
+            except (ValueError, TypeError):
+                continue
+
+            if hasattr(start_dt, 'replace'):
+                start_dt = start_dt.replace(tzinfo=None)
+            if hasattr(end_dt, 'replace'):
+                end_dt = end_dt.replace(tzinfo=None)
+
+            transit_date_str = start_dt.strftime('%Y-%m-%d')
+            if transit_date_str not in bg_dates:
+                continue
+
+            transit_type = transit.get('type', 'Yogi Transit')
+            planet = transit.get('planet', '')
+
+            title = f"🧘 {transit_type}"
+            if planet:
+                title = f"🧘 Yogi Point-{planet}"
+
+            description = f"🔮 YOGI POINT TRANSIT (BG)\\n📡 Type: {transit_type}"
+            if planet:
+                description += f"\\n🪐 Planet: {planet}"
+            orb = transit.get('orb')
+            if orb:
+                description += f"\\n🎯 Orb: {orb:.2f}°"
+
+            events.append({
+                'id': f"bg_yogi_{idx}",
+                'title': title,
+                'description': description,
+                'start': start_dt,
+                'end': end_dt,
+            })
+
+        return create_ics_response('bg_yogi_point', events, cal_name_override='ABmicrotimes - Yogi Point (Background)')
+
+    except Exception as e:
+        return f"Error generating Background Yogi Point calendar: {str(e)}", 500
+
+
+@ics_bp.route('/calendar/bg_pof.ics')
+def bg_pof_calendar_feed():
+    user_id, err = _verify_subscription('enhanced_pof')
+    if not user_id:
+        user_id, err = _verify_subscription('bird_batch')
+    if err:
+        return err
+
+    try:
+        bg_dates, saved_data = _get_background_dates(user_id)
+        if not saved_data:
+            return 'No calendar data found. Please generate calendars first.', 404
+        if not bg_dates:
+            return create_ics_response('bg_pof', [], cal_name_override='ABmicrotimes - PoF (Background)')
+
+        pof_transits = []
+        calendars = saved_data.get('calendars', {})
+        pof_cal = calendars.get('part_of_fortune', calendars.get('pof', {}))
+        if pof_cal:
+            pof_transits = pof_cal.get('transits', []) or pof_cal.get('results', [])
+
+        if not pof_transits:
+            try:
+                from microtransits.wb1 import process_transits as wb1_process
+                period = saved_data.get('period', {})
+                try:
+                    days = int(period.get('days', 60))
+                except (ValueError, TypeError):
+                    days = 60
+                start_date = datetime.combine(date.today(), datetime.min.time())
+                end_date = datetime.combine(date.today() + timedelta(days=days), datetime.min.time())
+                pof_transits = wb1_process(start_date, end_date)
+            except Exception:
+                pof_transits = []
+
+        events = []
+        for idx, transit in enumerate(pof_transits):
+            start_time_raw = transit.get('start_time') or transit.get('start')
+            end_time_raw = transit.get('end_time') or transit.get('end')
+
+            try:
+                if start_time_raw and end_time_raw:
+                    s_str = str(start_time_raw).replace('Z', '+00:00') if isinstance(start_time_raw, str) else None
+                    e_str = str(end_time_raw).replace('Z', '+00:00') if isinstance(end_time_raw, str) else None
+                    start_dt = datetime.fromisoformat(s_str) if s_str else start_time_raw
+                    end_dt = datetime.fromisoformat(e_str) if e_str else end_time_raw
+                else:
+                    continue
+            except (ValueError, TypeError):
+                continue
+
+            if hasattr(start_dt, 'replace'):
+                start_dt = start_dt.replace(tzinfo=None)
+            if hasattr(end_dt, 'replace'):
+                end_dt = end_dt.replace(tzinfo=None)
+
+            transit_date_str = start_dt.strftime('%Y-%m-%d')
+            if transit_date_str not in bg_dates:
+                continue
+
+            planet = transit.get('planet', transit.get('type', 'PoF'))
+            title = f"💰 PoF-{planet}"
+
+            description = f"💰 PART OF FORTUNE TRANSIT (BG)\\n📡 Type: {transit.get('type', '')}"
+            if planet:
+                description += f"\\n🪐 Planet: {planet}"
+            orb = transit.get('orb')
+            if orb:
+                try:
+                    description += f"\\n🎯 Orb: {float(orb):.2f}°"
+                except (ValueError, TypeError):
+                    description += f"\\n🎯 Orb: {orb}"
+            duration_mins = int((end_dt - start_dt).total_seconds() / 60)
+            description += f"\\n⏱️ Duration: {duration_mins} minutes"
+
+            events.append({
+                'id': f"bg_pof_{idx}",
+                'title': title,
+                'description': description,
+                'start': start_dt,
+                'end': end_dt,
+            })
+
+        return create_ics_response('bg_pof', events, cal_name_override='ABmicrotimes - PoF (Background)')
+
+    except Exception as e:
+        return f"Error generating Background PoF calendar: {str(e)}", 500
+
+
 @ics_bp.route('/calendar/microbird.ics')
 def microbird_calendar_feed():
     user_id, err = _verify_subscription('microbird')
     if err:
         return err
-    return _create_stub_ics('microbird', 'MicroBird Calendar')
+
+    try:
+        bg_dates, saved_data = _get_background_dates(user_id)
+        if not saved_data:
+            return 'No calendar data found. Please generate calendars first.', 404
+        if not bg_dates:
+            return create_ics_response('microbird', [], cal_name_override='ABmicrotimes - MicroBird')
+
+        calendars = saved_data.get('calendars', {})
+        bird_cal = calendars.get('bird_batch', {})
+        daily_results = bird_cal.get('daily_results', [])
+        if not daily_results and isinstance(bird_cal.get('data'), dict):
+            daily_results = bird_cal['data'].get('daily_results', [])
+
+        bird_periods = []
+        for day_data in daily_results:
+            day_date_str = day_data.get('date')
+            if not day_date_str or day_date_str not in bg_dates:
+                continue
+            try:
+                day_date_obj = datetime.strptime(day_date_str, '%Y-%m-%d').date()
+            except ValueError:
+                continue
+            for period in day_data.get('periods', []):
+                start_time_str = period.get('start_time', '00:00')
+                end_time_str = period.get('end_time', '23:59')
+                try:
+                    bird_start = _parse_time_to_datetime(day_date_obj, start_time_str)
+                    bird_end = _parse_time_to_datetime(day_date_obj, end_time_str)
+                    if bird_end <= bird_start:
+                        bird_end += timedelta(days=1)
+                except ValueError:
+                    bird_start = datetime.combine(day_date_obj, time(0, 0))
+                    bird_end = datetime.combine(day_date_obj, time(23, 59))
+                bird_periods.append({
+                    'date_str': day_date_str,
+                    'start': bird_start,
+                    'end': bird_end,
+                    'tier': period.get('tier', ''),
+                    'activity': period.get('sub_activity', period.get('main_activity', '')),
+                })
+
+        microtransits = []
+
+        yp_cal = calendars.get('yogi_point', {})
+        yp_transits = yp_cal.get('transits', []) or yp_cal.get('results', [])
+        for t in yp_transits:
+            start_raw = t.get('start_time') or t.get('start')
+            end_raw = t.get('end_time') or t.get('end')
+            try:
+                if start_raw and end_raw:
+                    s = datetime.fromisoformat(str(start_raw)) if isinstance(start_raw, str) else start_raw
+                    e = datetime.fromisoformat(str(end_raw)) if isinstance(end_raw, str) else end_raw
+                    if hasattr(s, 'replace'):
+                        s = s.replace(tzinfo=None)
+                    if hasattr(e, 'replace'):
+                        e = e.replace(tzinfo=None)
+                    microtransits.append({
+                        'start': s,
+                        'end': e,
+                        'type': 'YogiPoint',
+                        'planet': t.get('planet', t.get('type', '')),
+                    })
+            except (ValueError, TypeError):
+                continue
+
+        pof_cal = calendars.get('part_of_fortune', calendars.get('pof', {}))
+        pof_transits = []
+        if pof_cal:
+            pof_transits = pof_cal.get('transits', []) or pof_cal.get('results', [])
+        if not pof_transits:
+            try:
+                from microtransits.wb1 import process_transits as wb1_process
+                period = saved_data.get('period', {})
+                try:
+                    days = int(period.get('days', 60))
+                except (ValueError, TypeError):
+                    days = 60
+                start_date = datetime.combine(date.today(), datetime.min.time())
+                end_date = datetime.combine(date.today() + timedelta(days=days), datetime.min.time())
+                pof_transits = wb1_process(start_date, end_date)
+            except Exception:
+                pof_transits = []
+
+        for t in pof_transits:
+            start_raw = t.get('start_time') or t.get('start')
+            end_raw = t.get('end_time') or t.get('end')
+            try:
+                if start_raw and end_raw:
+                    s = datetime.fromisoformat(str(start_raw)) if isinstance(start_raw, str) else start_raw
+                    e = datetime.fromisoformat(str(end_raw)) if isinstance(end_raw, str) else end_raw
+                    if hasattr(s, 'replace'):
+                        s = s.replace(tzinfo=None)
+                    if hasattr(e, 'replace'):
+                        e = e.replace(tzinfo=None)
+                    microtransits.append({
+                        'start': s,
+                        'end': e,
+                        'type': 'PoF',
+                        'planet': t.get('planet', t.get('type', '')),
+                    })
+            except (ValueError, TypeError):
+                continue
+
+        events = []
+        event_idx = 0
+        for mt in microtransits:
+            mt_date_str = mt['start'].strftime('%Y-%m-%d')
+            if mt_date_str not in bg_dates:
+                continue
+            for bp in bird_periods:
+                if bp['date_str'] != mt_date_str:
+                    continue
+                if mt['start'] < bp['end'] and mt['end'] > bp['start']:
+                    overlap_start = max(mt['start'], bp['start'])
+                    overlap_end = min(mt['end'], bp['end'])
+                    duration_mins = int((overlap_end - overlap_start).total_seconds() / 60)
+                    if duration_mins <= 0:
+                        continue
+
+                    title = f"🎯 MicroBird - {mt['type']}"
+                    description = f"🎯 MICRO BIRD OVERLAP\\n"
+                    description += f"📡 Transit: {mt['type']}\\n"
+                    description += f"🪐 Planet: {mt['planet']}\\n"
+                    description += f"🏆 Bird Tier: {bp['tier']}\\n"
+                    description += f"🐦 Activity: {bp['activity']}\\n"
+                    description += f"⏱️ Overlap: {duration_mins} minutes"
+
+                    events.append({
+                        'id': f"microbird_{event_idx}",
+                        'title': title,
+                        'description': description,
+                        'start': overlap_start,
+                        'end': overlap_end,
+                    })
+                    event_idx += 1
+
+        return create_ics_response('microbird', events, cal_name_override='ABmicrotimes - MicroBird')
+
+    except Exception as e:
+        return f"Error generating MicroBird calendar: {str(e)}", 500
 
 
 @ics_bp.route('/calendar/enhanced_pof.ics')
@@ -755,11 +1158,28 @@ def calendar_subscription_info():
                 "requires_auth": True,
             },
             {
+                "name": "Bird Batch (Background)",
+                "endpoint": "/calendar/bg_bird_batch.ics",
+                "description": "Bird Batch periods filtered to background (OMNI/DOUBLE GO/GOOD) days only",
+                "requires_auth": True,
+            },
+            {
+                "name": "Yogi Point (Background)",
+                "endpoint": "/calendar/bg_yogi_point.ics",
+                "description": "Yogi Point transits filtered to background days only",
+                "requires_auth": True,
+            },
+            {
+                "name": "PoF (Background)",
+                "endpoint": "/calendar/bg_pof.ics",
+                "description": "Part of Fortune transits filtered to background days only",
+                "requires_auth": True,
+            },
+            {
                 "name": "MicroBird Calendar",
                 "endpoint": "/calendar/microbird.ics",
-                "description": "Bird-filtered microtransits (coming soon in rebuild)",
+                "description": "Precision posting times - overlaps between microtransits and bird batch periods on background days",
                 "requires_auth": True,
-                "status": "stub",
             },
             {
                 "name": "Enhanced POF Calendar",

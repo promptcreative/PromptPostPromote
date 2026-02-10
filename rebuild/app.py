@@ -35,6 +35,8 @@ def create_app():
     from routes.downloads import downloads_bp
     from routes.api import api_bp
     from routes.clients import clients_bp
+    from routes.power_days import power_days_bp
+    from routes.publer import publer_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(pages_bp)
@@ -44,6 +46,8 @@ def create_app():
     app.register_blueprint(downloads_bp)
     app.register_blueprint(api_bp)
     app.register_blueprint(clients_bp)
+    app.register_blueprint(power_days_bp)
+    app.register_blueprint(publer_bp)
 
     @app.after_request
     def add_no_cache_headers(response):
