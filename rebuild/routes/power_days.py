@@ -3,7 +3,7 @@
 import traceback
 from datetime import datetime, date, timedelta
 
-from flask import Blueprint, jsonify, session
+from flask import Blueprint, jsonify, request, session
 from database.manager import db_manager
 from database.models import db, UserProfile
 from helpers.dashboard import generate_dashboard_core
@@ -39,16 +39,32 @@ def _extract_power_days(saved_data):
         if not isinstance(day, dict):
             continue
 
+        breakdown = day.get('system_breakdown', {})
+        details = day.get('details', {})
+        if not breakdown:
+            breakdown = details.get('system_breakdown', {})
+
+        pti_info = breakdown.get('pti_collective', {}) or breakdown.get('pti', {}) or {}
+        vedic_info = breakdown.get('vedic_pti', {}) or breakdown.get('vedic', {}) or {}
+        personal_info = breakdown.get('personal', {}) or {}
+        pti_quality = pti_info.get('quality', '')
+        vedic_quality = vedic_info.get('quality', '')
+        personal_quality = personal_info.get('quality', '')
+
         entry = {
             'date': day.get('date', ''),
             'reason': day.get('reason', ''),
-            'pti_label': day.get('pti_label', ''),
-            'vedic_label': day.get('vedic_label', ''),
-            'personal_label': day.get('personal_label', ''),
+            'pti_label': pti_quality,
+            'vedic_label': vedic_quality,
+            'personal_label': personal_quality,
         }
 
         classification = day.get('classification', '')
         is_bg = day.get('is_background', False)
+        if not is_bg:
+            cls_key = day.get('classification_key', '') or details.get('classification_key', '')
+            if cls_key in ('omni', 'double_go', 'good'):
+                is_bg = True
 
         if classification == 'OMNI':
             omni_days.append(entry)
@@ -297,11 +313,26 @@ def get_part_of_fortune_power_days():
         end_date = datetime.combine(date.today() + timedelta(days=days), datetime.min.time())
 
         try:
-            from microtransits.wb1 import process_transits
+            import microtransits.wb1 as wb1_module
         except ImportError as ie:
             return jsonify({'error': f'Part of Fortune module unavailable: {ie}'}), 500
 
-        all_transits = process_transits(start_date, end_date)
+        user_profile = UserProfile.query.filter_by(email=user_id).first()
+        if not user_profile or not user_profile.birth_date:
+            return jsonify({'error': 'Profile with birth data required for Part of Fortune'}), 400
+
+        birth_dt = datetime.combine(user_profile.birth_date, datetime.min.time())
+        if user_profile.birth_time:
+            birth_dt = datetime.combine(user_profile.birth_date, user_profile.birth_time)
+
+        wb1_module.BIRTH_DATE = birth_dt
+        if user_profile.current_latitude and user_profile.current_longitude:
+            wb1_module.TRANSIT_LOCATION = (
+                float(user_profile.current_latitude),
+                float(user_profile.current_longitude)
+            )
+
+        all_transits = wb1_module.process_transits(start_date, end_date)
 
         filtered = []
         for t in all_transits:
@@ -326,3 +357,23 @@ def get_part_of_fortune_power_days():
     except Exception as e:
         traceback.print_exc()
         return jsonify({'error': str(e), 'traceback': traceback.format_exc()}), 500
+
+
+@power_days_bp.route('/api/calendar-feeds', methods=['GET'])
+def get_calendar_feeds():
+    try:
+        if not session.get('authenticated'):
+            return jsonify({'error': 'Authentication required'}), 401
+
+        user_info = session.get('user_info', {})
+        user_id = user_info.get('email')
+        if not user_id:
+            return jsonify({'error': 'User ID not found'}), 400
+
+        base_url = request.host_url.rstrip('/')
+        feeds = db_manager.get_user_subscriptions(user_id, base_url)
+        return jsonify({'feeds': feeds})
+
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500

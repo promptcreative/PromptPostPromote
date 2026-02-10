@@ -418,6 +418,22 @@
         .btn-push-all:hover { opacity: 0.85; transform: translateY(-1px); }
         .btn-push-all:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
+        .btn-proceed {
+            display: inline-block;
+            padding: 14px 36px;
+            background: linear-gradient(135deg, #7C6BC4 0%, #9B8ED8 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: 'DM Sans', sans-serif;
+            transition: all 0.2s;
+        }
+        .btn-proceed:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn-proceed:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
         .feed-row {
             display: flex;
             align-items: center;
@@ -580,9 +596,12 @@
     </nav>
 
     <div class="container">
-        <div class="page-header">
-            <h1>Your Power Days</h1>
-            <p id="page-subtitle">Loading your personalized posting schedule…</p>
+        <div class="page-header" style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px;">
+            <div>
+                <h1>Your Power Days</h1>
+                <p id="page-subtitle">Loading your personalized posting schedule…</p>
+            </div>
+            <button class="btn-proceed" id="regenerate-btn" onclick="regenerateCalendars()" style="flex-shrink:0; margin-top:4px;">Regenerate Calendars</button>
         </div>
 
         <div id="stats-section" class="stat-row">
@@ -619,52 +638,61 @@
             </div>
         </div>
 
-        <div class="section-block">
-            <h2 class="section-title">Bird Batch on Background Days</h2>
-            <p class="section-subtitle">Favorable bird periods filtered to your power days</p>
-            <div class="card">
-                <div id="bird-batch-content">
-                    <div class="loading-state"><div class="spinner"></div> Loading bird batch data…</div>
-                </div>
+        <div id="proceed-section" class="section-block" style="display:none;">
+            <div class="card" style="text-align:center; padding:30px;">
+                <p style="font-size:1.05rem; margin-bottom:18px; color:#6B6880;">Background days loaded. Ready to calculate bird batch windows, microtransits, and precision posting times?</p>
+                <button class="btn-proceed" id="proceed-btn" onclick="loadMicrotransitData()">Proceed with Microtransit Analysis</button>
             </div>
         </div>
 
-        <div class="section-block">
-            <h2 class="section-title">Microtransit Layers</h2>
-            <p class="section-subtitle">Yogi Point and Part of Fortune transits on background days</p>
-            <div class="two-col">
+        <div id="phase2-sections" style="display:none;">
+            <div class="section-block">
+                <h2 class="section-title">Bird Batch on Background Days</h2>
+                <p class="section-subtitle">Favorable bird periods filtered to your power days</p>
                 <div class="card">
-                    <h3 style="font-size:1rem;font-weight:700;margin-bottom:14px;color:#2D2B3D;">Yogi Point on Background</h3>
-                    <div id="yogi-point-content">
-                        <div class="loading-state"><div class="spinner"></div> Loading…</div>
-                    </div>
-                </div>
-                <div class="card">
-                    <h3 style="font-size:1rem;font-weight:700;margin-bottom:14px;color:#2D2B3D;">Part of Fortune on Background</h3>
-                    <div id="pof-content">
-                        <div class="loading-state"><div class="spinner"></div> Loading…</div>
+                    <div id="bird-batch-content">
+                        <div class="loading-state"><div class="spinner"></div> Loading bird batch data…</div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div class="section-block">
-            <h2 class="section-title">Micro Bird — Precision Posting Times</h2>
-            <p class="section-subtitle">Where microtransits overlap with bird batch windows — your best moments to post</p>
-            <div id="micro-bird-actions" style="display:none;">
-                <button class="btn-push-all" onclick="pushAllToPubler()">Push All to Publer</button>
+            <div class="section-block">
+                <h2 class="section-title">Microtransit Layers</h2>
+                <p class="section-subtitle">Yogi Point and Part of Fortune transits on background days</p>
+                <div class="two-col">
+                    <div class="card">
+                        <h3 style="font-size:1rem;font-weight:700;margin-bottom:14px;color:#2D2B3D;">Yogi Point on Background</h3>
+                        <div id="yogi-point-content">
+                            <div class="loading-state"><div class="spinner"></div> Calculating Yogi Point transits…</div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h3 style="font-size:1rem;font-weight:700;margin-bottom:14px;color:#2D2B3D;">Part of Fortune on Background</h3>
+                        <div id="pof-content">
+                            <div class="loading-state"><div class="spinner"></div> Calculating Part of Fortune transits…</div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div id="micro-bird-content">
-                <div class="loading-state"><div class="spinner"></div> Computing precision windows…</div>
-            </div>
-        </div>
 
-        <div class="section-block">
-            <h2 class="section-title">Subscribe to Background Calendars</h2>
-            <p class="section-subtitle">Add these feeds to Google Calendar, Apple Calendar, or any ICS-compatible app</p>
-            <div class="card">
-                <div id="feeds-content">
-                    <div class="loading-state"><div class="spinner"></div> Loading feed links…</div>
+            <div class="section-block">
+                <h2 class="section-title">Micro Bird — Precision Posting Times</h2>
+                <p class="section-subtitle">Where microtransits overlap with bird batch windows — your best moments to post</p>
+                <div id="micro-bird-actions" style="display:none;">
+                    <button class="btn-push-all" onclick="pushAllToPubler()">Push All to Publer</button>
+                </div>
+                <div id="micro-bird-content">
+                    <div class="loading-state"><div class="spinner"></div> Computing precision windows…</div>
+                </div>
+            </div>
+
+            <div class="section-block">
+                <h2 class="section-title">Subscribe to Background Calendars</h2>
+                <p class="section-subtitle">Add these feeds to Google Calendar, Apple Calendar, or any ICS-compatible app</p>
+                <div class="card">
+                    <div id="feeds-content">
+                        <div class="loading-state"><div class="spinner"></div> Loading feed links…</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -677,12 +705,13 @@
         let yogiPointData = null;
         let pofData = null;
         let userEmail = '';
+        let powerDaysLoaded = false;
 
         document.addEventListener('DOMContentLoaded', function() {
-            loadAllData();
+            loadBackgroundDays();
         });
 
-        async function loadAllData() {
+        async function loadBackgroundDays() {
             const authRes = await fetch('/auth/status');
             const authData = await authRes.json();
             if (authData.status !== 'authenticated') {
@@ -691,45 +720,63 @@
             }
             userEmail = (authData.user_info || {}).email || '';
 
+            try {
+                const res = await fetch('/api/power-days');
+                if (!res.ok) {
+                    const err = await res.json();
+                    renderPowerDaysError(err);
+                    return;
+                }
+                const data = await res.json();
+                renderPowerDays(data);
+                powerDaysLoaded = true;
+
+                document.getElementById('proceed-section').style.display = 'block';
+            } catch (e) {
+                renderPowerDaysError({error: 'Failed to load background days'});
+            }
+        }
+
+        async function loadMicrotransitData() {
+            const btn = document.getElementById('proceed-btn');
+            btn.disabled = true;
+            btn.textContent = 'Calculating… this may take a moment';
+
+            document.getElementById('proceed-section').style.display = 'none';
+            document.getElementById('phase2-sections').style.display = 'block';
+
             const results = await Promise.allSettled([
-                fetch('/api/power-days').then(r => r.ok ? r.json() : r.json().then(e => { throw e; })),
                 fetch('/api/power-days/bird-batch').then(r => r.ok ? r.json() : r.json().then(e => { throw e; })),
                 fetch('/api/power-days/yogi-point').then(r => r.ok ? r.json() : r.json().then(e => { throw e; })),
                 fetch('/api/power-days/part-of-fortune').then(r => r.ok ? r.json() : r.json().then(e => { throw e; })),
             ]);
 
             if (results[0].status === 'fulfilled') {
-                renderPowerDays(results[0].value);
+                birdBatchData = results[0].value;
+                renderBirdBatch(birdBatchData);
             } else {
-                renderPowerDaysError(results[0].reason);
+                renderBirdBatchError(results[0].reason);
             }
 
             if (results[1].status === 'fulfilled') {
-                birdBatchData = results[1].value;
-                renderBirdBatch(birdBatchData);
+                yogiPointData = results[1].value;
+                renderYogiPoint(yogiPointData);
             } else {
-                renderBirdBatchError(results[1].reason);
+                renderYogiPointError(results[1].reason);
             }
 
             if (results[2].status === 'fulfilled') {
-                yogiPointData = results[2].value;
-                renderYogiPoint(yogiPointData);
-            } else {
-                renderYogiPointError(results[2].reason);
-            }
-
-            if (results[3].status === 'fulfilled') {
-                pofData = results[3].value;
+                pofData = results[2].value;
                 renderPoF(pofData);
             } else {
-                renderPoFError(results[3].reason);
+                renderPoFError(results[2].reason);
             }
 
             if (birdBatchData && (yogiPointData || pofData)) {
                 renderMicroBird();
             } else {
                 document.getElementById('micro-bird-content').innerHTML =
-                    '<div class="empty-state">Micro Bird requires both bird batch and microtransit data. <a href="/account-dashboard">Generate your calendars first</a></div>';
+                    '<div class="empty-state">Micro Bird requires both bird batch and microtransit data to compute precision windows.</div>';
             }
 
             renderFeeds();
@@ -822,9 +869,13 @@
 
         function renderBirdBatch(data) {
             const container = document.getElementById('bird-batch-content');
+            if (data.error) {
+                container.innerHTML = '<div class="error-state">' + data.error + '</div>';
+                return;
+            }
             const days = data.daily_results || [];
             if (days.length === 0) {
-                container.innerHTML = '<div class="empty-state">No bird batch periods on background days. <a href="/account-dashboard">Generate your calendars first</a></div>';
+                container.innerHTML = '<div class="empty-state">No bird batch periods found on your background days for this period.</div>';
                 return;
             }
 
@@ -1082,47 +1133,40 @@
         async function renderFeeds() {
             const container = document.getElementById('feeds-content');
 
-            let token = '';
             try {
                 const tokenRes = await fetch('/api/calendar-feeds');
-                if (tokenRes.ok) {
-                    const tokenData = await tokenRes.json();
-                    const feeds = tokenData.feeds || tokenData;
-                    if (Array.isArray(feeds) && feeds.length > 0) {
-                        const firstUrl = feeds[0].url || feeds[0].feed_url || '';
-                        const tokenMatch = firstUrl.match(/token=([^&]+)/);
-                        if (tokenMatch) token = tokenMatch[1];
-                    }
+                if (!tokenRes.ok) throw new Error('Failed to load feeds');
+                const tokenData = await tokenRes.json();
+                const feedMap = tokenData.feeds || {};
+
+                const bgFeeds = [
+                    { name: 'Bird Batch (Background)', key: 'bird_batch' },
+                    { name: 'Yogi Point (Background)', key: 'yogi_point' },
+                    { name: 'Part of Fortune (Background)', key: 'part_of_fortune' },
+                    { name: 'Micro Bird', key: 'microbird' },
+                    { name: 'Combined Calendar', key: 'combined' },
+                ];
+
+                let html = '';
+                for (const feed of bgFeeds) {
+                    const feedUrl = feedMap[feed.key] || '';
+                    if (!feedUrl) continue;
+                    const gcalUrl = 'https://calendar.google.com/calendar/r?cid=' + encodeURIComponent(feedUrl.replace('https://', 'webcal://').replace('http://', 'webcal://'));
+
+                    html += `<div class="feed-row">
+                        <div class="feed-info">
+                            <div class="feed-name">${feed.name}</div>
+                        </div>
+                        <div class="feed-actions">
+                            <button class="btn-copy" onclick="copyFeedUrl('${feedUrl}')">Copy Link</button>
+                            <a class="btn-gcal" href="${gcalUrl}" target="_blank" rel="noopener">Add to Google Cal</a>
+                        </div>
+                    </div>`;
                 }
-            } catch {}
-
-            const encodedEmail = encodeURIComponent(userEmail);
-            const baseParams = `user_id=${encodedEmail}` + (token ? `&token=${token}` : '');
-
-            const feedList = [
-                { name: 'Bird Batch (Background)', file: 'bg_bird_batch.ics' },
-                { name: 'Yogi Point (Background)', file: 'bg_yogi_point.ics' },
-                { name: 'Part of Fortune (Background)', file: 'bg_pof.ics' },
-                { name: 'Micro Bird', file: 'microbird.ics' },
-            ];
-
-            let html = '';
-            for (const feed of feedList) {
-                const feedUrl = `${window.location.origin}/calendar/${feed.file}?${baseParams}`;
-                const gcalUrl = 'https://calendar.google.com/calendar/r?cid=' + encodeURIComponent(feedUrl.replace('https://', 'webcal://').replace('http://', 'webcal://'));
-
-                html += `<div class="feed-row">
-                    <div class="feed-info">
-                        <div class="feed-name">${feed.name}</div>
-                        <div class="feed-file">${feed.file}</div>
-                    </div>
-                    <div class="feed-actions">
-                        <button class="btn-copy" onclick="copyFeedUrl('${feedUrl}')">Copy Link</button>
-                        <a class="btn-gcal" href="${gcalUrl}" target="_blank" rel="noopener">📅 Google Cal</a>
-                    </div>
-                </div>`;
+                container.innerHTML = html || '<div class="empty-state">No feed links available</div>';
+            } catch (e) {
+                container.innerHTML = '<div class="error-state">Could not load calendar feed links</div>';
             }
-            container.innerHTML = html;
         }
 
         function copyFeedUrl(url) {
@@ -1144,6 +1188,42 @@
             toast.textContent = msg;
             toast.classList.add('show');
             setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        async function regenerateCalendars() {
+            const btn = document.getElementById('regenerate-btn');
+            btn.disabled = true;
+            btn.textContent = 'Regenerating…';
+
+            document.getElementById('page-subtitle').textContent = 'Regenerating all calendars with latest engine…';
+            document.getElementById('omni-count').textContent = '—';
+            document.getElementById('double-go-count').textContent = '—';
+            document.getElementById('good-count').textContent = '—';
+            document.getElementById('days-list-content').innerHTML = '<div class="loading-state"><div class="spinner"></div> Regenerating calendars…</div>';
+            document.getElementById('proceed-section').style.display = 'none';
+            document.getElementById('phase2-sections').style.display = 'none';
+
+            try {
+                const res = await fetch('/api/power-days/generate', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                });
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.error || 'Regeneration failed');
+                }
+                const data = await res.json();
+                renderPowerDays(data);
+                powerDaysLoaded = true;
+                document.getElementById('proceed-section').style.display = 'block';
+                showToast('Calendars regenerated with latest classification engine');
+            } catch (e) {
+                renderPowerDaysError({error: e.message});
+                showToast('Error: ' + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Regenerate Calendars';
+            }
         }
 
         async function logout() {
