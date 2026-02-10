@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block content %}
+<ul class="nav nav-tabs mb-3" id="mainTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="calendars-tab" data-bs-toggle="tab" data-bs-target="#calendars-pane" type="button">
+            <i class="bi bi-calendar3"></i> Calendars
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="events-tab" data-bs-toggle="tab" data-bs-target="#events-pane" type="button">
+            <i class="bi bi-list-task"></i> Events & Copy
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings-pane" type="button">
+            <i class="bi bi-gear"></i> Settings
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content" id="mainTabContent">
+    <div class="tab-pane fade show active" id="calendars-pane" role="tabpanel">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="bi bi-link-45deg"></i> Fetch Calendar from URL</h5>
+                        <div class="mb-3">
+                            <label class="form-label">Calendar Type</label>
+                            <select class="form-select" id="fetchCalType">
+                                <option value="AB">AB Calendar</option>
+                                <option value="YP">YP Calendar</option>
+                                <option value="POF">POF Calendar</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Calendar Name</label>
+                            <input type="text" class="form-control" id="fetchCalName" placeholder="e.g., Abundance Calendar 2025">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">ICS URL</label>
+                            <input type="url" class="form-control" id="fetchCalUrl" placeholder="https://example.com/calendar.ics">
+                        </div>
+                        <button class="btn btn-primary w-100" id="fetchCalBtn">
+                            <i class="bi bi-cloud-download"></i> Fetch & Import
+                        </button>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="bi bi-upload"></i> Upload .ics File</h5>
+                        <form id="importCalForm">
+                            <div class="mb-3">
+                                <label class="form-label">Calendar Type</label>
+                                <select class="form-select" id="importCalType">
+                                    <option value="AB">AB Calendar</option>
+                                    <option value="YP">YP Calendar</option>
+                                    <option value="POF">POF Calendar</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">.ics File</label>
+                                <input type="file" class="form-control" id="importCalFile" accept=".ics" required>
+                            </div>
+                            <button type="submit" class="btn btn-outline-primary w-100">
+                                <i class="bi bi-upload"></i> Upload & Import
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="bi bi-calendar-check"></i> Loaded Calendars</h5>
+                        <div id="calendarList">
+                            <p class="text-muted">No calendars loaded</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-pane fade" id="events-pane" role="tabpanel">
+        <div class="card mb-3">
+            <div class="card-body">
+                <div class="row align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label">Filter by Calendar</label>
+                        <select class="form-select" id="eventCalFilter">
+                            <option value="">All Calendars</option>
+                            <option value="AB">AB</option>
+                            <option value="YP">YP</option>
+                            <option value="POF">POF</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Filter by Status</label>
+                        <select class="form-select" id="eventStatusFilter">
+                            <option value="">All</option>
+                            <option value="pending">Pending</option>
+                            <option value="ready">Ready</option>
+                            <option value="pushed">Pushed</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <button class="btn btn-primary w-100" id="loadEventsBtn">
+                            <i class="bi bi-arrow-clockwise"></i> Load Events
+                        </button>
+                    </div>
+                    <div class="col-md-3">
+                        <button class="btn btn-success w-100" id="pushToPublerBtn" disabled>
+                            <i class="bi bi-cloud-upload"></i> Push to Publer
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover table-sm" id="eventsTable">
+                        <thead>
+                            <tr>
+                                <th width="40"><input type="checkbox" id="selectAllEvents"></th>
+                                <th>Date</th>
+                                <th>Time</th>
+                                <th>Event</th>
+                                <th>Social Copy</th>
+                                <th width="100">Status</th>
+                                <th width="100">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="eventsTableBody">
+                        </tbody>
+                    </table>
+                </div>
+                <p id="noEventsMsg" class="text-muted text-center">Click "Load Events" to see calendar events</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-pane fade" id="settings-pane" role="tabpanel">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="bi bi-building"></i> Brand Settings</h5>
+                        <div class="mb-3">
+                            <label class="form-label">Company Name</label>
+                            <input type="text" class="form-control" id="settingsCompanyName">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Branded Hashtag</label>
+                            <input type="text" class="form-control" id="settingsBrandedHashtag">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Shop URL</label>
+                            <input type="url" class="form-control" id="settingsShopUrl">
+                        </div>
+                        <button class="btn btn-primary" id="saveSettingsBtn">
+                            <i class="bi bi-save"></i> Save Settings
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="bi bi-cloud-check"></i> Publer Connection</h5>
+                        <button class="btn btn-outline-primary mb-3" id="testPublerBtn">
+                            <i class="bi bi-plug"></i> Test Connection
+                        </button>
+                        <div id="publerStatus"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
