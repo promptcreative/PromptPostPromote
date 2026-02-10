@@ -394,10 +394,7 @@ def get_saved_calendar():
         if not user_id:
             return jsonify({'error': 'User ID not found'}), 400
 
-        month = request.args.get('month', type=int)
-        year = request.args.get('year', type=int)
-
-        saved_data = db_manager.get_calendar_data(user_id, year, month)
+        saved_data = db_manager.get_calendar_data(user_id)
 
         if saved_data:
             calendars = saved_data.get('calendars', {})
