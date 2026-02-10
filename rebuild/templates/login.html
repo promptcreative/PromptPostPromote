@@ -3,176 +3,168 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Astrobatching</title>
+    <title>Sign In - Astrobatching</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: #f8fafc;
+            font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #FFF8F0;
             min-height: 100vh;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
-            padding: 20px;
+            justify-content: center;
+            color: #2D2B3D;
+            padding: 24px;
         }
-        
-        .container {
+
+        .login-card {
             background: white;
             border-radius: 20px;
             padding: 40px;
-            max-width: 450px;
+            max-width: 420px;
             width: 100%;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
             text-align: center;
         }
-        
-        h1 {
-            font-size: 2rem;
-            color: #1e293b;
-            margin-bottom: 10px;
+
+        .login-card h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #2D2B3D;
+            margin-bottom: 8px;
         }
-        
-        .subtitle {
-            font-size: 1rem;
-            color: #475569;
+
+        .login-card .subtitle {
+            font-size: 0.95rem;
+            color: #6B6885;
             margin-bottom: 30px;
-            line-height: 1.6;
         }
-        
+
         .form-group {
             margin-bottom: 20px;
             text-align: left;
         }
-        
-        label {
+
+        .form-group label {
             display: block;
-            color: #475569;
-            font-weight: 500;
-            margin-bottom: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #2D2B3D;
+            margin-bottom: 6px;
         }
-        
-        input[type="email"] {
+
+        .form-group input {
             width: 100%;
-            padding: 15px;
+            padding: 14px 16px;
+            border: 2px solid #E8E6EF;
+            border-radius: 12px;
             font-size: 1rem;
-            border: 2px solid #e2e8f0;
-            border-radius: 10px;
+            font-family: inherit;
+            color: #2D2B3D;
+            background: #FAFAFE;
+            transition: border-color 0.2s, box-shadow 0.2s;
             outline: none;
-            transition: border-color 0.3s ease;
         }
-        
-        input[type="email"]:focus {
-            border-color: #64748b;
+
+        .form-group input:focus {
+            border-color: #A78BFA;
+            box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.15);
+            background: white;
         }
-        
-        .login-button {
+
+        .btn-login {
             width: 100%;
-            background: #64748b;
+            background: #2D2B3D;
             color: white;
+            padding: 14px;
+            border-radius: 12px;
             border: none;
-            padding: 15px 30px;
-            font-size: 1.1rem;
-            font-weight: 500;
-            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
-            margin-top: 10px;
+            font-family: inherit;
+            transition: transform 0.2s, box-shadow 0.2s;
         }
-        
-        .login-button:hover {
-            background: #475569;
+
+        .btn-login:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(100, 116, 139, 0.25);
+            box-shadow: 0 6px 20px rgba(45, 43, 61, 0.3);
         }
-        
-        .login-button:disabled {
-            background: #94a3b8;
+
+        .btn-login:disabled {
+            opacity: 0.6;
             cursor: not-allowed;
             transform: none;
         }
-        
-        .error-message {
-            background: #fef2f2;
-            color: #dc2626;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            font-size: 0.9rem;
-        }
-        
-        .back-link {
+
+        .info-text {
             margin-top: 20px;
-            color: #64748b;
+            padding: 14px;
+            background: #F5F0FF;
+            border-radius: 12px;
+            color: #6B6885;
+            font-size: 0.85rem;
+            line-height: 1.5;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            color: #6B6885;
             text-decoration: none;
             font-size: 0.9rem;
         }
-        
-        .back-link:hover {
-            color: #475569;
-            text-decoration: underline;
-        }
-        
-        .info-text {
-            margin-top: 20px;
-            padding: 15px;
-            background: #f1f5f9;
-            border-radius: 8px;
-            color: #64748b;
-            font-size: 0.85rem;
-            line-height: 1.5;
+
+        .back-link:hover { color: #2D2B3D; }
+
+        .error-message {
+            background: #FFF1F0;
+            color: #991B1B;
+            border: 1px solid #FECACA;
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 16px;
+            font-size: 0.9rem;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Welcome to Astrobatching</h1>
-        <p class="subtitle">Enter your email to access your personalized calendars</p>
-        
+    <div class="login-card">
+        <h1>Welcome back</h1>
+        <p class="subtitle">Sign in with your email to access your calendars</p>
+
         <div id="error-container"></div>
-        
+
         <form id="login-form" action="/login" method="POST">
             <div class="form-group">
-                <label for="email">Email Address</label>
-                <input type="email" id="email" name="email" placeholder="your@email.com" required autofocus>
+                <label>Email Address</label>
+                <input type="email" id="email" name="email" placeholder="you@example.com" required autofocus autocomplete="email">
             </div>
-            
-            <button type="submit" class="login-button" id="login-btn">
-                Continue
-            </button>
+            <button type="submit" class="btn-login" id="login-btn">Continue</button>
         </form>
-        
+
         <div class="info-text">
             Your email is used to save your profile and calendar preferences. No password required.
         </div>
-        
-        <a href="/" class="back-link">Back to Home</a>
+
+        <a href="/" class="back-link">Back to home</a>
     </div>
 
     <script>
-        // Check for error in URL
         const urlParams = new URLSearchParams(window.location.search);
         const error = urlParams.get('error');
-        
         if (error) {
-            const errorContainer = document.getElementById('error-container');
-            let errorMessage = 'An error occurred. Please try again.';
-            
-            if (error === 'invalid_email') {
-                errorMessage = 'Please enter a valid email address.';
-            } else if (error === 'server_error') {
-                errorMessage = 'Server error. Please try again later.';
-            }
-            
-            errorContainer.innerHTML = `<div class="error-message">${errorMessage}</div>`;
+            const container = document.getElementById('error-container');
+            let msg = 'An error occurred. Please try again.';
+            if (error === 'invalid_email') msg = 'Please enter a valid email address.';
+            else if (error === 'server_error') msg = 'Server error. Please try again later.';
+            container.innerHTML = '<div class="error-message">' + msg + '</div>';
         }
-        
-        // Form submission handling
-        document.getElementById('login-form').addEventListener('submit', function(e) {
+
+        document.getElementById('login-form').addEventListener('submit', function() {
             const btn = document.getElementById('login-btn');
             btn.disabled = true;
             btn.textContent = 'Signing in...';

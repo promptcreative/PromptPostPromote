@@ -4,578 +4,550 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Astrobatching</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: #f8fafc;
+            font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #FFF8F0;
             min-height: 100vh;
+            color: #2D2B3D;
+        }
+
+        nav {
             display: flex;
-            justify-content: center;
+            justify-content: space-between;
             align-items: center;
-            padding: 20px;
+            padding: 20px 60px;
+            max-width: 1400px;
+            margin: 0 auto;
         }
-        
-        .container {
-            background: white;
-            border-radius: 20px;
-            padding: 40px;
-            max-width: 900px;
-            width: 100%;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            text-align: center;
-        }
-        
-        .header {
-            margin-bottom: 40px;
-        }
-        
-        .header h1 {
-            font-size: 2.5rem;
-            color: #1e293b;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 15px;
-        }
-        
-        
-        .subtitle {
-            font-size: 1.1rem;
-            color: #475569;
-            line-height: 1.6;
-        }
-        
-        .services-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 30px;
-            margin: 40px 0;
-        }
-        
-        .service-card {
-            background: #f8f9fa;
-            border-radius: 15px;
-            padding: 30px;
-            border: 1px solid #e2e8f0;
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-        
-        .service-card:hover {
-            transform: translateY(-5px);
-            border-color: #64748b;
-            box-shadow: 0 10px 30px rgba(100, 116, 139, 0.15);
-        }
-        
-        
-        .service-card h3 {
+
+        .logo {
             font-size: 1.4rem;
-            color: #1e293b;
-            margin-bottom: 15px;
+            font-weight: 700;
+            color: #2D2B3D;
+            text-decoration: none;
+            letter-spacing: -0.5px;
         }
-        
-        .service-card p {
-            color: #475569;
-            line-height: 1.6;
+
+        .nav-links {
+            display: flex;
+            gap: 30px;
+            align-items: center;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: #6B6885;
             font-size: 0.95rem;
+            font-weight: 500;
+            transition: color 0.2s;
         }
-        
-        .cta-button {
-            background: #64748b;
+
+        .nav-links a:hover { color: #2D2B3D; }
+
+        .btn-nav {
+            background: #2D2B3D;
+            color: white !important;
+            padding: 10px 24px;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn-nav:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(45, 43, 61, 0.3);
+        }
+
+        .hero {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 60px 60px 40px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            align-items: center;
+        }
+
+        .hero-text h1 {
+            font-size: 3.2rem;
+            font-weight: 700;
+            line-height: 1.15;
+            color: #2D2B3D;
+            margin-bottom: 20px;
+            letter-spacing: -1px;
+        }
+
+        .hero-text p {
+            font-size: 1.15rem;
+            color: #6B6885;
+            line-height: 1.7;
+            margin-bottom: 35px;
+            max-width: 480px;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn-primary {
+            background: #2D2B3D;
             color: white;
+            padding: 14px 32px;
+            border-radius: 50px;
             border: none;
-            padding: 15px 40px;
-            font-size: 1.1rem;
-            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
-            margin-top: 30px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-family: inherit;
         }
-        
-        .cta-button:hover {
-            background: #475569;
+
+        .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(100, 116, 139, 0.25);
+            box-shadow: 0 6px 20px rgba(45, 43, 61, 0.3);
         }
-        
-        .feature-list {
-            text-align: left;
-            margin-top: 15px;
+
+        .btn-secondary {
+            background: white;
+            color: #2D2B3D;
+            padding: 14px 32px;
+            border-radius: 50px;
+            border: 2px solid #E8E6EF;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+            font-family: inherit;
         }
-        
-        .feature-list li {
-            color: #64748b;
-            margin: 8px 0;
-            padding-left: 20px;
+
+        .btn-secondary:hover {
+            border-color: #2D2B3D;
+            transform: translateY(-2px);
+        }
+
+        .hero-visual {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .hero-card {
+            background: white;
+            border-radius: 24px;
+            padding: 35px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
+            width: 100%;
+            max-width: 420px;
             position: relative;
         }
-        
-        .feature-list li::before {
-            content: "✓";
-            color: #1e293b;
-            font-weight: bold;
+
+        .hero-card::before {
+            content: '';
             position: absolute;
-            left: 0;
+            top: -15px;
+            right: -15px;
+            width: 120px;
+            height: 120px;
+            background: #FFE4B8;
+            border-radius: 50%;
+            z-index: -1;
+        }
+
+        .hero-card::after {
+            content: '';
+            position: absolute;
+            bottom: -20px;
+            left: -20px;
+            width: 80px;
+            height: 80px;
+            background: #D4F0E8;
+            border-radius: 50%;
+            z-index: -1;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .card-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #FFE4B8, #FFD699);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+        }
+
+        .card-header-text h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #2D2B3D;
+        }
+
+        .card-header-text span {
+            font-size: 0.85rem;
+            color: #9B98AE;
+        }
+
+        .timing-slots {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .timing-slot {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 16px;
+            border-radius: 14px;
+            transition: transform 0.2s;
+        }
+
+        .timing-slot:hover { transform: translateX(4px); }
+
+        .slot-go {
+            background: #E8F8F0;
+            border-left: 4px solid #34D399;
+        }
+
+        .slot-premium {
+            background: #FFF3E0;
+            border-left: 4px solid #FBBF24;
+        }
+
+        .slot-rest {
+            background: #F0F0F8;
+            border-left: 4px solid #A5B4FC;
+        }
+
+        .slot-time {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #2D2B3D;
+            min-width: 80px;
+        }
+
+        .slot-label {
+            font-size: 0.85rem;
+            color: #6B6885;
+        }
+
+        .slot-badge {
+            margin-left: auto;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-go { background: #D1FAE5; color: #065F46; }
+        .badge-premium { background: #FEF3C7; color: #92400E; }
+        .badge-rest { background: #E8E8F0; color: #4B4875; }
+
+        .features {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 80px 60px;
+        }
+
+        .features h2 {
+            text-align: center;
+            font-size: 2rem;
+            font-weight: 700;
+            color: #2D2B3D;
+            margin-bottom: 50px;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+
+        .feature-card {
+            background: white;
+            border-radius: 20px;
+            padding: 32px;
+            border: 1px solid #F0EEF5;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.06);
+        }
+
+        .feature-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 18px;
+        }
+
+        .fi-yellow { background: #FFF3E0; }
+        .fi-green { background: #E8F8F0; }
+        .fi-purple { background: #F0EEFF; }
+
+        .feature-card h3 {
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: #2D2B3D;
+            margin-bottom: 10px;
+        }
+
+        .feature-card p {
+            font-size: 0.95rem;
+            color: #6B6885;
+            line-height: 1.6;
+        }
+
+        .how-it-works {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 60px 80px;
+        }
+
+        .how-it-works h2 {
+            text-align: center;
+            font-size: 2rem;
+            font-weight: 700;
+            color: #2D2B3D;
+            margin-bottom: 50px;
+        }
+
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 24px;
+        }
+
+        .step {
+            text-align: center;
+            padding: 24px;
+        }
+
+        .step-number {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: #2D2B3D;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin: 0 auto 16px;
+        }
+
+        .step h3 {
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: #2D2B3D;
+            margin-bottom: 8px;
+        }
+
+        .step p {
+            font-size: 0.9rem;
+            color: #6B6885;
+            line-height: 1.5;
+        }
+
+        .cta {
+            background: #2D2B3D;
+            border-radius: 24px;
+            max-width: 1280px;
+            margin: 0 auto 60px;
+            padding: 60px;
+            text-align: center;
+            color: white;
+        }
+
+        .cta h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        .cta p {
+            font-size: 1.1rem;
+            color: #B8B6C8;
+            margin-bottom: 30px;
+        }
+
+        .btn-cta {
+            background: white;
+            color: #2D2B3D;
+            padding: 16px 36px;
+            border-radius: 50px;
+            border: none;
+            font-size: 1.05rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: transform 0.2s;
+            font-family: inherit;
+        }
+
+        .btn-cta:hover { transform: translateY(-2px); }
+
+        @media (max-width: 768px) {
+            nav { padding: 16px 24px; }
+            .nav-links { display: none; }
+            .hero {
+                grid-template-columns: 1fr;
+                padding: 30px 24px;
+                gap: 40px;
+            }
+            .hero-text h1 { font-size: 2.2rem; }
+            .features { padding: 40px 24px; }
+            .features-grid { grid-template-columns: 1fr; }
+            .steps { grid-template-columns: repeat(2, 1fr); }
+            .how-it-works { padding: 30px 24px; }
+            .cta { margin: 0 24px 40px; padding: 40px 24px; }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <!-- Account Access Bar - Shows when logged in -->
-        <div id="account-bar" style="display: none; margin-bottom: 20px; padding: 15px; background: #f1f5f9; border-radius: 10px; border: 1px solid #e2e8f0;">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                <div id="user-greeting" style="color: #475569; font-size: 0.95rem;">
-                    Welcome back!
-                </div>
-                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                    <button onclick="window.location.href='/account-dashboard'" style="background: #64748b; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 0.9rem; font-weight: 500;">
-                        My Account
-                    </button>
-                    <button onclick="window.location.href='/calendar-feeds'" style="background: #475569; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 0.9rem; font-weight: 500;">
-                        Calendar Feeds
-                    </button>
-                </div>
-            </div>
+    <nav>
+        <a href="/" class="logo">Astrobatching</a>
+        <div class="nav-links">
+            <a href="#features">Features</a>
+            <a href="#how-it-works">How it works</a>
+            <a href="/login" class="btn-nav">Get Started</a>
         </div>
-        
-        <div class="header">
-            <h1>
-                Astrobatching
-            </h1>
-            <p class="subtitle">
-                Optimize Your Schedule, Boost Your Productivity, & Increase Results by aligning with cosmic rhythms.
-            </p>
-        </div>
-        
-        <div class="services-grid">
-            <div class="service-card" onclick="navigateWithAuth('/calendar-form?type=collective')">
-                <h3>Collective Calendar</h3>
-                <p>Universal timing guidance for any location. Perfect for business launches, important decisions, and strategic planning.</p>
-                <ul class="feature-list">
-                    <li>PTI Analysis</li>
-                    <li>GoSlow Timing</li>
-                    <li>Electional Astrology</li>
-                    <li>Combined Intelligence</li>
-                </ul>
-            </div>
-            
-            <div class="service-card" onclick="navigateWithAuth('/calendar-form?type=personal')">
-                <h3>Personal Calendar</h3>
-                <p>Individualized timing optimization based on your birth data. Get personalized auspicious periods for major decisions.</p>
-                <ul class="feature-list">
-                    <li>Birth Chart Analysis</li>
-                    <li>House Transit Timing</li>
-                    <li>Yogi/Avayogi Periods</li>
-                    <li>Personal Favorability</li>
-                </ul>
-            </div>
-            
-            <div class="service-card" onclick="navigateWithAuth('/calendar-form?type=batch')">
-                <h3>30-Day Batch Processing</h3>
-                <p>Complete microtransits analysis with bird filtering and astro detection. Comprehensive timing intelligence.</p>
-                <ul class="feature-list">
-                    <li>Astrobatching Analysis</li>
-                    <li>Yogi Point Transits</li>
-                    <li>Part of Fortune</li>
-                    <li>Automation Moments</li>
-                </ul>
-            </div>
-        </div>
-        
-        <!-- Login Section for Unauthenticated Users -->
-        <div id="login-section" style="display: none; margin: 30px 0; padding: 30px; background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); border-radius: 15px; border: 1px solid #cbd5e1;">
-            <h3 style="color: #1e293b; margin-bottom: 15px; font-size: 1.3rem;">Login to Get Started</h3>
-            <p style="color: #475569; margin-bottom: 20px; line-height: 1.6;">
-                Enter your email to access personalized calendars and save your preferences.
-            </p>
-            <form id="quick-login-form" style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; align-items: center;">
-                <input type="email" id="quick-email" name="email" placeholder="your@email.com" required 
-                    style="padding: 15px 20px; font-size: 1rem; border: 2px solid #cbd5e1; border-radius: 10px; min-width: 250px; outline: none;">
-                <button type="submit" style="background: #64748b; color: white; border: none; padding: 15px 30px; border-radius: 10px; cursor: pointer; font-size: 1.1rem; font-weight: 500; transition: all 0.3s ease;">
-                    Continue
-                </button>
-            </form>
-            <p style="margin-top: 15px; font-size: 0.85rem; color: #94a3b8;">
-                No password required - Just your email to save your preferences
-            </p>
-        </div>
+    </nav>
 
-        <!-- CTA Button - Hidden, replaced by login section for unauthenticated users -->
-        <button id="cta-button" class="cta-button" style="display: none;" onclick="window.location.href='/profile-setup'">
-            Get Started - Complete Your Profile
-        </button>
-        
-        <div style="margin-top: 30px; padding-top: 30px; border-top: 1px solid #eee; color: #888; font-size: 0.9rem;">
-            <p>Powered by Swiss Ephemeris • Authentic Vedic Astrology • Precision Astronomical Calculations</p>
+    <section class="hero">
+        <div class="hero-text">
+            <h1>Find your golden windows for content</h1>
+            <p>Enter your birth data. We calculate your best days and optimal posting times using three astrological calendar systems. Then push directly to Publer.</p>
+            <div class="hero-buttons">
+                <a href="/profile-setup" class="btn-primary">Get your calendar</a>
+                <a href="#how-it-works" class="btn-secondary">Learn more</a>
+            </div>
         </div>
-        
-        <!-- Debug Panel for Google Calendar Connection -->
-        <div id="debug-panel" style="display: none; margin-top: 40px; background: #f8f9fa; border-radius: 15px; padding: 20px; border: 2px dashed #dee2e6;">
-            <h3 style="color: #333; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
-                🔍 Google Calendar Debug Panel
-                <button id="hide-debug" style="margin-left: auto; background: #64748b; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer;">Hide</button>
-            </h3>
-            <div id="debug-content">
-                <div style="text-align: center; color: #666; padding: 20px;">
-                    Loading debug information...
+        <div class="hero-visual">
+            <div class="hero-card">
+                <div class="card-header">
+                    <div class="card-icon">&#9733;</div>
+                    <div class="card-header-text">
+                        <h3>Today's Windows</h3>
+                        <span>Feb 10, 2026 &middot; Double GO</span>
+                    </div>
+                </div>
+                <div class="timing-slots">
+                    <div class="timing-slot slot-go">
+                        <span class="slot-time">9:08 AM</span>
+                        <span class="slot-label">Yogi Point transit</span>
+                        <span class="slot-badge badge-go">Premium</span>
+                    </div>
+                    <div class="timing-slot slot-premium">
+                        <span class="slot-time">1:24 PM</span>
+                        <span class="slot-label">Part of Fortune window</span>
+                        <span class="slot-badge badge-premium">Golden</span>
+                    </div>
+                    <div class="timing-slot slot-rest">
+                        <span class="slot-time">5:15 PM</span>
+                        <span class="slot-label">Bird period overlap</span>
+                        <span class="slot-badge badge-rest">Standard</span>
+                    </div>
                 </div>
             </div>
         </div>
-        
-        <!-- Debug Toggle Button -->
-        <div style="position: fixed; top: 20px; right: 20px; z-index: 1000;">
-            <button id="debug-toggle" style="background: #64748b; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-size: 14px; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
-                🔧 Debug
-            </button>
+    </section>
+
+    <section class="features" id="features">
+        <h2>What you get</h2>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon fi-yellow">&#128197;</div>
+                <h3>3 Calendar Systems</h3>
+                <p>Vedic, Magi/PTI, and Personal calendars cross-referenced to find days where multiple systems agree.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon fi-green">&#9201;</div>
+                <h3>Precision Timing</h3>
+                <p>Bird Batch finds your best time slots per day. Microtransits confirm which slots have planetary backing.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon fi-purple">&#128640;</div>
+                <h3>Push to Publer</h3>
+                <p>Your golden windows become posting times. Export as ICS or push drafts directly to Publer.</p>
+            </div>
         </div>
+    </section>
+
+    <section class="how-it-works" id="how-it-works">
+        <h2>How the funnel works</h2>
+        <div class="steps">
+            <div class="step">
+                <div class="step-number">1</div>
+                <h3>Enter birth info</h3>
+                <p>Name, birth date & time, birth location, and current location.</p>
+            </div>
+            <div class="step">
+                <div class="step-number">2</div>
+                <h3>3 calendars run</h3>
+                <p>Vedic, Magi/PTI, and Personal calendars cover 30-60 days.</p>
+            </div>
+            <div class="step">
+                <div class="step-number">3</div>
+                <h3>Best days found</h3>
+                <p>Double GO detection finds where calendars agree. Bird Batch picks the top time slots.</p>
+            </div>
+            <div class="step">
+                <div class="step-number">4</div>
+                <h3>Golden windows</h3>
+                <p>Microtransits confirm the best times. Your posting schedule is ready.</p>
+            </div>
+        </div>
+    </section>
+
+    <div class="cta">
+        <h2>Ready to find your best timing?</h2>
+        <p>Takes 2 minutes to set up. Your personalized calendar generates automatically.</p>
+        <a href="/profile-setup" class="btn-cta">Get started free</a>
     </div>
 
     <script>
-        // Load Google integration status when page loads
-        document.addEventListener('DOMContentLoaded', function() {
-            loadGoogleStatus();
-            updateRedirectURI();
-            setInterval(loadGoogleStatus, 5000); // Refresh every 5 seconds
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                const resp = await fetch('/auth/status');
+                const data = await resp.json();
+                if (data.status === 'authenticated') {
+                    window.location.href = '/account-dashboard';
+                }
+            } catch(e) {}
         });
-
-        // Update current redirect URI display dynamically
-        async function updateRedirectURI() {
-            try {
-                const response = await fetch('/debug/oauth-comprehensive');
-                const data = await response.json();
-                
-                if (data.redirect_uri_tests && data.redirect_uri_tests.generated_uri) {
-                    const redirectUri = data.redirect_uri_tests.generated_uri;
-                    const displayElement = document.getElementById('redirect-uri-display');
-                    if (displayElement) {
-                        displayElement.textContent = redirectUri;
-                        
-                        // Hide config help if user is authenticated
-                        const authResponse = await fetch('/auth/status');
-                        const authData = await authResponse.json();
-                        
-                        if (authData.status === 'authenticated') {
-                            document.getElementById('oauth-config-help').style.display = 'none';
-                        }
-                    }
-                }
-            } catch (error) {
-                console.error('Redirect URI update error:', error);
-                const displayElement = document.getElementById('redirect-uri-display');
-                if (displayElement) {
-                    displayElement.textContent = 'Error loading current domain';
-                }
-            }
-        }
-
-        // Google Integration Status Management
-        async function loadGoogleStatus() {
-            try {
-                const response = await fetch('/auth/status');
-                const data = await response.json();
-                updateGoogleStatusUI(data);
-            } catch (error) {
-                console.error('Error loading Google status:', error);
-                showGoogleError();
-            }
-        }
-
-        // Track authentication state globally
-        let isAuthenticated = false;
-
-        function updateGoogleStatusUI(authData) {
-            const statusDiv = document.getElementById('google-status');
-            const accountBar = document.getElementById('account-bar');
-            const userGreeting = document.getElementById('user-greeting');
-            const loginSection = document.getElementById('login-section');
-            const ctaButton = document.getElementById('cta-button');
-            
-            if (authData.status === 'authenticated') {
-                isAuthenticated = true;
-                // Auto-redirect authenticated users to account dashboard
-                console.log('User authenticated, redirecting to account dashboard...');
-                window.location.href = '/account-dashboard';
-                return;
-            } else {
-                isAuthenticated = false;
-                // Hide account bar for unauthenticated users
-                if (accountBar) {
-                    accountBar.style.display = 'none';
-                }
-                // Show login section for unauthenticated users
-                if (loginSection) {
-                    loginSection.style.display = 'block';
-                }
-                // Hide CTA button (replaced by login section)
-                if (ctaButton) {
-                    ctaButton.style.display = 'none';
-                }
-            }
-        }
-
-        // Navigate to a page only if authenticated, otherwise prompt login
-        function navigateWithAuth(targetUrl) {
-            if (isAuthenticated) {
-                window.location.href = targetUrl;
-            } else {
-                // Scroll to login section and highlight it
-                const loginSection = document.getElementById('login-section');
-                if (loginSection) {
-                    loginSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    loginSection.style.animation = 'pulse 0.5s ease-in-out 2';
-                    setTimeout(() => {
-                        loginSection.style.animation = '';
-                    }, 1000);
-                }
-                alert('Please sign in first to access this feature.');
-            }
-        }
-
-        function showGoogleError() {
-            const statusDiv = document.getElementById('google-status');
-            statusDiv.innerHTML = `
-                <div style="text-align: center; color: #475569;">
-                    <div style="font-size: 24px; margin-bottom: 10px;">⚠️</div>
-                    <p>Unable to check Google Calendar connection status.</p>
-                    <button onclick="loadGoogleStatus()" style="background: #64748b; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-top: 10px;">
-                        Try Again
-                    </button>
-                </div>
-            `;
-        }
-
-        // Google Integration Actions
-        // Email login form handler
-        document.addEventListener('DOMContentLoaded', function() {
-            const quickLoginForm = document.getElementById('quick-login-form');
-            if (quickLoginForm) {
-                quickLoginForm.addEventListener('submit', async function(e) {
-                    e.preventDefault();
-                    const email = document.getElementById('quick-email').value.trim();
-                    
-                    if (!email || !email.includes('@') || !email.includes('.')) {
-                        alert('Please enter a valid email address');
-                        return;
-                    }
-                    
-                    try {
-                        const response = await fetch('/login', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ email: email })
-                        });
-                        
-                        const data = await response.json();
-                        
-                        if (data.status === 'success') {
-                            window.location.href = data.redirect || '/account-dashboard';
-                        } else {
-                            alert(data.message || 'Login failed. Please try again.');
-                        }
-                    } catch (error) {
-                        console.error('Login error:', error);
-                        alert('Error logging in. Please try again.');
-                    }
-                });
-            }
-        });
-
-        async function loginWithGoogle() {
-            // Redirect to email login instead
-            window.location.href = '/login';
-        }
-
-        async function setupGoogleCalendars() {
-            try {
-                const button = event.target;
-                button.innerHTML = '⏳ Creating Calendars...';
-                button.disabled = true;
-                
-                const response = await fetch('/google/setup-calendars');
-                const data = await response.json();
-                
-                if (data.status === 'success') {
-                    alert(`✅ Success! Created ${Object.keys(data.calendars).length} personalized calendars in your Google Calendar.`);
-                    loadGoogleStatus(); // Refresh status
-                } else {
-                    alert('Error: ' + data.message);
-                }
-            } catch (error) {
-                alert('Error setting up calendars: ' + error.message);
-            } finally {
-                const button = event.target;
-                button.innerHTML = '📅 Setup My Calendars';
-                button.disabled = false;
-            }
-        }
-
-        async function syncAllData() {
-            try {
-                const button = event.target;
-                button.innerHTML = '⏳ Syncing Data...';
-                button.disabled = true;
-                
-                // This would connect to a comprehensive sync endpoint
-                alert('🚧 Full sync feature coming soon! For now, use the calendar generation pages to create data, then sync specific periods.');
-                
-            } catch (error) {
-                alert('Error syncing data: ' + error.message);
-            } finally {
-                const button = event.target;
-                button.innerHTML = '🔄 Sync Calendar Data';
-                button.disabled = false;
-            }
-        }
-
-        async function logoutGoogle() {
-            try {
-                if (confirm('Are you sure you want to disconnect from Google Calendar?')) {
-                    const response = await fetch('/auth/logout');
-                    const data = await response.json();
-                    alert(data.message);
-                    loadGoogleStatus(); // Refresh status
-                }
-            } catch (error) {
-                alert('Error logging out: ' + error.message);
-            }
-        }
-
-        // Debug Panel Functionality
-        document.getElementById('debug-toggle').addEventListener('click', function() {
-            const panel = document.getElementById('debug-panel');
-            if (panel.style.display === 'none') {
-                panel.style.display = 'block';
-                loadDebugInfo();
-            } else {
-                panel.style.display = 'none';
-            }
-        });
-
-        document.getElementById('hide-debug').addEventListener('click', function() {
-            document.getElementById('debug-panel').style.display = 'none';
-        });
-
-        async function loadDebugInfo() {
-            try {
-                const debugContent = document.getElementById('debug-content');
-                debugContent.innerHTML = '<div style="text-align: center; color: #666; padding: 20px;">Loading debug information...</div>';
-
-                // Fetch auth status and debug info
-                const [authResponse, debugResponse] = await Promise.all([
-                    fetch('/auth/status'),
-                    fetch('/debug/google-connection')
-                ]);
-
-                const authData = await authResponse.json();
-                const debugData = await debugResponse.json();
-
-                // Build debug HTML
-                let html = '<div style="font-family: monospace; font-size: 12px;">';
-                
-                // Auth Status Section
-                html += `<div style="background: ${authData.status === 'authenticated' ? '#f1f5f9' : '#f8fafc'}; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid ${authData.status === 'authenticated' ? '#64748b' : '#94a3b8'};">`;
-                html += `<h4 style="margin: 0 0 10px 0; color: #333;">🔐 Authentication Status</h4>`;
-                html += `<p><strong>Status:</strong> ${authData.status === 'authenticated' ? '✅ Authenticated' : '❌ Not Authenticated'}</p>`;
-                if (authData.user_info && authData.user_info.display_name) {
-                    html += `<p><strong>User:</strong> ${authData.user_info.display_name} (${authData.user_info.email})</p>`;
-                    html += `<p><strong>Authenticated At:</strong> ${new Date(authData.authenticated_at).toLocaleString()}</p>`;
-                }
-                html += '</div>';
-
-                // Environment Section
-                html += '<div style="background: #e2e3e5; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #6c757d;">';
-                html += '<h4 style="margin: 0 0 10px 0; color: #333;">🔧 Environment</h4>';
-                html += `<p><strong>Google Client ID:</strong> ${debugData.debug_info.environment.google_client_id_exists ? '✅ Configured' : '❌ Missing'}</p>`;
-                html += `<p><strong>Google Client Secret:</strong> ${debugData.debug_info.environment.google_client_secret_exists ? '✅ Configured' : '❌ Missing'}</p>`;
-                html += `<p><strong>Token File:</strong> ${debugData.debug_info.environment.token_file_exists ? '✅ Exists' : '❌ Not Found'}</p>`;
-                html += '</div>';
-
-                // Google API Section
-                const apiActive = debugData.debug_info.google_api.calendar_service_active;
-                html += `<div style="background: ${apiActive ? '#f1f5f9' : '#f8fafc'}; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid ${apiActive ? '#64748b' : '#94a3b8'};">`;
-                html += '<h4 style="margin: 0 0 10px 0; color: #333;">🌐 Google API</h4>';
-                html += `<p><strong>Calendar Service:</strong> ${debugData.debug_info.google_api.calendar_service_active ? '✅ Active' : '❌ Inactive'}</p>`;
-                html += `<p><strong>People Service:</strong> ${debugData.debug_info.google_api.people_service_active ? '✅ Active' : '❌ Inactive'}</p>`;
-                html += `<p><strong>Credentials Valid:</strong> ${debugData.debug_info.google_api.credentials_valid ? '✅ Valid' : '❌ Invalid'}</p>`;
-                if (debugData.debug_info.google_api.error) {
-                    html += `<p><strong>Error:</strong> <span style="color: #475569;">${debugData.debug_info.google_api.error}</span></p>`;
-                }
-                html += '</div>';
-
-                // Calendar Section
-                html += '<div style="background: #f1f5f9; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #64748b;">';
-                html += '<h4 style="margin: 0 0 10px 0; color: #333;">📅 Calendars</h4>';
-                if (debugData.debug_info.calendars.error) {
-                    html += `<p><span style="color: #475569;">${debugData.debug_info.calendars.error}</span></p>`;
-                } else {
-                    html += `<p><strong>Total Calendars:</strong> ${debugData.debug_info.calendars.total_calendars}</p>`;
-                    html += `<p><strong>Panch Pakshi Calendars:</strong> ${debugData.debug_info.calendars.panch_pakshi_calendars}</p>`;
-                    if (debugData.debug_info.calendars.calendar_names && debugData.debug_info.calendars.calendar_names.length > 0) {
-                        html += '<p><strong>Calendar Names:</strong></p><ul>';
-                        debugData.debug_info.calendars.calendar_names.forEach(name => {
-                            html += `<li>${name}</li>`;
-                        });
-                        html += '</ul>';
-                    }
-                }
-                html += '</div>';
-
-                // Action Buttons
-                html += '<div style="margin-top: 20px; text-align: center;">';
-                if (authData.status !== 'authenticated') {
-                    html += '<button onclick="authenticateGoogle()" style="background: #64748b; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-right: 10px;">🔗 Authenticate with Google</button>';
-                } else {
-                    html += '<button onclick="setupCalendars()" style="background: #64748b; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-right: 10px;">📅 Setup Calendars</button>';
-                    html += '<button onclick="logoutUser()" style="background: #64748b; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-right: 10px;">🔓 Logout</button>';
-                }
-                html += '<button onclick="loadDebugInfo()" style="background: #64748b; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">🔄 Refresh</button>';
-                html += '</div>';
-
-                html += '</div>';
-                debugContent.innerHTML = html;
-
-            } catch (error) {
-                document.getElementById('debug-content').innerHTML = `<div style="color: #475569; padding: 20px;">Error loading debug info: ${error.message}</div>`;
-            }
-        }
-
-        // Debug Action Functions
-        async function authenticateGoogle() {
-            try {
-                window.location.href = '/auth/google';
-            } catch (error) {
-                alert('Error authenticating: ' + error.message);
-            }
-        }
-
-        async function setupCalendars() {
-            try {
-                const response = await fetch('/google/setup-calendars');
-                const data = await response.json();
-                alert(data.message);
-                loadDebugInfo(); // Refresh debug info
-            } catch (error) {
-                alert('Error setting up calendars: ' + error.message);
-            }
-        }
-
-        async function logoutUser() {
-            try {
-                const response = await fetch('/auth/logout');
-                const data = await response.json();
-                alert(data.message);
-                loadDebugInfo(); // Refresh debug info
-            } catch (error) {
-                alert('Error logging out: ' + error.message);
-            }
-        }
     </script>
 </body>
 </html>
