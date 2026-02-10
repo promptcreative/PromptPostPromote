@@ -1,0 +1,90 @@
+**Perfect. Now we have the complete architecture.**
+
+---
+
+## **FINAL REBUILD STRUCTURE:**
+
+### **Input:**
+- User birth data (date, time, location)
+- Calendar range (default 60 days)
+
+### **Processing Pipeline:**
+```
+1. Generate 3 Calendars
+   ├─ Vedic Calendar
+   ├─ Magi/PTI Calendar  
+   └─ Personal Calendar
+
+2. Detect Background Days
+   ├─ Double GO (Vedic + Magi)
+   └─ Personal GOOD + (Vedic GO OR Magi GO)
+
+3. Run Micro Transits (only on background days)
+   ├─ YP (Yogi Point)
+   ├─ POF (Part of Fortune)
+   └─ AB (Bird time + micro transit overlaps)
+
+4. Calculate Midpoint Times
+   ├─ For each transit window (start → end)
+   └─ Posting time = (start + end) / 2
+
+5. Export ICS Calendar
+   ├─ Each event = one posting time
+   ├─ User-friendly title/description
+   └─ Hidden tracking in CATEGORIES/UID/COMMENT
+```
+
+### **Output (ICS file):**
+```
+BEGIN:VEVENT
+SUMMARY:Optimal Posting Time
+DESCRIPTION:Premium timing window for content
+DTSTART:20250215T090800Z
+DTEND:20250215T090800Z
+CATEGORIES:YP,PREMIUM
+UID:YP-MOON-YOGI-001-20250215T0908
+COMMENT:Internal: MOON-YOGI transit, orb 0.5°, window 09:05-09:11
+END:VEVENT
+```
+
+### **Database Storage (minimal):**
+```
+UserProfile:
+  - birth_data
+  - calendar_range
+
+BackgroundDays:
+  - date
+  - reason (double_go, personal_vedic_go, personal_magi_go)
+
+PostingTimes:
+  - datetime (midpoint)
+  - tag (YP/POF/AB)
+  - quality (premium/standard)
+  - transit_details (for debugging)
+```
+
+---
+
+## **What You Get:**
+
+1. ✅ User signs up → automatic processing (5 min)
+2. ✅ Simple background day selection (no manual picking)
+3. ✅ Midpoint calculation built-in (no extra PromptPost step needed)
+4. ✅ User-friendly output (no astro jargon)
+5. ✅ Full tracking via CATEGORIES for Publer analytics
+6. ✅ Minimal database storage
+
+---
+
+## **Next Steps:**
+
+**Do you want me to:**
+
+**A)** Map out which files from `rebuild.zip` you actually need and which to discard?
+
+**B)** Design the new modular structure for the rebuild environment?
+
+**C)** Something else first?
+
+What makes sense as the next action?
