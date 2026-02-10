@@ -44,30 +44,24 @@ class BirdBatchFilter:
     
     def import_panchapakshi(self):
         """
-        Import the panchapaskshi_2.py module - uses rebuild's core/panch_pakshi path
-        Falls back to top-level panch_pakshi/ if available
+        Import the PanchPakshiCalculator from core/panch_pakshi package.
+        Returns an instantiated calculator object.
         """
         if self._panchapakshi_module:
             return self._panchapakshi_module
 
         try:
             rebuild_root = os.path.dirname(os.path.dirname(__file__))
-            pp_path = os.path.join(rebuild_root, 'core', 'panch_pakshi')
+            core_pp = os.path.join(rebuild_root, 'core', 'panch_pakshi')
 
-            top_level_pp = os.path.join(os.path.dirname(os.path.dirname(rebuild_root)), 'panch_pakshi')
+            if os.path.isdir(core_pp) and os.path.exists(os.path.join(core_pp, '__init__.py')):
+                if rebuild_root not in sys.path:
+                    sys.path.insert(0, rebuild_root)
+                from core.panch_pakshi import PanchPakshiCalculator
+                self._panchapakshi_module = PanchPakshiCalculator()
+                return self._panchapakshi_module
 
-            for search_path in [pp_path, top_level_pp]:
-                candidate = os.path.join(search_path, 'panchapaskshi_2.py')
-                if not os.path.exists(candidate):
-                    candidate = os.path.join(search_path, 'panchapakshi.py')
-                if os.path.exists(candidate):
-                    spec = importlib.util.spec_from_file_location("panchapakshi_module", candidate)
-                    module = importlib.util.module_from_spec(spec)
-                    spec.loader.exec_module(module)
-                    self._panchapakshi_module = module
-                    return self._panchapakshi_module
-
-            raise FileNotFoundError("panchapakshi module not found in rebuild or top-level paths")
+            raise FileNotFoundError("panch_pakshi package not found at " + core_pp)
         except Exception as e:
             raise Exception(f"Error importing panchapakshi module: {e}")
     
@@ -96,7 +90,7 @@ class BirdBatchFilter:
             Dictionary containing all periods data
         """
         try:
-            pp = self.import_panchapakshi()
+            calc = self.import_panchapakshi()
             
             start_dt = datetime.strptime(start_date, "%Y-%m-%d")
             
@@ -110,16 +104,23 @@ class BirdBatchFilter:
             else:
                 birth_dt = datetime(1973, 3, 9, 16, 56)
             
-            birth_info = pp.calculate_birth_bird(birth_dt, b_lat, b_lon)
-            birth_bird = birth_info['bird']
+            from timezonefinder import TimezoneFinder
+            tf = TimezoneFinder()
+            tz_str = tf.timezone_at(lat=c_lat, lng=c_lon) or 'UTC'
+            
+            first_day = calc.calculate_bird_periods(
+                start_dt, birth_dt, c_lat, c_lon, tz_str
+            )
+            birth_bird = first_day.get('birth_bird', '')
+            birth_star = first_day.get('birth_star', '')
             
             all_periods = {
                 "start_date": start_date,
                 "days_processed": days,
                 "birth_info": {
                     "bird": birth_bird,
-                    "nakshatra": birth_info.get('nakshatra', ''),
-                    "paksha": birth_info.get('paksha', '')
+                    "nakshatra": birth_star,
+                    "paksha": first_day.get('paksha', '')
                 },
                 "daily_periods": []
             }
@@ -128,14 +129,19 @@ class BirdBatchFilter:
                 current_date = start_dt + timedelta(days=day_offset)
                 date_str = current_date.strftime("%Y-%m-%d")
                 
-                timing = pp.get_daily_bird_timing(current_date.date(), birth_bird, c_lat, c_lon)
+                if day_offset == 0:
+                    result = first_day
+                else:
+                    result = calc.calculate_bird_periods(
+                        current_date, birth_dt, c_lat, c_lon, tz_str
+                    )
                 
-                day_periods = self._extract_periods_from_timing(timing)
+                day_periods = self._extract_periods_from_timing(result)
                 
                 all_periods["daily_periods"].append({
                     "date": date_str,
                     "weekday": current_date.strftime("%A"),
-                    "paksha": timing.get('paksha', ''),
+                    "paksha": result.get('paksha', ''),
                     "periods": day_periods
                 })
             
@@ -181,67 +187,59 @@ class BirdBatchFilter:
     
     def _extract_periods_from_timing(self, timing: Dict[str, Any]) -> List[Dict[str, Any]]:
         """
-        Extract periods from panchapakshi timing data (new CSV database format)
+        Extract periods from PanchPakshiCalculator output.
         
         Args:
-            timing: Dictionary from get_daily_bird_timing with day_main_periods, night_main_periods, etc.
+            timing: Dictionary from calculate_bird_periods with day_periods, night_periods, etc.
             
         Returns:
             List of period dictionaries with subperiods flattened for tier classification
         """
         all_periods = []
         
-        for period in timing.get('day_main_periods', []):
-            main_activity = period.get('activity', '')
-            
-            period_data = {
-                "start_time": period.get('start_time', ''),
-                "end_time": period.get('end_time', ''),
-                "main_activity": main_activity,
-                "period_type": "day",
-                "period_index": period.get('period_index', 0),
-            }
-            
-            for sub in period.get('subperiods', []):
-                sub_activity = sub.get('activity', '')
-                sub_data = period_data.copy()
-                sub_data.update({
-                    "start_time": sub.get('start_time', ''),
-                    "end_time": sub.get('end_time', ''),
-                    "sub_activity": sub_activity,
-                    "combination": f"{main_activity}/{sub_activity}",
-                    "is_sub_period": True,
-                    "rating": sub.get('rating', 5),
-                    "effect": sub.get('effect', 'Average'),
-                    "relation": sub.get('relation', 'Neutral')
-                })
-                all_periods.append(sub_data)
+        period_keys = [
+            ('day_periods', 'day'),
+            ('night_periods', 'night'),
+            ('day_main_periods', 'day'),
+            ('night_main_periods', 'night'),
+        ]
         
-        for period in timing.get('night_main_periods', []):
-            main_activity = period.get('activity', '')
-            
-            period_data = {
-                "start_time": period.get('start_time', ''),
-                "end_time": period.get('end_time', ''),
-                "main_activity": main_activity,
-                "period_type": "night",
-                "period_index": period.get('period_index', 0),
-            }
-            
-            for sub in period.get('subperiods', []):
-                sub_activity = sub.get('activity', '')
-                sub_data = period_data.copy()
-                sub_data.update({
-                    "start_time": sub.get('start_time', ''),
-                    "end_time": sub.get('end_time', ''),
-                    "sub_activity": sub_activity,
-                    "combination": f"{main_activity}/{sub_activity}",
-                    "is_sub_period": True,
-                    "rating": sub.get('rating', 5),
-                    "effect": sub.get('effect', 'Average'),
-                    "relation": sub.get('relation', 'Neutral')
-                })
-                all_periods.append(sub_data)
+        for key, period_type in period_keys:
+            for period in timing.get(key, []):
+                main_activity = period.get('activity', '')
+                
+                period_data = {
+                    "start_time": period.get('start_time', ''),
+                    "end_time": period.get('end_time', ''),
+                    "main_activity": main_activity,
+                    "period_type": period_type,
+                    "period_index": period.get('yama_index', period.get('period_index', 0)),
+                    "bird": period.get('bird', ''),
+                    "auspiciousness": period.get('auspiciousness', ''),
+                }
+                
+                subs = period.get('sub_periods', []) or period.get('subperiods', [])
+                if subs:
+                    for sub in subs:
+                        sub_activity = sub.get('activity', '')
+                        sub_data = period_data.copy()
+                        sub_data.update({
+                            "start_time": sub.get('start_time', ''),
+                            "end_time": sub.get('end_time', ''),
+                            "sub_activity": sub_activity,
+                            "combination": f"{main_activity}/{sub_activity}",
+                            "is_sub_period": True,
+                            "rating": sub.get('rating', 5),
+                            "effect": sub.get('effect', sub.get('auspiciousness', 'Average')),
+                            "relation": sub.get('relation', sub.get('relationship', 'Neutral')),
+                            "sub_bird": sub.get('bird', ''),
+                        })
+                        all_periods.append(sub_data)
+                else:
+                    period_data["sub_activity"] = main_activity
+                    period_data["combination"] = f"{main_activity}/{main_activity}"
+                    period_data["is_sub_period"] = False
+                    all_periods.append(period_data)
         
         return all_periods
     

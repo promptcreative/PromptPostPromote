@@ -205,6 +205,10 @@ def generate_dashboard_core(data: dict, user_id: str = None) -> dict:
         bird_result = bird_filter.process_batch(
             start_date=datetime.now().strftime("%Y-%m-%d"),
             days=days, max_periods_per_day=6,
+            birth_date=birth_date,
+            birth_time=birth_time if ':' in str(birth_time or '') else None,
+            birth_latitude=birth_latitude,
+            birth_longitude=birth_longitude,
         )
         dashboard_results["calendars"]["bird_batch"] = bird_result
     except Exception as e:
