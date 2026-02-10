@@ -186,6 +186,11 @@ def interactive_calendar():
     return render_template('interactive_calendar.html')
 
 
+@pages_bp.route('/power-days', methods=['GET'])
+def power_days_page():
+    return render_template('power_days.html')
+
+
 @pages_bp.route('/multi-calendar', methods=['GET'])
 def multi_calendar():
     return render_template('multi_calendar_view.html')

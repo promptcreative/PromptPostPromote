@@ -442,8 +442,9 @@
 </head>
 <body>
     <nav>
-        <a href="/" class="logo">Astrobatching</a>
+        <a href="/account-dashboard" class="logo">Astrobatching</a>
         <div class="nav-actions">
+            <a href="/power-days" class="nav-link">Power Days</a>
             <a href="/clients" class="nav-link">Clients</a>
             <a href="/profile-setup" class="nav-link">Profile</a>
             <button class="btn-nav" onclick="logout()">Sign out</button>
@@ -481,17 +482,17 @@
                         <svg viewBox="0 0 24 24" fill="none" stroke="#9C88FF" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
                     </div>
                     <h3>Power Days</h3>
-                    <p>Double GO alignments, Personal Power Days, and top-tier BirdBatch periods.</p>
-                    <button class="btn-card purple" onclick="downloadPowerDays()">Download .ics</button>
+                    <p>OMNI, Double GO & Good days with Bird Batch windows, microtransits, and Micro Bird precision timing.</p>
+                    <button class="btn-card purple" onclick="window.location.href='/power-days'">View Power Days</button>
                 </div>
 
                 <div class="cal-card green">
                     <div class="cal-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="#4CAF50" stroke-width="2"><path d="M12 2C6.48 2 2 6 2 11c0 3.5 2.5 6 5 7.5V22l3.5-2 3.5 2v-3.5c2.5-1.5 5-4 5-7.5 0-5-4.48-9-7-9z"/></svg>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="#4CAF50" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                     </div>
-                    <h3>BirdBatch</h3>
-                    <p>30 days of favorable bird periods with precise timing windows.</p>
-                    <button class="btn-card green" onclick="downloadBirdBatch()">Download .ics</button>
+                    <h3>Clients</h3>
+                    <p>Manage your agency clients, generate calendars, and view their personalized results.</p>
+                    <button class="btn-card green" onclick="window.location.href='/clients'">Manage clients</button>
                 </div>
 
                 <div class="cal-card amber">
@@ -507,7 +508,7 @@
             <div class="advanced-bar">
                 <div class="bar-text">
                     <h4>Full calendar dashboard</h4>
-                    <p>Interactive 4-calendar view with microtransit analysis and day-by-day breakdowns</p>
+                    <p>Interactive 4-calendar view with day-by-day breakdowns across all systems</p>
                 </div>
                 <button class="btn-outline" onclick="window.location.href='/my-calendars'">Open dashboard</button>
             </div>
@@ -671,52 +672,6 @@
             } catch (error) {
                 console.error('Logout error:', error);
                 window.location.href = '/';
-            }
-        }
-
-        async function downloadPowerDays() {
-            try {
-                const response = await fetch('/download-power-days');
-                if (!response.ok) {
-                    const err = await response.json();
-                    alert(err.error || 'Error downloading');
-                    return;
-                }
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'astrobatching-power-days.ics';
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
-                a.remove();
-            } catch (error) {
-                console.error('Download error:', error);
-                alert('Error downloading Power Days calendar');
-            }
-        }
-
-        async function downloadBirdBatch() {
-            try {
-                const response = await fetch('/download-birdbatch');
-                if (!response.ok) {
-                    const err = await response.json();
-                    alert(err.error || 'Error downloading');
-                    return;
-                }
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'astrobatching-birdbatch.ics';
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
-                a.remove();
-            } catch (error) {
-                console.error('Download error:', error);
-                alert('Error downloading BirdBatch calendar');
             }
         }
 

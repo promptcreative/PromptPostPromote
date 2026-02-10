@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Power Days - Astrobatching</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: #FFF8F0;
+            min-height: 100vh;
+            color: #2D2B3D;
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 48px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .logo {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #2D2B3D;
+            text-decoration: none;
+        }
+
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .nav-link {
+            color: #6B6880;
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            padding: 8px 16px;
+            border-radius: 10px;
+            transition: all 0.2s;
+        }
+
+        .nav-link:hover { background: rgba(45,43,61,0.06); }
+
+        .btn-nav {
+            background: #2D2B3D;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 12px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-nav:hover { opacity: 0.9; transform: translateY(-1px); }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 32px 60px;
+        }
+
+        .page-header {
+            padding: 20px 0 36px;
+        }
+
+        .page-header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #2D2B3D;
+            margin-bottom: 6px;
+        }
+
+        .page-header p {
+            color: #8A8698;
+            font-size: 0.95rem;
+        }
+
+        .section-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #2D2B3D;
+            margin-bottom: 6px;
+        }
+
+        .section-subtitle {
+            color: #8A8698;
+            font-size: 0.88rem;
+            margin-bottom: 20px;
+        }
+
+        .section-block {
+            margin-bottom: 40px;
+        }
+
+        .stat-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 20px;
+            padding: 28px 24px;
+            box-shadow: 0 2px 16px rgba(45,43,61,0.06);
+            display: flex;
+            align-items: center;
+            gap: 18px;
+        }
+
+        .stat-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 1.4rem;
+        }
+
+        .stat-icon.purple { background: #F3E5F5; }
+        .stat-icon.blue { background: #E3F2FD; }
+        .stat-icon.green { background: #E8F5E9; }
+
+        .stat-info .stat-count {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #2D2B3D;
+            line-height: 1;
+        }
+
+        .stat-info .stat-label {
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: #8A8698;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-top: 4px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 28px 28px;
+            box-shadow: 0 2px 16px rgba(45,43,61,0.06);
+        }
+
+        .days-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+
+        .day-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 14px 0;
+            border-bottom: 1px solid #F3F1ED;
+        }
+
+        .day-row:last-child { border-bottom: none; }
+
+        .day-date {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #2D2B3D;
+            min-width: 120px;
+            flex-shrink: 0;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            flex-shrink: 0;
+        }
+
+        .badge-omni {
+            background: linear-gradient(135deg, #9C88FF, #7C6CE0);
+            color: white;
+        }
+
+        .badge-double-go {
+            background: #42A5F5;
+            color: white;
+        }
+
+        .badge-good {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .badge-double-boost {
+            background: linear-gradient(135deg, #FFB74D, #FFA726);
+            color: white;
+        }
+
+        .badge-boost {
+            background: #FF8A65;
+            color: white;
+        }
+
+        .badge-build {
+            background: #26A69A;
+            color: white;
+        }
+
+        .day-reason {
+            color: #8A8698;
+            font-size: 0.85rem;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .day-labels {
+            display: flex;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        .label-tag {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 0.68rem;
+            font-weight: 600;
+            background: #F3F1ED;
+            color: #6B6880;
+        }
+
+        .bird-day-group {
+            margin-bottom: 20px;
+        }
+
+        .bird-day-group:last-child { margin-bottom: 0; }
+
+        .bird-day-header {
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: #2D2B3D;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #F3F1ED;
+        }
+
+        .bird-period {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 0;
+            border-bottom: 1px solid #FAFAF8;
+        }
+
+        .bird-period:last-child { border-bottom: none; }
+
+        .bird-time {
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: #2D2B3D;
+            min-width: 150px;
+            flex-shrink: 0;
+        }
+
+        .bird-activity {
+            color: #8A8698;
+            font-size: 0.85rem;
+            flex: 1;
+        }
+
+        .bird-duration {
+            color: #B0ADBC;
+            font-size: 0.8rem;
+            flex-shrink: 0;
+        }
+
+        .two-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+
+        .transit-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 0;
+            border-bottom: 1px solid #F3F1ED;
+        }
+
+        .transit-item:last-child { border-bottom: none; }
+
+        .transit-time {
+            font-weight: 600;
+            font-size: 0.82rem;
+            color: #2D2B3D;
+            min-width: 90px;
+            flex-shrink: 0;
+        }
+
+        .transit-planet {
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: #9C88FF;
+        }
+
+        .transit-type {
+            color: #8A8698;
+            font-size: 0.82rem;
+            flex: 1;
+        }
+
+        .micro-bird-card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px 24px;
+            box-shadow: 0 2px 16px rgba(45,43,61,0.06);
+            margin-bottom: 14px;
+            border-left: 4px solid #9C88FF;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .micro-bird-card .mb-datetime {
+            flex-shrink: 0;
+        }
+
+        .micro-bird-card .mb-datetime .mb-date {
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: #2D2B3D;
+        }
+
+        .micro-bird-card .mb-datetime .mb-time {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #9C88FF;
+        }
+
+        .micro-bird-card .mb-details {
+            flex: 1;
+            min-width: 180px;
+        }
+
+        .micro-bird-card .mb-source {
+            font-size: 0.85rem;
+            color: #2D2B3D;
+            font-weight: 600;
+        }
+
+        .micro-bird-card .mb-meta {
+            font-size: 0.8rem;
+            color: #8A8698;
+            margin-top: 2px;
+        }
+
+        .micro-bird-card .mb-duration {
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: #2D2B3D;
+            flex-shrink: 0;
+            background: #F3F1ED;
+            padding: 4px 12px;
+            border-radius: 8px;
+        }
+
+        .btn-push {
+            background: #2D2B3D;
+            color: white;
+            border: none;
+            padding: 8px 18px;
+            border-radius: 10px;
+            font-family: inherit;
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .btn-push:hover { opacity: 0.85; transform: translateY(-1px); }
+        .btn-push:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        .btn-push-all {
+            background: #9C88FF;
+            color: white;
+            border: none;
+            padding: 12px 28px;
+            border-radius: 12px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 20px;
+        }
+
+        .btn-push-all:hover { opacity: 0.85; transform: translateY(-1px); }
+        .btn-push-all:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        .feed-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 0;
+            border-bottom: 1px solid #F3F1ED;
+            gap: 12px;
+        }
+
+        .feed-row:last-child { border-bottom: none; }
+
+        .feed-info {
+            flex: 1;
+        }
+
+        .feed-name {
+            font-weight: 600;
+            font-size: 0.92rem;
+            color: #2D2B3D;
+        }
+
+        .feed-file {
+            font-size: 0.78rem;
+            color: #B0ADBC;
+            font-family: monospace;
+        }
+
+        .feed-actions {
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .btn-copy {
+            background: #F3F1ED;
+            color: #2D2B3D;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-copy:hover { background: #E8E6F0; }
+
+        .btn-gcal {
+            background: white;
+            color: #2D2B3D;
+            border: 2px solid #E8E6F0;
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .btn-gcal:hover { border-color: #2D2B3D; }
+
+        .spinner {
+            display: inline-block;
+            width: 28px;
+            height: 28px;
+            border: 3px solid #E8E6F0;
+            border-top-color: #9C88FF;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .loading-state {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 40px 20px;
+            color: #8A8698;
+            font-size: 0.9rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 36px 20px;
+            color: #8A8698;
+            font-size: 0.92rem;
+        }
+
+        .empty-state a {
+            color: #9C88FF;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .empty-state a:hover { text-decoration: underline; }
+
+        .error-state {
+            text-align: center;
+            padding: 28px 20px;
+            color: #EF5350;
+            font-size: 0.88rem;
+            background: #FFF5F5;
+            border-radius: 12px;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 32px;
+            right: 32px;
+            background: #2D2B3D;
+            color: white;
+            padding: 14px 24px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            box-shadow: 0 8px 24px rgba(45,43,61,0.2);
+            z-index: 1000;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.3s;
+            pointer-events: none;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        @media (max-width: 768px) {
+            nav { padding: 16px 20px; }
+            .container { padding: 0 20px 40px; }
+            .stat-row { grid-template-columns: 1fr; }
+            .two-col { grid-template-columns: 1fr; }
+            .day-row { flex-wrap: wrap; }
+            .day-date { min-width: 100%; }
+            .day-labels { margin-top: 6px; }
+            .micro-bird-card { flex-direction: column; align-items: flex-start; }
+            .feed-row { flex-wrap: wrap; }
+            .feed-actions { width: 100%; justify-content: flex-end; }
+            .bird-time { min-width: 120px; }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/account-dashboard" class="logo">Astrobatching</a>
+        <div class="nav-actions">
+            <a href="/clients" class="nav-link">Clients</a>
+            <a href="/profile-setup" class="nav-link">Profile</a>
+            <button class="btn-nav" onclick="logout()">Sign out</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="page-header">
+            <h1>Your Power Days</h1>
+            <p id="page-subtitle">Loading your personalized posting schedule…</p>
+        </div>
+
+        <div id="stats-section" class="stat-row">
+            <div class="stat-card">
+                <div class="stat-icon purple">⚡</div>
+                <div class="stat-info">
+                    <div class="stat-count" id="omni-count">—</div>
+                    <div class="stat-label">OMNI Days</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon blue">🚀</div>
+                <div class="stat-info">
+                    <div class="stat-count" id="double-go-count">—</div>
+                    <div class="stat-label">Double GO Days</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green">✓</div>
+                <div class="stat-info">
+                    <div class="stat-count" id="good-count">—</div>
+                    <div class="stat-label">Good Days</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-block">
+            <h2 class="section-title">Background Days</h2>
+            <p class="section-subtitle">All classified power days sorted by date</p>
+            <div class="card">
+                <div id="days-list-content">
+                    <div class="loading-state"><div class="spinner"></div> Loading background days…</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-block">
+            <h2 class="section-title">Bird Batch on Background Days</h2>
+            <p class="section-subtitle">Favorable bird periods filtered to your power days</p>
+            <div class="card">
+                <div id="bird-batch-content">
+                    <div class="loading-state"><div class="spinner"></div> Loading bird batch data…</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-block">
+            <h2 class="section-title">Microtransit Layers</h2>
+            <p class="section-subtitle">Yogi Point and Part of Fortune transits on background days</p>
+            <div class="two-col">
+                <div class="card">
+                    <h3 style="font-size:1rem;font-weight:700;margin-bottom:14px;color:#2D2B3D;">Yogi Point on Background</h3>
+                    <div id="yogi-point-content">
+                        <div class="loading-state"><div class="spinner"></div> Loading…</div>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3 style="font-size:1rem;font-weight:700;margin-bottom:14px;color:#2D2B3D;">Part of Fortune on Background</h3>
+                    <div id="pof-content">
+                        <div class="loading-state"><div class="spinner"></div> Loading…</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-block">
+            <h2 class="section-title">Micro Bird — Precision Posting Times</h2>
+            <p class="section-subtitle">Where microtransits overlap with bird batch windows — your best moments to post</p>
+            <div id="micro-bird-actions" style="display:none;">
+                <button class="btn-push-all" onclick="pushAllToPubler()">Push All to Publer</button>
+            </div>
+            <div id="micro-bird-content">
+                <div class="loading-state"><div class="spinner"></div> Computing precision windows…</div>
+            </div>
+        </div>
+
+        <div class="section-block">
+            <h2 class="section-title">Subscribe to Background Calendars</h2>
+            <p class="section-subtitle">Add these feeds to Google Calendar, Apple Calendar, or any ICS-compatible app</p>
+            <div class="card">
+                <div id="feeds-content">
+                    <div class="loading-state"><div class="spinner"></div> Loading feed links…</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        let birdBatchData = null;
+        let yogiPointData = null;
+        let pofData = null;
+        let userEmail = '';
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadAllData();
+        });
+
+        async function loadAllData() {
+            const authRes = await fetch('/auth/status');
+            const authData = await authRes.json();
+            if (authData.status !== 'authenticated') {
+                window.location.href = '/';
+                return;
+            }
+            userEmail = (authData.user_info || {}).email || '';
+
+            const results = await Promise.allSettled([
+                fetch('/api/power-days').then(r => r.ok ? r.json() : r.json().then(e => { throw e; })),
+                fetch('/api/power-days/bird-batch').then(r => r.ok ? r.json() : r.json().then(e => { throw e; })),
+                fetch('/api/power-days/yogi-point').then(r => r.ok ? r.json() : r.json().then(e => { throw e; })),
+                fetch('/api/power-days/part-of-fortune').then(r => r.ok ? r.json() : r.json().then(e => { throw e; })),
+            ]);
+
+            if (results[0].status === 'fulfilled') {
+                renderPowerDays(results[0].value);
+            } else {
+                renderPowerDaysError(results[0].reason);
+            }
+
+            if (results[1].status === 'fulfilled') {
+                birdBatchData = results[1].value;
+                renderBirdBatch(birdBatchData);
+            } else {
+                renderBirdBatchError(results[1].reason);
+            }
+
+            if (results[2].status === 'fulfilled') {
+                yogiPointData = results[2].value;
+                renderYogiPoint(yogiPointData);
+            } else {
+                renderYogiPointError(results[2].reason);
+            }
+
+            if (results[3].status === 'fulfilled') {
+                pofData = results[3].value;
+                renderPoF(pofData);
+            } else {
+                renderPoFError(results[3].reason);
+            }
+
+            if (birdBatchData && (yogiPointData || pofData)) {
+                renderMicroBird();
+            } else {
+                document.getElementById('micro-bird-content').innerHTML =
+                    '<div class="empty-state">Micro Bird requires both bird batch and microtransit data. <a href="/account-dashboard">Generate your calendars first</a></div>';
+            }
+
+            renderFeeds();
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '';
+            try {
+                const d = new Date(dateStr + 'T00:00:00');
+                return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+            } catch { return dateStr; }
+        }
+
+        function formatTime(isoStr) {
+            if (!isoStr) return '';
+            try {
+                const d = new Date(isoStr);
+                if (isNaN(d)) {
+                    const parts = isoStr.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?/i);
+                    if (parts) return isoStr;
+                    return isoStr;
+                }
+                return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+            } catch { return isoStr; }
+        }
+
+        function classificationBadge(cls) {
+            const c = (cls || '').toUpperCase();
+            if (c === 'OMNI') return '<span class="badge badge-omni">OMNI</span>';
+            if (c === 'DOUBLE GO') return '<span class="badge badge-double-go">DOUBLE GO</span>';
+            if (c === 'GOOD') return '<span class="badge badge-good">GOOD</span>';
+            return '<span class="badge" style="background:#E8E6F0;color:#6B6880;">' + cls + '</span>';
+        }
+
+        function tierBadge(tier) {
+            const t = (tier || '').toLowerCase();
+            if (t === 'double boost') return '<span class="badge badge-double-boost">Double Boost</span>';
+            if (t === 'boost') return '<span class="badge badge-boost">Boost</span>';
+            if (t === 'build') return '<span class="badge badge-build">Build</span>';
+            return '<span class="badge" style="background:#E8E6F0;color:#6B6880;">' + tier + '</span>';
+        }
+
+        function renderPowerDays(data) {
+            document.getElementById('omni-count').textContent = (data.omni_days || []).length;
+            document.getElementById('double-go-count').textContent = (data.double_go_days || []).length;
+            document.getElementById('good-count').textContent = (data.good_days || []).length;
+
+            const total = data.total_background || 0;
+            document.getElementById('page-subtitle').textContent =
+                total + ' background day' + (total !== 1 ? 's' : '') + ' found across ' + (data.total_days || 0) + ' days analyzed';
+
+            const allDays = [
+                ...(data.omni_days || []).map(d => ({...d, classification: 'OMNI'})),
+                ...(data.double_go_days || []).map(d => ({...d, classification: 'DOUBLE GO'})),
+                ...(data.good_days || []).map(d => ({...d, classification: 'GOOD'})),
+            ];
+            allDays.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+
+            const container = document.getElementById('days-list-content');
+            if (allDays.length === 0) {
+                container.innerHTML = '<div class="empty-state">No power days found in this period. <a href="/account-dashboard">Generate your calendars first</a></div>';
+                return;
+            }
+
+            let html = '<div class="days-list">';
+            for (const day of allDays) {
+                const labels = [];
+                if (day.pti_label) labels.push(day.pti_label);
+                if (day.vedic_label) labels.push(day.vedic_label);
+                if (day.personal_label) labels.push(day.personal_label);
+
+                html += `<div class="day-row">
+                    <span class="day-date">${formatDate(day.date)}</span>
+                    ${classificationBadge(day.classification)}
+                    <span class="day-reason">${day.reason || ''}</span>
+                    <span class="day-labels">
+                        ${labels.map(l => '<span class="label-tag">' + l + '</span>').join('')}
+                    </span>
+                </div>`;
+            }
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function renderPowerDaysError(err) {
+            const msg = (err && err.error) || 'Failed to load power days';
+            document.getElementById('days-list-content').innerHTML = '<div class="error-state">' + msg + '</div>';
+            document.getElementById('page-subtitle').textContent = 'Could not load data';
+        }
+
+        function renderBirdBatch(data) {
+            const container = document.getElementById('bird-batch-content');
+            const days = data.daily_results || [];
+            if (days.length === 0) {
+                container.innerHTML = '<div class="empty-state">No bird batch periods on background days. <a href="/account-dashboard">Generate your calendars first</a></div>';
+                return;
+            }
+
+            let html = '';
+            for (const day of days) {
+                const periods = day.periods || [];
+                html += '<div class="bird-day-group">';
+                html += '<div class="bird-day-header">' + formatDate(day.date) + '</div>';
+                for (const p of periods) {
+                    const startTime = p.start_time || '';
+                    const endTime = p.end_time || '';
+                    const dur = p.duration_minutes || p.duration || '';
+                    const activity = p.sub_activity || p.main_activity || p.activity || '';
+                    html += `<div class="bird-period">
+                        <span class="bird-time">${startTime} – ${endTime}</span>
+                        ${tierBadge(p.tier)}
+                        <span class="bird-activity">${activity}</span>
+                        <span class="bird-duration">${dur ? dur + ' min' : ''}</span>
+                    </div>`;
+                }
+                html += '</div>';
+            }
+            container.innerHTML = html;
+        }
+
+        function renderBirdBatchError(err) {
+            const msg = (err && err.error) || 'Failed to load bird batch data';
+            document.getElementById('bird-batch-content').innerHTML = '<div class="error-state">' + msg + '</div>';
+        }
+
+        function renderTransitList(containerId, data, source) {
+            const container = document.getElementById(containerId);
+            const transits = data.transits || [];
+            if (transits.length === 0) {
+                container.innerHTML = '<div class="empty-state">No ' + source + ' transits on background days</div>';
+                return;
+            }
+
+            let html = '';
+            for (const t of transits) {
+                const startRaw = t.start_time || t.start || t.datetime || '';
+                const planet = t.planet || t.type || '';
+                const tType = t.transit_type || t.aspect || t.type || '';
+                html += `<div class="transit-item">
+                    <span class="transit-time">${formatTime(startRaw)}</span>
+                    <span class="transit-planet">${planet}</span>
+                    <span class="transit-type">${tType}</span>
+                </div>`;
+            }
+            container.innerHTML = html;
+        }
+
+        function renderYogiPoint(data) { renderTransitList('yogi-point-content', data, 'Yogi Point'); }
+        function renderYogiPointError(err) {
+            const msg = (err && err.error) || 'Failed to load Yogi Point data';
+            document.getElementById('yogi-point-content').innerHTML = '<div class="error-state">' + msg + '</div>';
+        }
+
+        function renderPoF(data) { renderTransitList('pof-content', data, 'Part of Fortune'); }
+        function renderPoFError(err) {
+            const msg = (err && err.error) || 'Failed to load Part of Fortune data';
+            document.getElementById('pof-content').innerHTML = '<div class="error-state">' + msg + '</div>';
+        }
+
+        function computeMicroBird() {
+            if (!birdBatchData) return [];
+            const birdDays = birdBatchData.daily_results || [];
+
+            const birdWindows = [];
+            for (const day of birdDays) {
+                const dayDate = day.date || '';
+                for (const p of (day.periods || [])) {
+                    const startStr = p.start_time || '';
+                    const endStr = p.end_time || '';
+                    const startDt = parseTimeOnDate(dayDate, startStr);
+                    const endDt = parseTimeOnDate(dayDate, endStr);
+                    if (!startDt || !endDt) continue;
+                    birdWindows.push({
+                        date: dayDate,
+                        start: startDt,
+                        end: endDt,
+                        tier: p.tier || '',
+                        activity: p.sub_activity || p.main_activity || p.activity || '',
+                    });
+                }
+            }
+
+            const allTransits = [];
+            if (yogiPointData) {
+                for (const t of (yogiPointData.transits || [])) {
+                    allTransits.push({...t, _source: 'Yogi Point'});
+                }
+            }
+            if (pofData) {
+                for (const t of (pofData.transits || [])) {
+                    allTransits.push({...t, _source: 'Part of Fortune'});
+                }
+            }
+
+            const events = [];
+            for (const transit of allTransits) {
+                const tStartRaw = transit.start_time || transit.start || '';
+                const tEndRaw = transit.end_time || transit.end || '';
+                if (!tStartRaw || !tEndRaw) continue;
+
+                let tStart, tEnd;
+                try {
+                    tStart = new Date(tStartRaw);
+                    tEnd = new Date(tEndRaw);
+                    if (isNaN(tStart) || isNaN(tEnd)) continue;
+                } catch { continue; }
+
+                const tDate = tStart.toISOString().split('T')[0];
+
+                for (const bw of birdWindows) {
+                    if (bw.date !== tDate) continue;
+                    if (tStart < bw.end && tEnd > bw.start) {
+                        const overlapStart = tStart > bw.start ? tStart : bw.start;
+                        const overlapEnd = tEnd < bw.end ? tEnd : bw.end;
+                        const durationMin = Math.round((overlapEnd - overlapStart) / 60000);
+                        if (durationMin < 1) continue;
+
+                        events.push({
+                            date: tDate,
+                            start: overlapStart.toISOString(),
+                            end: overlapEnd.toISOString(),
+                            duration_minutes: durationMin,
+                            transit_source: transit._source,
+                            planet: transit.planet || transit.type || '',
+                            bird_tier: bw.tier,
+                            bird_activity: bw.activity,
+                        });
+                    }
+                }
+            }
+
+            events.sort((a, b) => a.start.localeCompare(b.start));
+            return events;
+        }
+
+        function parseTimeOnDate(dateStr, timeStr) {
+            if (!dateStr || !timeStr) return null;
+            try {
+                const tryISO = new Date(dateStr + 'T' + timeStr);
+                if (!isNaN(tryISO)) return tryISO;
+
+                const match = timeStr.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)/i);
+                if (match) {
+                    let h = parseInt(match[1]);
+                    const m = parseInt(match[2]);
+                    const s = match[3] ? parseInt(match[3]) : 0;
+                    const ampm = match[4].toUpperCase();
+                    if (ampm === 'PM' && h < 12) h += 12;
+                    if (ampm === 'AM' && h === 12) h = 0;
+                    return new Date(dateStr + 'T' + String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0'));
+                }
+
+                const match24 = timeStr.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+                if (match24) {
+                    return new Date(dateStr + 'T' + timeStr);
+                }
+            } catch {}
+            return null;
+        }
+
+        let microBirdEvents = [];
+
+        function renderMicroBird() {
+            const container = document.getElementById('micro-bird-content');
+            microBirdEvents = computeMicroBird();
+
+            if (microBirdEvents.length === 0) {
+                container.innerHTML = '<div class="empty-state">No precision posting windows found. This happens when microtransits don\'t overlap with bird batch periods on your power days.</div>';
+                return;
+            }
+
+            document.getElementById('micro-bird-actions').style.display = 'block';
+
+            let html = '';
+            for (let i = 0; i < microBirdEvents.length; i++) {
+                const ev = microBirdEvents[i];
+                html += `<div class="micro-bird-card">
+                    <div class="mb-datetime">
+                        <div class="mb-date">${formatDate(ev.date)}</div>
+                        <div class="mb-time">${formatTime(ev.start)} – ${formatTime(ev.end)}</div>
+                    </div>
+                    <div class="mb-details">
+                        <div class="mb-source">${ev.transit_source} · ${ev.planet}</div>
+                        <div class="mb-meta">${tierBadge(ev.bird_tier)} ${ev.bird_activity}</div>
+                    </div>
+                    <div class="mb-duration">${ev.duration_minutes} min</div>
+                    <button class="btn-push" onclick="pushSingleToPubler(${i})" id="push-btn-${i}">Push to Publer</button>
+                </div>`;
+            }
+            container.innerHTML = html;
+        }
+
+        async function pushSingleToPubler(index) {
+            const btn = document.getElementById('push-btn-' + index);
+            if (btn) { btn.disabled = true; btn.textContent = 'Pushing…'; }
+            try {
+                const response = await fetch('/api/publer/push', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        events: [{
+                            title: 'MicroBird: ' + microBirdEvents[index].transit_source + ' x ' + microBirdEvents[index].bird_tier,
+                            text: buildMicroBirdText(microBirdEvents[index]),
+                            scheduled_time: microBirdEvents[index].start,
+                        }],
+                        account_ids: null,
+                    }),
+                });
+                const result = await response.json();
+                if (result.error) throw new Error(result.error);
+                showToast('Pushed to Publer!');
+                if (btn) { btn.textContent = '✓ Pushed'; }
+            } catch (e) {
+                showToast('Error: ' + e.message);
+                if (btn) { btn.disabled = false; btn.textContent = 'Push to Publer'; }
+            }
+        }
+
+        async function pushAllToPubler() {
+            const btn = document.querySelector('.btn-push-all');
+            if (btn) { btn.disabled = true; btn.textContent = 'Pushing all…'; }
+            try {
+                const response = await fetch('/api/publer/push-microbird', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ account_ids: null }),
+                });
+                const result = await response.json();
+                if (result.error) throw new Error(result.error);
+                showToast('Pushed ' + (result.pushed || 0) + ' events to Publer!');
+                if (btn) { btn.textContent = '✓ All pushed'; }
+            } catch (e) {
+                showToast('Error: ' + e.message);
+                if (btn) { btn.disabled = false; btn.textContent = 'Push All to Publer'; }
+            }
+        }
+
+        function buildMicroBirdText(ev) {
+            return [
+                '🎯 MicroBird: ' + ev.transit_source + ' x ' + ev.bird_tier,
+                '📅 ' + formatDate(ev.date),
+                '⏰ ' + formatTime(ev.start) + ' – ' + formatTime(ev.end),
+                '⏱️ ' + ev.duration_minutes + ' min window',
+                '🪐 ' + ev.planet,
+                '🐦 ' + ev.bird_tier + ' (' + ev.bird_activity + ')',
+                '#astrobatching',
+            ].join('\n');
+        }
+
+        async function renderFeeds() {
+            const container = document.getElementById('feeds-content');
+
+            let token = '';
+            try {
+                const tokenRes = await fetch('/api/calendar-feeds');
+                if (tokenRes.ok) {
+                    const tokenData = await tokenRes.json();
+                    const feeds = tokenData.feeds || tokenData;
+                    if (Array.isArray(feeds) && feeds.length > 0) {
+                        const firstUrl = feeds[0].url || feeds[0].feed_url || '';
+                        const tokenMatch = firstUrl.match(/token=([^&]+)/);
+                        if (tokenMatch) token = tokenMatch[1];
+                    }
+                }
+            } catch {}
+
+            const encodedEmail = encodeURIComponent(userEmail);
+            const baseParams = `user_id=${encodedEmail}` + (token ? `&token=${token}` : '');
+
+            const feedList = [
+                { name: 'Bird Batch (Background)', file: 'bg_bird_batch.ics' },
+                { name: 'Yogi Point (Background)', file: 'bg_yogi_point.ics' },
+                { name: 'Part of Fortune (Background)', file: 'bg_pof.ics' },
+                { name: 'Micro Bird', file: 'microbird.ics' },
+            ];
+
+            let html = '';
+            for (const feed of feedList) {
+                const feedUrl = `${window.location.origin}/calendar/${feed.file}?${baseParams}`;
+                const gcalUrl = 'https://calendar.google.com/calendar/r?cid=' + encodeURIComponent(feedUrl.replace('https://', 'webcal://').replace('http://', 'webcal://'));
+
+                html += `<div class="feed-row">
+                    <div class="feed-info">
+                        <div class="feed-name">${feed.name}</div>
+                        <div class="feed-file">${feed.file}</div>
+                    </div>
+                    <div class="feed-actions">
+                        <button class="btn-copy" onclick="copyFeedUrl('${feedUrl}')">Copy Link</button>
+                        <a class="btn-gcal" href="${gcalUrl}" target="_blank" rel="noopener">📅 Google Cal</a>
+                    </div>
+                </div>`;
+            }
+            container.innerHTML = html;
+        }
+
+        function copyFeedUrl(url) {
+            navigator.clipboard.writeText(url).then(() => {
+                showToast('Feed URL copied!');
+            }).catch(() => {
+                const input = document.createElement('input');
+                input.value = url;
+                document.body.appendChild(input);
+                input.select();
+                document.execCommand('copy');
+                document.body.removeChild(input);
+                showToast('Feed URL copied!');
+            });
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        async function logout() {
+            await fetch('/auth/logout', { method: 'POST', headers: {'Content-Type': 'application/json'} });
+            window.location.href = '/';
+        }
+    </script>
+</body>
+</html>
