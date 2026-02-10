@@ -32,6 +32,8 @@ def account_dashboard():
 @pages_bp.route('/calendar-feeds', methods=['GET'])
 def calendar_feeds_page():
     personal_calendar_url = None
+    pti_calendar_url = None
+    vedic_calendar_url = None
     is_authenticated = False
 
     try:
@@ -48,18 +50,33 @@ def calendar_feeds_page():
                 birth_lon = user_profile.birth_longitude or 0
                 tz_offset = user_profile.birth_timezone or -5
                 user_id_encoded = quote(user_email, safe='')
-                subscription_token = db_manager.get_subscription_token(user_email, 'personal')
+
+                personal_token = db_manager.get_subscription_token(user_email, 'personal')
                 personal_calendar_url = (
                     f"/calendar/personal.ics?user_id={user_id_encoded}"
-                    f"&token={subscription_token}&birth_date={birth_date}"
+                    f"&token={personal_token}&birth_date={birth_date}"
                     f"&birth_time={birth_time}&birth_lat={birth_lat}"
                     f"&birth_lon={birth_lon}&timezone={tz_offset}"
+                )
+
+                pti_token = db_manager.get_subscription_token(user_email, 'pti')
+                pti_calendar_url = (
+                    f"/calendar/pti.ics?user_id={user_id_encoded}"
+                    f"&token={pti_token}"
+                )
+
+                vedic_token = db_manager.get_subscription_token(user_email, 'vedic')
+                vedic_calendar_url = (
+                    f"/calendar/vedic.ics?user_id={user_id_encoded}"
+                    f"&token={vedic_token}"
                 )
     except Exception:
         pass
 
     return render_template('calendar_feeds.html',
                            personal_calendar_url=personal_calendar_url,
+                           pti_calendar_url=pti_calendar_url,
+                           vedic_calendar_url=vedic_calendar_url,
                            is_authenticated=is_authenticated)
 
 

@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
     <title>Calendar Feeds - Astrobatching</title>
     <style>
         * {
@@ -12,8 +13,8 @@
         }
         
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+            font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #FFF8F0;
             min-height: 100vh;
             padding: 20px;
         }
@@ -35,7 +36,7 @@
         }
         
         .header h1 {
-            color: #e65100;
+            color: #2D2B3D;
             font-size: 2rem;
             margin-bottom: 10px;
         }
@@ -103,6 +104,25 @@
         .feed-card.yogi { border-color: #8e44ad; }
         .feed-card.nogo { border-color: #e67e22; }
         .feed-card.allmicro { border-color: #9b59b6; }
+        .feed-card.pti { border-color: #e65100; }
+        .feed-card.vedic { border-color: #1565c0; }
+        
+        .section-header {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: #2D2B3D;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .section-divider {
+            margin-top: 35px;
+            margin-bottom: 20px;
+        }
         
         .feed-title {
             font-size: 1.3rem;
@@ -156,6 +176,12 @@
             transform: translateY(-2px);
         }
         
+        .feed-card.pti .feed-btn-copy { background: #e65100; color: white; }
+        .feed-card.pti .feed-btn-download { background: #bf360c; color: white; }
+        .feed-card.vedic .feed-btn-copy { background: #1565c0; color: white; }
+        .feed-card.vedic .feed-btn-download { background: #0d47a1; color: white; }
+        .feed-card.pti .feed-title { color: #e65100; }
+        .feed-card.vedic .feed-title { color: #1565c0; }
         .feed-card.bird .feed-btn-copy { background: #3498db; color: white; }
         .feed-card.bird .feed-btn-download { background: #2980b9; color: white; }
         .feed-card.microbird .feed-btn-copy { background: #e74c3c; color: white; }
@@ -270,6 +296,54 @@
             <div class="info-icon">⏱️</div>
             <div class="info-content">
                 <strong>First-time setup:</strong> Calendar generation takes about 3-5 minutes on first use while we calculate your personalized transits. After that, your calendars are saved and load instantly. Subscription URLs stay the same, so any calendar app you connect will automatically receive updates.
+            </div>
+        </div>
+        
+        <div class="section-header">
+            <span>📆</span> Subscribe to Monthly Calendars
+        </div>
+        
+        <div class="feed-grid" style="margin-bottom: 10px;">
+            <div class="feed-card pti">
+                <div class="feed-title">📈 PTI Calendar</div>
+                <div class="feed-description">
+                    Professional Timing Index - your monthly overview of collective energy days. Shows daily classifications (PTI Best, PTI Go, Normal, PTI Slow, PTI Worst) with scores so you can see the big picture at a glance.
+                </div>
+                <div class="feed-stats">Daily classifications for the full month</div>
+                <div class="feed-actions">
+                    {% if pti_calendar_url %}
+                    <button class="feed-btn feed-btn-copy" onclick="copyUrl('{{ pti_calendar_url }}', this)">Copy URL</button>
+                    <a href="{{ pti_calendar_url }}" download class="feed-btn feed-btn-download">Download ICS</a>
+                    {% elif is_authenticated %}
+                    <a href="/profile-setup" class="feed-btn" style="background: #e65100; color: white;">Complete Profile</a>
+                    {% else %}
+                    <a href="/login" class="feed-btn" style="background: #e65100; color: white;">Sign In to Access</a>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="feed-card vedic">
+                <div class="feed-title">🕉️ Personal Vedic Calendar</div>
+                <div class="feed-description">
+                    Your Vedic collective calendar showing daily energy classifications based on tithi, nakshatra, and traditional Vedic timing. Days are rated as GO, Focus, Build, Slow, Inward, or Stop.
+                </div>
+                <div class="feed-stats">Daily Vedic classifications for the full month</div>
+                <div class="feed-actions">
+                    {% if vedic_calendar_url %}
+                    <button class="feed-btn feed-btn-copy" onclick="copyUrl('{{ vedic_calendar_url }}', this)">Copy URL</button>
+                    <a href="{{ vedic_calendar_url }}" download class="feed-btn feed-btn-download">Download ICS</a>
+                    {% elif is_authenticated %}
+                    <a href="/profile-setup" class="feed-btn" style="background: #1565c0; color: white;">Complete Profile</a>
+                    {% else %}
+                    <a href="/login" class="feed-btn" style="background: #1565c0; color: white;">Sign In to Access</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="section-divider">
+            <div class="section-header">
+                <span>⏱️</span> Subscribe to Microtransit Calendars
             </div>
         </div>
         
