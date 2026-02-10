@@ -85,6 +85,9 @@ templates/                     - Jinja2 templates (pastel UI)
 - `GET /api/power-days/yogi-point` - Yogi Point transits on background days only
 - `GET /api/power-days/part-of-fortune` - Part of Fortune transits on background days only
 
+### PTI Calendar
+- `GET /api/pti-calendar` - full PTI calendar with all classifications (PTI Best, PTI Go, Normal, PTI Slow, PTI Worst) with scores and details
+
 ### Publer Integration
 - `GET /api/publer/test` - test Publer API connection
 - `GET /api/publer/accounts` - list connected social accounts

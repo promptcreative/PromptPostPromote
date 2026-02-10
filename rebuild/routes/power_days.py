@@ -377,3 +377,64 @@ def get_calendar_feeds():
     except Exception as e:
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
+
+
+@power_days_bp.route('/api/pti-calendar', methods=['GET'])
+def get_pti_calendar():
+    try:
+        if not session.get('authenticated'):
+            return jsonify({'error': 'Not authenticated'}), 401
+        user_info = session.get('user_info', {})
+        user_id = user_info.get('email')
+        if not user_id:
+            return jsonify({'error': 'User ID not found'}), 400
+
+        saved = db_manager.get_calendar_data(user_id)
+        if not saved:
+            return jsonify({'error': 'No calendar data found. Please generate calendars first.'}), 404
+
+        calendars = saved.get('calendars', {})
+        pti = calendars.get('pti_collective', calendars.get('pti', {}))
+        pti_data = pti.get('data', pti) if isinstance(pti, dict) else {}
+        results = pti_data.get('results', [])
+
+        if not results:
+            return jsonify({'error': 'No PTI data found. Please regenerate calendars.'}), 404
+
+        classification_order = ['PTI Best', 'PTI Go', 'Normal', 'PTI Slow', 'PTI Worst']
+        counts = {}
+        days_by_class = {}
+        formatted_days = []
+
+        for r in results:
+            cls = r.get('classification', 'Normal')
+            counts[cls] = counts.get(cls, 0) + 1
+            if cls not in days_by_class:
+                days_by_class[cls] = []
+
+            day_entry = {
+                'date': r.get('date'),
+                'classification': cls,
+                'score': r.get('score'),
+                'reason': r.get('reason', ''),
+                'details': r.get('details', {}),
+            }
+            days_by_class[cls].append(day_entry)
+            formatted_days.append(day_entry)
+
+        formatted_days.sort(key=lambda d: d.get('date', ''))
+
+        summary = []
+        for cls in classification_order:
+            summary.append({'classification': cls, 'count': counts.get(cls, 0)})
+
+        return jsonify({
+            'days': formatted_days,
+            'total_days': len(formatted_days),
+            'summary': summary,
+            'period': pti_data.get('period', {}),
+        })
+
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
