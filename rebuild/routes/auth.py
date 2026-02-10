@@ -1,3 +1,4 @@
+import os
 from flask import Blueprint, request, jsonify, session, render_template, redirect
 from database.models import db, UserProfile
 from database.manager import db_manager
@@ -47,23 +48,37 @@ def login_email():
             return redirect('/login?error=invalid_email')
 
         session['authenticated'] = True
+
+        up = UserProfile.query.filter_by(email=email).first()
+        admin_email = os.environ.get('ADMIN_EMAIL', '').strip().lower()
+        is_admin = (up and up.is_admin) or (email == admin_email)
+
+        if is_admin and up and not up.is_admin:
+            up.is_admin = True
+            db.session.commit()
+
         session['user_info'] = {
             'email': email,
             'name': email.split('@')[0],
             'display_name': email.split('@')[0].title(),
             'picture': None,
-            'auth_method': 'email'
+            'auth_method': 'email',
+            'is_admin': is_admin,
         }
         session['auth_timestamp'] = datetime.now().isoformat()
+
+        redirect_url = '/account-dashboard'
+        if not up or not up.birth_date or not up.birth_time:
+            redirect_url = '/profile-setup'
 
         if request.is_json:
             return jsonify({
                 "status": "success",
                 "message": "Logged in successfully",
-                "redirect": "/account-dashboard"
+                "redirect": redirect_url
             })
 
-        return redirect('/account-dashboard')
+        return redirect(redirect_url)
 
     except Exception as e:
         if request.is_json:

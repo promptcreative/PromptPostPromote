@@ -445,7 +445,7 @@
         <a href="/account-dashboard" class="logo">Astrobatching</a>
         <div class="nav-actions">
             <a href="/power-days" class="nav-link">Power Days</a>
-            <a href="/clients" class="nav-link">Clients</a>
+            {% if is_admin %}<a href="/clients" class="nav-link">Clients</a>{% endif %}
             <a href="/profile-setup" class="nav-link">Profile</a>
             <button class="btn-nav" onclick="logout()">Sign out</button>
         </div>
@@ -486,6 +486,7 @@
                     <button class="btn-card purple" onclick="window.location.href='/power-days'">View Power Days</button>
                 </div>
 
+                {% if is_admin %}
                 <div class="cal-card green">
                     <div class="cal-icon">
                         <svg viewBox="0 0 24 24" fill="none" stroke="#4CAF50" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
@@ -494,6 +495,7 @@
                     <p>Manage your agency clients, generate calendars, and view their personalized results.</p>
                     <button class="btn-card green" onclick="window.location.href='/clients'">Manage clients</button>
                 </div>
+                {% endif %}
 
                 <div class="cal-card amber">
                     <div class="cal-icon">

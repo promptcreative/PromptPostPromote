@@ -127,8 +127,17 @@ templates/                     - Jinja2 templates (pastel UI)
 - Calendar status: pending → generating → ready (or error)
 - Results page at `/clients/{id}/results` shows golden windows, bird periods, full calendar
 
+## Auth & Admin System
+- Email-based auth (no password) — enter email to sign in/sign up
+- Admin account: cobrillitate@gmail.com (is_admin=True in DB)
+- ADMIN_EMAIL env var controls admin designation
+- Admin-only features: Client management, agency tools
+- Regular users: Dashboard, Power Days, Calendar Feeds, Profile
+- New users without birth data redirected to profile setup on first login
+
 ## Environment Variables
 - `DATABASE_URL` - PostgreSQL connection string
+- `ADMIN_EMAIL` - Admin email address (cobrillitate@gmail.com)
 - `PUBLER_API_KEY` - Publer API key
 - `PUBLER_WORKSPACE_ID` - Publer workspace ID
 - `SESSION_SECRET` - Flask session secret
@@ -142,13 +151,18 @@ templates/                     - Jinja2 templates (pastel UI)
 - PTI Worst = hard exclusion from background
 
 ## Recent Changes (February 2026)
+- Added PTI Calendar endpoint (GET /api/pti-calendar) with full classification data
+- Added admin role system: is_admin flag on UserProfile, ADMIN_EMAIL env var
+- Restricted client management to admin-only (pages + API routes return 403 for non-admins)
+- Dashboard conditionally shows Clients nav/card for admin users only
+- Fixed microtransit display to group by date with date headers (was showing time only)
+- Updated login page to support both signup and signin with profile-setup redirect for new users
+- Fixed bird batch filter to use PanchPakshiCalculator from core/panch_pakshi package
+- Passed birth data through to bird batch calculations for personalized results
 - Built full Power Days pipeline: classify → filter → overlap → export
 - Added background-filtered endpoints: bird batch, Yogi Point, PoF on background days only
 - Implemented Micro Bird: precision posting times where microtransits overlap bird windows
 - Created background-filtered ICS feeds (bg_bird_batch, bg_yogi_point, bg_pof)
-- Replaced microbird.ics stub with real overlap computation
 - Built Publer integration: push Micro Bird events as scheduled draft posts
 - Built agency multi-client system with CRUD, generation, and results viewing
-- Created client results page with golden windows, bird periods, full calendar table
-- Fixed timezone_offset parameter handling in client generation flow
 - Redesigned all pages to match pastel UI design system

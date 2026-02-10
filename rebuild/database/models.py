@@ -23,6 +23,7 @@ class UserProfile(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(255), unique=True, nullable=False, index=True)
+    is_admin = db.Column(db.Boolean, default=False, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -47,6 +48,7 @@ class UserProfile(db.Model):
         return {
             'id': self.id,
             'email': self.email,
+            'is_admin': self.is_admin,
             'calendar_range_days': self.calendar_range_days,
             'birth_date': self.birth_date.isoformat() if self.birth_date else None,
             'birth_time': self.birth_time.isoformat() if self.birth_time else None,

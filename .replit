@@ -45,3 +45,4 @@ expertMode = true
 
 [userenv.shared]
 SECRET_KEY = "59bbe3b08473e2b8c94a4d6686613ceedd16974724b5e252ce449519456b16a4"
+ADMIN_EMAIL = "cobrillitate@gmail.com"

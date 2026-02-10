@@ -914,16 +914,39 @@
                 return;
             }
 
-            let html = '';
+            const byDate = {};
             for (const t of transits) {
                 const startRaw = t.start_time || t.start || t.datetime || '';
-                const planet = t.planet || t.type || '';
-                const tType = t.transit_type || t.aspect || t.type || '';
-                html += `<div class="transit-item">
-                    <span class="transit-time">${formatTime(startRaw)}</span>
-                    <span class="transit-planet">${planet}</span>
-                    <span class="transit-type">${tType}</span>
-                </div>`;
+                const endRaw = t.end_time || t.end || '';
+                let tDate = '';
+                try {
+                    const d = new Date(startRaw);
+                    if (!isNaN(d)) tDate = d.toISOString().split('T')[0];
+                } catch {}
+                if (!tDate && typeof startRaw === 'string') tDate = startRaw.split('T')[0];
+                if (!tDate) tDate = 'Unknown';
+                if (!byDate[tDate]) byDate[tDate] = [];
+                byDate[tDate].push({ ...t, _startRaw: startRaw, _endRaw: endRaw });
+            }
+
+            const sortedDates = Object.keys(byDate).sort();
+            let html = '';
+            for (const dateKey of sortedDates) {
+                html += '<div class="bird-day-group">';
+                html += '<div class="bird-day-header">' + formatDate(dateKey) + '</div>';
+                for (const t of byDate[dateKey]) {
+                    const planet = t.planet || t.type || t.transit_code || '';
+                    const tType = t.transit_type || t.aspect || t.type || '';
+                    const timeRange = t._endRaw
+                        ? formatTime(t._startRaw) + ' – ' + formatTime(t._endRaw)
+                        : formatTime(t._startRaw);
+                    html += `<div class="transit-item">
+                        <span class="transit-time">${timeRange}</span>
+                        <span class="transit-planet">${planet}</span>
+                        <span class="transit-type">${tType}</span>
+                    </div>`;
+                }
+                html += '</div>';
             }
             container.innerHTML = html;
         }

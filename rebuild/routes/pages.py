@@ -24,7 +24,9 @@ def landing_page():
 
 @pages_bp.route('/account-dashboard', methods=['GET'])
 def account_dashboard():
-    return render_template('account_dashboard.html')
+    user_info = session.get('user_info', {})
+    is_admin = user_info.get('is_admin', False)
+    return render_template('account_dashboard.html', is_admin=is_admin)
 
 
 @pages_bp.route('/calendar-feeds', methods=['GET'])
@@ -157,6 +159,9 @@ def my_calendars():
 def clients_page():
     if not session.get('authenticated'):
         return redirect('/login')
+    user_info = session.get('user_info', {})
+    if not user_info.get('is_admin'):
+        return redirect('/account-dashboard')
     return render_template('clients.html')
 
 
@@ -164,6 +169,9 @@ def clients_page():
 def client_results_page(client_id):
     if not session.get('authenticated'):
         return redirect('/login')
+    user_info = session.get('user_info', {})
+    if not user_info.get('is_admin'):
+        return redirect('/account-dashboard')
     return render_template('client_results.html', client_id=client_id)
 
 

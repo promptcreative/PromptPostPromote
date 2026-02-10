@@ -13,10 +13,17 @@ def _get_owner_email():
     return user_info.get('email')
 
 
+def _require_admin():
+    user_info = session.get('user_info', {})
+    return user_info.get('is_admin', False)
+
+
 @clients_bp.route('/api/clients', methods=['GET'])
 def list_clients():
     if not session.get('authenticated'):
         return jsonify({"status": "error", "message": "Not authenticated"}), 401
+    if not _require_admin():
+        return jsonify({"status": "error", "message": "Admin access required"}), 403
 
     try:
         owner_email = _get_owner_email()
@@ -30,6 +37,8 @@ def list_clients():
 def create_client():
     if not session.get('authenticated'):
         return jsonify({"status": "error", "message": "Not authenticated"}), 401
+    if not _require_admin():
+        return jsonify({"status": "error", "message": "Admin access required"}), 403
 
     try:
         owner_email = _get_owner_email()
@@ -94,6 +103,8 @@ def create_client():
 def get_client(client_id):
     if not session.get('authenticated'):
         return jsonify({"status": "error", "message": "Not authenticated"}), 401
+    if not _require_admin():
+        return jsonify({"status": "error", "message": "Admin access required"}), 403
 
     try:
         owner_email = _get_owner_email()
@@ -115,6 +126,8 @@ def get_client(client_id):
 def update_client(client_id):
     if not session.get('authenticated'):
         return jsonify({"status": "error", "message": "Not authenticated"}), 401
+    if not _require_admin():
+        return jsonify({"status": "error", "message": "Admin access required"}), 403
 
     try:
         owner_email = _get_owner_email()
@@ -195,6 +208,8 @@ def update_client(client_id):
 def delete_client(client_id):
     if not session.get('authenticated'):
         return jsonify({"status": "error", "message": "Not authenticated"}), 401
+    if not _require_admin():
+        return jsonify({"status": "error", "message": "Admin access required"}), 403
 
     try:
         owner_email = _get_owner_email()
@@ -221,6 +236,8 @@ def delete_client(client_id):
 def generate_client_calendar(client_id):
     if not session.get('authenticated'):
         return jsonify({"status": "error", "message": "Not authenticated"}), 401
+    if not _require_admin():
+        return jsonify({"status": "error", "message": "Admin access required"}), 403
 
     try:
         owner_email = _get_owner_email()
@@ -292,6 +309,8 @@ def generate_client_calendar(client_id):
 def get_client_calendar(client_id):
     if not session.get('authenticated'):
         return jsonify({"status": "error", "message": "Not authenticated"}), 401
+    if not _require_admin():
+        return jsonify({"status": "error", "message": "Admin access required"}), 403
 
     try:
         owner_email = _get_owner_email()
