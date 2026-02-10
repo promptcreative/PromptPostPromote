@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clients - Astrobatching</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: #FFF8F0;
+            min-height: 100vh;
+            color: #2D2B3D;
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 48px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .logo { font-size: 1.25rem; font-weight: 700; color: #2D2B3D; text-decoration: none; }
+
+        .nav-links { display: flex; align-items: center; gap: 12px; }
+
+        .nav-link {
+            color: #6B6880;
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            padding: 8px 16px;
+            border-radius: 10px;
+            transition: all 0.2s;
+        }
+
+        .nav-link:hover { background: rgba(45,43,61,0.06); }
+        .nav-link.active { color: #2D2B3D; background: rgba(45,43,61,0.06); font-weight: 600; }
+
+        .container { max-width: 960px; margin: 0 auto; padding: 0 32px 60px; }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 24px 0 32px;
+        }
+
+        .page-header h1 { font-size: 1.8rem; font-weight: 700; }
+        .page-header p { color: #8A8698; font-size: 0.9rem; margin-top: 4px; }
+
+        .btn-add {
+            background: #2D2B3D;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-add:hover { opacity: 0.9; transform: translateY(-1px); }
+
+        .btn-add svg { width: 18px; height: 18px; }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 2px 16px rgba(45,43,61,0.06);
+        }
+
+        .empty-state .icon-circle {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            background: #F3E5F5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+        }
+
+        .empty-state .icon-circle svg { width: 32px; height: 32px; color: #9C88FF; }
+        .empty-state h2 { font-size: 1.3rem; font-weight: 600; margin-bottom: 8px; }
+        .empty-state p { color: #8A8698; font-size: 0.9rem; max-width: 360px; margin: 0 auto 24px; line-height: 1.5; }
+
+        .clients-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+        }
+
+        .client-card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 2px 12px rgba(45,43,61,0.05);
+            transition: all 0.2s;
+            border: 2px solid transparent;
+            position: relative;
+        }
+
+        .client-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(45,43,61,0.08);
+            border-color: #E8E6F0;
+        }
+
+        .client-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 14px;
+        }
+
+        .client-card h3 { font-size: 1.05rem; font-weight: 600; margin-bottom: 4px; }
+        .client-card .client-email { color: #8A8698; font-size: 0.82rem; margin-bottom: 12px; }
+
+        .client-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 16px;
+        }
+
+        .meta-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.82rem;
+            color: #6B6880;
+        }
+
+        .meta-row svg { width: 14px; height: 14px; flex-shrink: 0; color: #B0ADBC; }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .status-pending { background: #FFF8E1; color: #F9A825; }
+        .status-ready { background: #E8F5E9; color: #4CAF50; }
+        .status-generating { background: #E8E6F0; color: #9C88FF; }
+        .status-error { background: #FFEBEE; color: #EF5350; }
+
+        .card-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #F0EEE8;
+        }
+
+        .btn-card-action {
+            flex: 1;
+            padding: 9px 12px;
+            border: none;
+            border-radius: 10px;
+            font-family: inherit;
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+
+        .btn-card-action svg { width: 14px; height: 14px; }
+        .btn-card-action:hover { transform: translateY(-1px); }
+        .btn-edit { background: #F3E5F5; color: #9C88FF; }
+        .btn-generate { background: #E8F5E9; color: #4CAF50; }
+        .btn-view { background: #E8F5E9; color: #4CAF50; }
+        .btn-delete { background: #FFEBEE; color: #EF5350; }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(45,43,61,0.4);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-overlay.active { display: flex; }
+
+        .modal {
+            background: white;
+            border-radius: 20px;
+            padding: 36px;
+            width: 100%;
+            max-width: 520px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(45,43,61,0.2);
+        }
+
+        .modal h2 { font-size: 1.3rem; font-weight: 700; margin-bottom: 24px; }
+
+        .form-group { margin-bottom: 18px; }
+
+        .form-group label {
+            display: block;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: #2D2B3D;
+            margin-bottom: 6px;
+        }
+
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 11px 14px;
+            border: 2px solid #EDE9E3;
+            border-radius: 10px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            color: #2D2B3D;
+            transition: border-color 0.2s;
+            background: white;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #9C88FF;
+        }
+
+        .form-group .hint { font-size: 0.75rem; color: #B0ADBC; margin-top: 4px; }
+
+        .section-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #B0ADBC;
+            margin-bottom: 12px;
+            margin-top: 24px;
+        }
+
+        .location-wrapper { position: relative; }
+
+        .location-suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 2px solid #EDE9E3;
+            border-top: none;
+            border-radius: 0 0 10px 10px;
+            max-height: 160px;
+            overflow-y: auto;
+            z-index: 10;
+            display: none;
+        }
+
+        .location-suggestions.active { display: block; }
+
+        .location-suggestion {
+            padding: 10px 14px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            border-bottom: 1px solid #F5F3EF;
+        }
+
+        .location-suggestion:hover { background: #FFF8F0; }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 28px;
+        }
+
+        .btn-cancel {
+            flex: 1;
+            padding: 13px;
+            border: 2px solid #EDE9E3;
+            border-radius: 12px;
+            background: transparent;
+            font-family: inherit;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #6B6880;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-cancel:hover { border-color: #2D2B3D; }
+
+        .btn-save {
+            flex: 1;
+            padding: 13px;
+            border: none;
+            border-radius: 12px;
+            background: #2D2B3D;
+            font-family: inherit;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-save:hover { opacity: 0.9; }
+        .btn-save:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            padding: 14px 24px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            z-index: 200;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s;
+        }
+
+        .toast.active { transform: translateY(0); opacity: 1; }
+        .toast.success { background: #E8F5E9; color: #2E7D32; }
+        .toast.error { background: #FFEBEE; color: #C62828; }
+
+        @media (max-width: 768px) {
+            nav { padding: 16px 20px; }
+            .container { padding: 0 20px 40px; }
+            .page-header { flex-direction: column; align-items: flex-start; gap: 16px; }
+            .clients-grid { grid-template-columns: 1fr; }
+            .form-row { grid-template-columns: 1fr; }
+            .modal { margin: 16px; padding: 24px; }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/" class="logo">Astrobatching</a>
+        <div class="nav-links">
+            <a href="/account-dashboard" class="nav-link">Dashboard</a>
+            <a href="/clients" class="nav-link active">Clients</a>
+            <a href="/profile-setup" class="nav-link">Profile</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="page-header">
+            <div>
+                <h1>Clients</h1>
+                <p id="clientCount">Loading...</p>
+            </div>
+            <button class="btn-add" onclick="openAddModal()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Add client
+            </button>
+        </div>
+
+        <div id="emptyState" class="empty-state" style="display: none;">
+            <div class="icon-circle">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            <h2>No clients yet</h2>
+            <p>Add your first client to start generating personalized astrological calendars for them.</p>
+            <button class="btn-add" onclick="openAddModal()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Add your first client
+            </button>
+        </div>
+
+        <div id="clientsGrid" class="clients-grid"></div>
+    </div>
+
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <h2 id="modalTitle">Add client</h2>
+
+            <input type="hidden" id="editingClientId" value="">
+
+            <div class="form-group">
+                <label>Name</label>
+                <input type="text" id="clientName" placeholder="Client's full name">
+            </div>
+
+            <div class="form-group">
+                <label>Email (optional)</label>
+                <input type="email" id="clientEmail" placeholder="client@example.com">
+            </div>
+
+            <div class="section-label">Birth details</div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Birth Date</label>
+                    <input type="date" id="clientBirthDate">
+                </div>
+                <div class="form-group">
+                    <label>Birth Time</label>
+                    <input type="time" id="clientBirthTime">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Birth Location</label>
+                <div class="location-wrapper">
+                    <input type="text" id="clientBirthLocation" placeholder="City, State/Country" autocomplete="off">
+                    <div class="location-suggestions" id="birthLocationSuggestions"></div>
+                </div>
+                <p class="hint">Start typing to search</p>
+                <input type="hidden" id="clientBirthLat">
+                <input type="hidden" id="clientBirthLon">
+            </div>
+
+            <div class="section-label">Current location</div>
+
+            <div class="form-group">
+                <label>Where they are now</label>
+                <div class="location-wrapper">
+                    <input type="text" id="clientCurrentLocation" placeholder="City, State/Country" autocomplete="off">
+                    <div class="location-suggestions" id="currentLocationSuggestions"></div>
+                </div>
+                <input type="hidden" id="clientCurrentLat">
+                <input type="hidden" id="clientCurrentLon">
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+                <button class="btn-save" id="saveBtn" onclick="saveClient()">Save client</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const avatarColors = ['#9C88FF', '#4CAF50', '#FFB74D', '#EF5350', '#29B6F6', '#AB47BC', '#26A69A', '#FF7043'];
+
+        function getAvatarColor(name) {
+            let hash = 0;
+            for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+            return avatarColors[Math.abs(hash) % avatarColors.length];
+        }
+
+        function showToast(message, type) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast ${type} active`;
+            setTimeout(() => toast.className = 'toast', 3000);
+        }
+
+        async function loadClients() {
+            try {
+                const resp = await fetch('/api/clients');
+                const clients = await resp.json();
+
+                const grid = document.getElementById('clientsGrid');
+                const empty = document.getElementById('emptyState');
+                const countEl = document.getElementById('clientCount');
+
+                if (clients.length === 0) {
+                    grid.innerHTML = '';
+                    empty.style.display = 'block';
+                    countEl.textContent = 'Manage your agency clients';
+                    return;
+                }
+
+                empty.style.display = 'none';
+                countEl.textContent = `${clients.length} client${clients.length !== 1 ? 's' : ''}`;
+
+                grid.innerHTML = clients.map(c => {
+                    const initial = c.name ? c.name.charAt(0).toUpperCase() : '?';
+                    const color = getAvatarColor(c.name || '');
+                    const statusClass = `status-${c.calendar_status || 'pending'}`;
+                    const statusLabel = (c.calendar_status || 'pending').charAt(0).toUpperCase() + (c.calendar_status || 'pending').slice(1);
+
+                    const birthInfo = c.birth_date
+                        ? `${c.birth_date}${c.birth_time ? ' at ' + c.birth_time.substring(0,5) : ''}`
+                        : 'No birth data';
+
+                    const locationInfo = c.birth_location_name || 'No location';
+
+                    const actionBtns = c.calendar_status === 'ready'
+                        ? `<button class="btn-card-action btn-view" onclick="viewCalendar(${c.id})">
+                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                             View
+                           </button>`
+                        : c.has_birth_data
+                        ? `<button class="btn-card-action btn-generate" onclick="generateCalendar(${c.id})">
+                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 12l2 2 4-4"/></svg>
+                             Generate
+                           </button>`
+                        : '';
+
+                    return `
+                        <div class="client-card">
+                            <div class="client-avatar" style="background: ${color}">${initial}</div>
+                            <h3>${escapeHtml(c.name)}</h3>
+                            <div class="client-email">${c.email ? escapeHtml(c.email) : 'No email'}</div>
+                            <div class="client-meta">
+                                <div class="meta-row">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                    ${escapeHtml(birthInfo)}
+                                </div>
+                                <div class="meta-row">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                                    ${escapeHtml(locationInfo)}
+                                </div>
+                            </div>
+                            <span class="status-badge ${statusClass}">${statusLabel}</span>
+                            <div class="card-actions">
+                                <button class="btn-card-action btn-edit" onclick="editClient(${c.id})">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                    Edit
+                                </button>
+                                ${actionBtns}
+                                <button class="btn-card-action btn-delete" onclick="deleteClient(${c.id}, '${escapeHtml(c.name)}')">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+                                </button>
+                            </div>
+                        </div>`;
+                }).join('');
+
+            } catch (error) {
+                console.error('Error loading clients:', error);
+                showToast('Error loading clients', 'error');
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function openAddModal() {
+            document.getElementById('modalTitle').textContent = 'Add client';
+            document.getElementById('editingClientId').value = '';
+            document.getElementById('clientName').value = '';
+            document.getElementById('clientEmail').value = '';
+            document.getElementById('clientBirthDate').value = '';
+            document.getElementById('clientBirthTime').value = '';
+            document.getElementById('clientBirthLocation').value = '';
+            document.getElementById('clientBirthLat').value = '';
+            document.getElementById('clientBirthLon').value = '';
+            document.getElementById('clientCurrentLocation').value = '';
+            document.getElementById('clientCurrentLat').value = '';
+            document.getElementById('clientCurrentLon').value = '';
+            document.getElementById('saveBtn').textContent = 'Save client';
+            document.getElementById('modalOverlay').classList.add('active');
+        }
+
+        async function editClient(id) {
+            try {
+                const resp = await fetch(`/api/clients/${id}`);
+                if (!resp.ok) { showToast('Could not load client', 'error'); return; }
+                const c = await resp.json();
+
+                document.getElementById('modalTitle').textContent = 'Edit client';
+                document.getElementById('editingClientId').value = id;
+                document.getElementById('clientName').value = c.name || '';
+                document.getElementById('clientEmail').value = c.email || '';
+                document.getElementById('clientBirthDate').value = c.birth_date || '';
+                document.getElementById('clientBirthTime').value = c.birth_time ? c.birth_time.substring(0, 5) : '';
+                document.getElementById('clientBirthLocation').value = c.birth_location_name || '';
+                document.getElementById('clientBirthLat').value = c.birth_latitude || '';
+                document.getElementById('clientBirthLon').value = c.birth_longitude || '';
+                document.getElementById('clientCurrentLocation').value = c.current_location_name || '';
+                document.getElementById('clientCurrentLat').value = c.current_latitude || '';
+                document.getElementById('clientCurrentLon').value = c.current_longitude || '';
+                document.getElementById('saveBtn').textContent = 'Update client';
+                document.getElementById('modalOverlay').classList.add('active');
+            } catch (error) {
+                showToast('Error loading client', 'error');
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('modalOverlay').classList.remove('active');
+        }
+
+        async function saveClient() {
+            const btn = document.getElementById('saveBtn');
+            const name = document.getElementById('clientName').value.trim();
+
+            if (!name) { showToast('Please enter a name', 'error'); return; }
+
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+
+            const data = {
+                name: name,
+                email: document.getElementById('clientEmail').value.trim() || null,
+                birth_date: document.getElementById('clientBirthDate').value || null,
+                birth_time: document.getElementById('clientBirthTime').value || null,
+                birth_location_name: document.getElementById('clientBirthLocation').value || null,
+                birth_latitude: parseFloat(document.getElementById('clientBirthLat').value) || null,
+                birth_longitude: parseFloat(document.getElementById('clientBirthLon').value) || null,
+                current_location_name: document.getElementById('clientCurrentLocation').value || null,
+                current_latitude: parseFloat(document.getElementById('clientCurrentLat').value) || null,
+                current_longitude: parseFloat(document.getElementById('clientCurrentLon').value) || null,
+            };
+
+            const editingId = document.getElementById('editingClientId').value;
+            const method = editingId ? 'PUT' : 'POST';
+            const url = editingId ? `/api/clients/${editingId}` : '/api/clients';
+
+            try {
+                const resp = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (!resp.ok) {
+                    const err = await resp.json();
+                    showToast(err.error || 'Error saving', 'error');
+                    return;
+                }
+
+                closeModal();
+                showToast(editingId ? 'Client updated' : 'Client added', 'success');
+                loadClients();
+            } catch (error) {
+                showToast('Error saving client', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = editingId ? 'Update client' : 'Save client';
+            }
+        }
+
+        async function deleteClient(id, name) {
+            if (!confirm(`Remove ${name}? This will also delete their calendar data.`)) return;
+
+            try {
+                const resp = await fetch(`/api/clients/${id}`, { method: 'DELETE' });
+                if (resp.ok) {
+                    showToast(`${name} removed`, 'success');
+                    loadClients();
+                } else {
+                    showToast('Error removing client', 'error');
+                }
+            } catch (error) {
+                showToast('Error removing client', 'error');
+            }
+        }
+
+        async function generateCalendar(clientId) {
+            const cards = document.querySelectorAll('.client-card');
+            cards.forEach(card => {
+                const genBtn = card.querySelector('.btn-generate');
+                if (genBtn && genBtn.getAttribute('onclick')?.includes(clientId)) {
+                    genBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;animation:spin 1s linear infinite"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Generating...';
+                    genBtn.disabled = true;
+                }
+            });
+
+            try {
+                const resp = await fetch(`/api/clients/${clientId}/generate`, { method: 'POST' });
+                const data = await resp.json();
+
+                if (data.status === 'success') {
+                    showToast('Calendar generated successfully', 'success');
+                    loadClients();
+                } else {
+                    showToast(data.message || 'Generation failed', 'error');
+                    loadClients();
+                }
+            } catch (error) {
+                showToast('Error generating calendar', 'error');
+                loadClients();
+            }
+        }
+
+        function viewCalendar(clientId) {
+            window.location.href = `/clients/${clientId}/results`;
+        }
+
+        let searchTimeout;
+        function setupLocationSearch(inputId, suggestionsId, latId, lonId) {
+            const input = document.getElementById(inputId);
+            const suggestionsEl = document.getElementById(suggestionsId);
+
+            input.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                const q = this.value.trim();
+                if (q.length < 3) { suggestionsEl.classList.remove('active'); return; }
+
+                searchTimeout = setTimeout(async () => {
+                    try {
+                        const resp = await fetch(`/api/geocode?q=${encodeURIComponent(q)}`);
+                        const results = await resp.json();
+                        if (results.length === 0) { suggestionsEl.classList.remove('active'); return; }
+
+                        suggestionsEl.innerHTML = results.map(r => `
+                            <div class="location-suggestion" data-lat="${r.lat}" data-lon="${r.lon}" data-name="${escapeHtml(r.display_name)}">
+                                ${escapeHtml(r.display_name)}
+                            </div>
+                        `).join('');
+                        suggestionsEl.classList.add('active');
+
+                        suggestionsEl.querySelectorAll('.location-suggestion').forEach(el => {
+                            el.addEventListener('click', function() {
+                                input.value = this.dataset.name;
+                                document.getElementById(latId).value = this.dataset.lat;
+                                document.getElementById(lonId).value = this.dataset.lon;
+                                suggestionsEl.classList.remove('active');
+                            });
+                        });
+                    } catch (e) {
+                        console.error('Geocode error:', e);
+                    }
+                }, 300);
+            });
+
+            document.addEventListener('click', function(e) {
+                if (!input.contains(e.target) && !suggestionsEl.contains(e.target)) {
+                    suggestionsEl.classList.remove('active');
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadClients();
+            setupLocationSearch('clientBirthLocation', 'birthLocationSuggestions', 'clientBirthLat', 'clientBirthLon');
+            setupLocationSearch('clientCurrentLocation', 'currentLocationSuggestions', 'clientCurrentLat', 'clientCurrentLon');
+        });
+
+        document.getElementById('modalOverlay').addEventListener('click', function(e) {
+            if (e.target === this) closeModal();
+        });
+    </script>
+</body>
+</html>

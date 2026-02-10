@@ -34,6 +34,7 @@ def create_app():
     from routes.microtransits import microtransits_bp
     from routes.downloads import downloads_bp
     from routes.api import api_bp
+    from routes.clients import clients_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(pages_bp)
@@ -42,6 +43,7 @@ def create_app():
     app.register_blueprint(microtransits_bp)
     app.register_blueprint(downloads_bp)
     app.register_blueprint(api_bp)
+    app.register_blueprint(clients_bp)
 
     @app.after_request
     def add_no_cache_headers(response):

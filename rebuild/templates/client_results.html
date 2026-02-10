@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Client Calendar - Astrobatching</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: #FFF8F0;
+            min-height: 100vh;
+            color: #2D2B3D;
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 48px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .logo { font-size: 1.25rem; font-weight: 700; color: #2D2B3D; text-decoration: none; }
+
+        .nav-links { display: flex; align-items: center; gap: 12px; }
+
+        .nav-link {
+            color: #6B6880;
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            padding: 8px 16px;
+            border-radius: 10px;
+            transition: all 0.2s;
+        }
+
+        .nav-link:hover { background: rgba(45,43,61,0.06); }
+
+        .container { max-width: 960px; margin: 0 auto; padding: 0 32px 60px; }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: #8A8698;
+            text-decoration: none;
+            font-size: 0.88rem;
+            font-weight: 500;
+            padding: 12px 0;
+            transition: color 0.2s;
+        }
+
+        .back-link:hover { color: #2D2B3D; }
+        .back-link svg { width: 16px; height: 16px; }
+
+        .client-header {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding: 16px 0 32px;
+        }
+
+        .client-avatar {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .client-info h1 { font-size: 1.5rem; font-weight: 700; }
+        .client-info p { color: #8A8698; font-size: 0.88rem; margin-top: 2px; }
+
+        .header-actions { margin-left: auto; display: flex; gap: 10px; }
+
+        .btn-regen {
+            background: white;
+            border: 2px solid #EDE9E3;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-family: inherit;
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: #2D2B3D;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .btn-regen:hover { border-color: #2D2B3D; }
+        .btn-regen svg { width: 16px; height: 16px; }
+
+        .loading-state {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .loading-state p { color: #8A8698; font-size: 0.95rem; }
+
+        .section-title {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #B0ADBC;
+            margin-bottom: 16px;
+            margin-top: 8px;
+        }
+
+        .golden-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 12px;
+            margin-bottom: 36px;
+        }
+
+        .golden-card {
+            background: white;
+            border-radius: 14px;
+            padding: 18px;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .golden-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(45,43,61,0.08); }
+        .golden-card.omni { border-color: #E8D5FF; background: linear-gradient(135deg, #FDFAFF, #F8F0FF); }
+        .golden-card.double-go { border-color: #D4EDDA; background: linear-gradient(135deg, #FDFFF8, #F0FFF4); }
+        .golden-card.good { border-color: #FFECD2; background: linear-gradient(135deg, #FFFDF8, #FFF8F0); }
+
+        .golden-date {
+            font-size: 0.95rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .golden-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-omni { background: #E8D5FF; color: #7C3AED; }
+        .badge-double-go { background: #D4EDDA; color: #2E7D32; }
+        .badge-good { background: #FFECD2; color: #E65100; }
+
+        .golden-details { font-size: 0.78rem; color: #8A8698; margin-top: 8px; line-height: 1.4; }
+
+        .calendar-table {
+            width: 100%;
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 2px 12px rgba(45,43,61,0.05);
+            margin-bottom: 36px;
+        }
+
+        .calendar-table table { width: 100%; border-collapse: collapse; }
+
+        .calendar-table th {
+            text-align: left;
+            padding: 14px 18px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #8A8698;
+            background: #FDFBF9;
+            border-bottom: 2px solid #F0EEE8;
+        }
+
+        .calendar-table td {
+            padding: 12px 18px;
+            font-size: 0.85rem;
+            border-bottom: 1px solid #F5F3EF;
+            vertical-align: middle;
+        }
+
+        .calendar-table tr:last-child td { border-bottom: none; }
+
+        .day-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .day-omni { background: #E8D5FF; color: #7C3AED; }
+        .day-double-go { background: #D4EDDA; color: #2E7D32; }
+        .day-good { background: #E8F5E9; color: #4CAF50; }
+        .day-neutral { background: #F5F3EF; color: #8A8698; }
+        .day-slow { background: #FFF8E1; color: #F9A825; }
+        .day-caution { background: #FFEBEE; color: #EF5350; }
+
+        .bird-section { margin-bottom: 36px; }
+
+        .bird-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 12px;
+        }
+
+        .bird-card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            border-left: 4px solid #4CAF50;
+            box-shadow: 0 2px 8px rgba(45,43,61,0.04);
+        }
+
+        .bird-card .bird-date { font-size: 0.82rem; font-weight: 600; color: #2D2B3D; }
+        .bird-card .bird-time { font-size: 0.95rem; font-weight: 700; color: #4CAF50; margin: 4px 0; }
+        .bird-card .bird-detail { font-size: 0.78rem; color: #8A8698; }
+
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            background: white;
+            border-radius: 16px;
+            color: #8A8698;
+        }
+
+        @media (max-width: 768px) {
+            nav { padding: 16px 20px; }
+            .container { padding: 0 20px 40px; }
+            .golden-grid { grid-template-columns: 1fr; }
+            .bird-grid { grid-template-columns: 1fr; }
+            .client-header { flex-direction: column; align-items: flex-start; }
+            .header-actions { margin-left: 0; }
+            .calendar-table { overflow-x: auto; }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/" class="logo">Astrobatching</a>
+        <div class="nav-links">
+            <a href="/account-dashboard" class="nav-link">Dashboard</a>
+            <a href="/clients" class="nav-link">Clients</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <a href="/clients" class="back-link">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+            Back to clients
+        </a>
+
+        <div class="client-header" id="clientHeader">
+            <div class="loading-state"><p>Loading...</p></div>
+        </div>
+
+        <div id="resultsContent"></div>
+    </div>
+
+    <script>
+        const CLIENT_ID = {{ client_id }};
+        const avatarColors = ['#9C88FF', '#4CAF50', '#FFB74D', '#EF5350', '#29B6F6', '#AB47BC', '#26A69A', '#FF7043'];
+
+        function getAvatarColor(name) {
+            let hash = 0;
+            for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+            return avatarColors[Math.abs(hash) % avatarColors.length];
+        }
+
+        function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '';
+            const d = new Date(dateStr + 'T00:00:00');
+            return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+        }
+
+        function classKey(c) {
+            if (!c) return 'neutral';
+            const u = c.toUpperCase().replace(/[_ ]/g, '');
+            if (u === 'OMNI') return 'omni';
+            if (u === 'DOUBLEGO') return 'double-go';
+            if (u === 'GOOD') return 'good';
+            if (u === 'SLOW') return 'slow';
+            if (u === 'CAUTION') return 'caution';
+            return 'neutral';
+        }
+
+        async function loadResults() {
+            try {
+                const resp = await fetch(`/api/clients/${CLIENT_ID}/calendar`);
+
+                if (!resp.ok) {
+                    const err = await resp.json();
+                    document.getElementById('clientHeader').innerHTML = '';
+                    document.getElementById('resultsContent').innerHTML = `
+                        <div class="no-data">
+                            <p>${err.message || 'No calendar data available'}</p>
+                            <br>
+                            <a href="/clients" style="color: #9C88FF">Back to clients</a>
+                        </div>`;
+                    return;
+                }
+
+                const data = await resp.json();
+                const client = data.client;
+                const color = getAvatarColor(client.name || '');
+                const initial = client.name ? client.name.charAt(0).toUpperCase() : '?';
+
+                document.getElementById('clientHeader').innerHTML = `
+                    <div class="client-avatar" style="background: ${color}">${initial}</div>
+                    <div class="client-info">
+                        <h1>${escapeHtml(client.name)}</h1>
+                        <p>${client.birth_location_name ? escapeHtml(client.birth_location_name) : ''}${data.generated_at ? ' \u00B7 Generated ' + new Date(data.generated_at).toLocaleDateString() : ''}</p>
+                    </div>
+                    <div class="header-actions">
+                        <button class="btn-regen" onclick="regenerate()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                            Regenerate
+                        </button>
+                    </div>`;
+
+                let html = '';
+
+                if (data.golden_windows && data.golden_windows.length > 0) {
+                    html += `<div class="section-title">Golden Windows (${data.golden_windows.length})</div>`;
+                    html += '<div class="golden-grid">';
+                    data.golden_windows.forEach(w => {
+                        const cls = classKey(w.classification);
+                        const badgeCls = cls === 'omni' ? 'badge-omni' : cls === 'double-go' ? 'badge-double-go' : 'badge-good';
+                        html += `
+                            <div class="golden-card ${cls}">
+                                <div class="golden-date">${formatDate(w.date)}</div>
+                                <span class="golden-badge ${badgeCls}">${escapeHtml(w.classification)}</span>
+                                <div class="golden-details">
+                                    ${w.pti_label ? 'PTI: ' + escapeHtml(w.pti_label) : ''}
+                                    ${w.vedic_label ? '<br>Vedic: ' + escapeHtml(w.vedic_label) : ''}
+                                    ${w.personal_label ? '<br>Personal: ' + escapeHtml(w.personal_label) : ''}
+                                </div>
+                            </div>`;
+                    });
+                    html += '</div>';
+                }
+
+                if (data.bird_periods && data.bird_periods.length > 0) {
+                    html += `<div class="section-title">Bird Batch Timing (${data.bird_periods.length} windows)</div>`;
+                    html += '<div class="bird-grid">';
+                    data.bird_periods.forEach(p => {
+                        html += `
+                            <div class="bird-card">
+                                <div class="bird-date">${formatDate(p.date)}</div>
+                                <div class="bird-time">${p.start || ''} - ${p.end || ''}</div>
+                                <div class="bird-detail">${p.tier ? escapeHtml(p.tier) : ''}${p.bird ? ' \u00B7 ' + escapeHtml(p.bird) : ''}${p.activity ? ' \u00B7 ' + escapeHtml(p.activity) : ''}</div>
+                            </div>`;
+                    });
+                    html += '</div>';
+                }
+
+                if (data.combined_results && data.combined_results.length > 0) {
+                    html += '<div class="section-title">Full Calendar</div>';
+                    html += '<div class="calendar-table"><table>';
+                    html += '<tr><th>Date</th><th>Day</th><th>Classification</th><th>Details</th></tr>';
+                    data.combined_results.forEach(day => {
+                        const cls = classKey(day.classification);
+                        html += `
+                            <tr>
+                                <td>${formatDate(day.date)}</td>
+                                <td style="font-weight:500">${day.date || ''}</td>
+                                <td><span class="day-badge day-${cls}">${escapeHtml(day.classification || 'NEUTRAL')}</span></td>
+                                <td style="color:#8A8698;font-size:0.82rem">${day.description ? escapeHtml(day.description) : ''}</td>
+                            </tr>`;
+                    });
+                    html += '</table></div>';
+                }
+
+                if (!html) {
+                    html = '<div class="no-data"><p>No calendar results available. Try regenerating.</p></div>';
+                }
+
+                document.getElementById('resultsContent').innerHTML = html;
+
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('resultsContent').innerHTML = '<div class="no-data"><p>Error loading results</p></div>';
+            }
+        }
+
+        async function regenerate() {
+            const btn = document.querySelector('.btn-regen');
+            if (btn) { btn.innerHTML = 'Generating...'; btn.disabled = true; }
+
+            try {
+                const resp = await fetch(`/api/clients/${CLIENT_ID}/generate`, { method: 'POST' });
+                const data = await resp.json();
+
+                if (data.status === 'success') {
+                    loadResults();
+                } else {
+                    alert(data.message || 'Generation failed');
+                    if (btn) { btn.innerHTML = 'Regenerate'; btn.disabled = false; }
+                }
+            } catch (e) {
+                alert('Error generating calendar');
+                if (btn) { btn.innerHTML = 'Regenerate'; btn.disabled = false; }
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadResults);
+    </script>
+</body>
+</html>

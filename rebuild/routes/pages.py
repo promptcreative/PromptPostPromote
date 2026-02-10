@@ -153,6 +153,20 @@ def my_calendars():
                            birth_data=birth_data)
 
 
+@pages_bp.route('/clients', methods=['GET'])
+def clients_page():
+    if not session.get('authenticated'):
+        return redirect('/login')
+    return render_template('clients.html')
+
+
+@pages_bp.route('/clients/<int:client_id>/results', methods=['GET'])
+def client_results_page(client_id):
+    if not session.get('authenticated'):
+        return redirect('/login')
+    return render_template('client_results.html', client_id=client_id)
+
+
 @pages_bp.route('/calendar-form', methods=['GET'])
 def calendar_form():
     return render_template('calendar_form.html')
