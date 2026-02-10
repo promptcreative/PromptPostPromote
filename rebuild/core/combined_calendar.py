@@ -2,425 +2,336 @@
 """
 Combined Calendar System - Smart 4th Calendar
 Analyzes Personal + PTI Collective + Vedic PTI to find optimal timing patterns
-Implements OMNI/DOUBLE GO/GOOD/CAUTION/SLOW/NEUTRAL classification system
+
+Classification tiers:
+  OMNI       = PTI (Best/Go) + Vedic (GO/Mild GO/Build) + Personal (power/supportive)
+  DOUBLE GO  = PTI (Best/Go) + Vedic (GO/Mild GO/Build) — ignores Personal
+  GOOD       = Any 2 systems positive, but NOT if PTI Worst
+  NEUTRAL    = Mixed or single system positive
+  SLOW       = 2 systems adverse
+  CAUTION    = 3 systems adverse or PTI Worst + another adverse
+
+Background days (posting recommended) = OMNI + DOUBLE GO + GOOD
+PTI Worst days are NEVER background days.
 """
 
-import sys
-import os
+import re
 from datetime import date, datetime, timedelta
 from typing import Dict, List, Any, Optional
 
+
 class CombinedCalendarAnalyzer:
-    """
-    Smart Combined Calendar that analyzes 3 base calendars for optimal timing patterns
-    """
-    
+
     def __init__(self):
-        """Initialize the combined calendar analyzer"""
-        
-        # Define quality mappings for each calendar system
-        self.personal_good = ['power', 'supportive']
-        self.personal_bad = ['avoid']
-        self.personal_neutral = ['neutral', 'aware']
-        
-        self.pti_good = ['BEST', 'MAYBE', 'PTI Best', 'PTI Go', 'PTI BEST', 'PTI GO'] 
-        self.pti_bad = ['NO', 'PTI Slow', 'PTI SLOW']
-        self.pti_neutral = ['Normal', 'NORMAL']
-        
-        self.vedic_good = ['GO', 'FOCUS', 'BUILD']
-        self.vedic_bad = ['STOP', 'MEGA_STOP', 'SLOW', 'INWARD']
-        self.vedic_neutral = ['NEUTRAL']
-        
-        # DOUBLE GO specific lists (stricter than general good)
-        self.pti_double_go = ['PTI BEST', 'PTI GO', 'BEST']
-        self.vedic_double_go = ['GO', 'BUILD']  # NOT FOCUS
-        
-        # Classification emojis and descriptions
+        self.pti_go_values = {'PTI BEST', 'PTI GO', 'BEST', 'GO'}
+        self.pti_worst_values = {'PTI WORST', 'WORST', 'PTI SLOW'}
+
+        self.vedic_go_values = {'GO', 'MILD GO', 'BUILD'}
+        self.vedic_bad_values = {'STOP', 'MEGA RED', 'MEGA_STOP', 'SLOW'}
+
+        self.personal_good_values = {'power', 'supportive'}
+        self.personal_bad_values = {'avoid'}
+
         self.classifications = {
             'omni': {
-                'emoji': '⚡',
                 'label': 'OMNI',
-                'description': 'Perfect 3-system alignment - optimal for major activities'
+                'description': 'All 3 systems aligned — optimal for major content batching',
+                'is_background': True,
             },
             'double_go': {
-                'emoji': '🚀',
                 'label': 'DOUBLE GO',
-                'description': 'PTI + Vedic aligned - powerful momentum regardless of personal'
+                'description': 'PTI + Vedic aligned — strong collective momentum',
+                'is_background': True,
             },
             'good': {
-                'emoji': '💚',
                 'label': 'GOOD',
-                'description': '2 systems aligned - favorable timing'
-            },
-            'caution': {
-                'emoji': '🔴',
-                'label': 'CAUTION',
-                'description': '3 systems adverse - avoid major decisions'
-            },
-            'slow': {
-                'emoji': '🟡',
-                'label': 'SLOW',
-                'description': '2 systems adverse - proceed carefully'
+                'description': '2 systems aligned — favorable timing',
+                'is_background': True,
             },
             'neutral': {
-                'emoji': '⚪',
                 'label': 'NEUTRAL',
-                'description': 'Mixed signals - routine activities'
-            }
+                'description': 'Mixed signals — routine activities only',
+                'is_background': False,
+            },
+            'slow': {
+                'label': 'SLOW',
+                'description': '2 systems adverse — proceed carefully',
+                'is_background': False,
+            },
+            'caution': {
+                'label': 'CAUTION',
+                'description': 'Multiple systems adverse — avoid major launches',
+                'is_background': False,
+            },
         }
-    
-    def _normalize_label(self, label: str) -> str:
-        """
-        Normalize a calendar label by stripping emojis and extra whitespace.
-        Handles strings like 'PTI Best 💜⚡' -> 'PTI BEST'
-        """
+
+    def _normalize(self, label: str) -> str:
         if not label:
             return ''
-        # Remove common emojis and symbols
-        import re
-        # Remove emoji characters (Unicode ranges for most emojis)
-        clean = re.sub(r'[^\w\s-]', '', label)
-        # Normalize whitespace and uppercase
+        clean = re.sub(r'[^\w\s-]', '', str(label))
         return ' '.join(clean.split()).upper()
-    
-    def _is_double_go(self, pti_quality: str, vedic_quality: str) -> bool:
-        """
-        Check if PTI + Vedic combination qualifies for DOUBLE GO.
-        
-        DOUBLE GO = PTI (Best/Go) + Vedic (GO/BUILD) alignment
-        Completely ignores Personal calendar - this is a standalone indicator.
-        
-        IMPORTANT: This logic MUST match calculate_is_double_go() in astrobatch_api.py
-        to ensure consistency across all calendar outputs.
-        """
-        import re
-        
-        if not pti_quality or not vedic_quality:
-            return False
-        
-        # Normalize PTI: strip emojis and whitespace, uppercase
-        # Uses extended emoji regex to catch all Unicode emoji ranges
-        pti_clean = re.sub(r'[\U0001F300-\U0001F9FF\U0001FA00-\U0001FAFF\u2600-\u26FF\u2700-\u27BF]', '', str(pti_quality))
-        pti_normalized = ' '.join(pti_clean.split()).upper()
-        
-        # Normalize Vedic: strip whitespace, uppercase
-        vedic_normalized = str(vedic_quality).strip().upper()
-        
-        # Valid values for DOUBLE GO (same as in astrobatch_api.py)
-        pti_double_go_values = ['PTI BEST', 'PTI GO', 'BEST', 'GO']
-        vedic_double_go_values = ['GO', 'BUILD']  # NOT FOCUS, SLOW, STOP, etc.
-        
-        # Check PTI: must contain one of the valid values
-        pti_ok = any(valid in pti_normalized for valid in pti_double_go_values)
-        
-        # Check Vedic: must be exactly GO or BUILD (not FOCUS, SLOW, etc.)
-        vedic_ok = vedic_normalized in vedic_double_go_values
-        
-        return pti_ok and vedic_ok
-    
-    def classify_calendar_quality(self, calendar_type: str, quality: str) -> str:
-        """
-        Classify individual calendar quality as good/bad/neutral
-        """
-        if calendar_type == 'personal':
-            if quality in self.personal_good:
-                return 'good'
-            elif quality in self.personal_bad:
-                return 'bad'
+
+    def _pti_is_go(self, raw: str) -> bool:
+        return self._normalize(raw) in self.pti_go_values
+
+    def _pti_is_worst(self, raw: str) -> bool:
+        return self._normalize(raw) in self.pti_worst_values
+
+    def _vedic_is_go(self, raw: str) -> bool:
+        return str(raw).strip().upper() in self.vedic_go_values
+
+    def _vedic_is_bad(self, raw: str) -> bool:
+        return str(raw).strip().upper() in self.vedic_bad_values
+
+    def _personal_is_good(self, raw: str) -> bool:
+        return str(raw).strip().lower() in self.personal_good_values
+
+    def _personal_is_bad(self, raw: str) -> bool:
+        return str(raw).strip().lower() in self.personal_bad_values
+
+    def classify_day(self, pti_quality: str, vedic_quality: str, personal_quality: str) -> Dict[str, Any]:
+        pti_go = self._pti_is_go(pti_quality)
+        pti_worst = self._pti_is_worst(pti_quality)
+        vedic_go = self._vedic_is_go(vedic_quality)
+        vedic_bad = self._vedic_is_bad(vedic_quality)
+        personal_good = self._personal_is_good(personal_quality)
+        personal_bad = self._personal_is_bad(personal_quality)
+
+        is_double_go = pti_go and vedic_go
+
+        if is_double_go and personal_good:
+            key = 'omni'
+            reason = "All 3 aligned: PTI ({}) + Vedic ({}) + Personal ({})".format(
+                pti_quality, vedic_quality, personal_quality)
+        elif is_double_go:
+            key = 'double_go'
+            reason = "PTI ({}) + Vedic ({}) aligned".format(pti_quality, vedic_quality)
+        elif pti_worst:
+            bad_count = sum([vedic_bad, personal_bad])
+            if bad_count >= 1:
+                key = 'caution'
             else:
-                return 'neutral'
-                
-        elif calendar_type == 'pti_collective':
-            if quality in self.pti_good:
-                return 'good'
-            elif quality in self.pti_bad:
-                return 'bad'
-            else:
-                return 'neutral'
-                
-        elif calendar_type == 'vedic_pti':
-            if quality in self.vedic_good:
-                return 'good'
-            elif quality in self.vedic_bad:
-                return 'bad'
-            else:
-                return 'neutral'
-        
-        return 'neutral'  # Default fallback
-    
-    def calculate_combined_classification(self, personal_quality: str, 
-                                        pti_quality: str, 
-                                        vedic_quality: str) -> Dict[str, Any]:
-        """
-        Calculate combined classification using user's smart logic:
-        - OMNI = all 3 good
-        - DOUBLE GO = PTI + Vedic good (ignores Personal)
-        - GOOD = 2 good
-        - CAUTION = 3 bad
-        - SLOW = 2 bad  
-        - NEUTRAL = 1 bad or mixed
-        """
-        
-        # Classify each calendar
-        personal_class = self.classify_calendar_quality('personal', personal_quality)
-        pti_class = self.classify_calendar_quality('pti_collective', pti_quality)
-        vedic_class = self.classify_calendar_quality('vedic_pti', vedic_quality)
-        
-        # Count good and bad systems
-        good_systems = [personal_class, pti_class, vedic_class].count('good')
-        bad_systems = [personal_class, pti_class, vedic_class].count('bad')
-        
-        # OMNI: All 3 systems good - HIGHEST PRIORITY (must check first!)
-        if good_systems == 3:
-            classification_key = 'omni'
-            reason = f"Perfect alignment: Personal ({personal_quality}) + PTI ({pti_quality}) + Vedic ({vedic_quality})"
-            systems_aligned = ['Personal', 'PTI Collective', 'Vedic PTI']
-            
-        # Special case: DOUBLE GO (PTI Best/Go + Vedic GO/BUILD specifically)
-        elif self._is_double_go(pti_quality, vedic_quality):
-            classification_key = 'double_go'
-            reason = f"PTI ({pti_quality}) + Vedic ({vedic_quality}) aligned"
-            systems_aligned = ['PTI Collective', 'Vedic PTI']
-            
-        # GOOD: 2 systems good
-        elif good_systems == 2:
-            classification_key = 'good'
-            aligned_systems = []
-            if personal_class == 'good': aligned_systems.append(f"Personal ({personal_quality})")
-            if pti_class == 'good': aligned_systems.append(f"PTI ({pti_quality})")
-            if vedic_class == 'good': aligned_systems.append(f"Vedic ({vedic_quality})")
-            reason = f"2 systems aligned: {' + '.join(aligned_systems)}"
-            systems_aligned = [s.split(' (')[0] for s in aligned_systems]
-            
-        # CAUTION: 3 systems bad
-        elif bad_systems == 3:
-            classification_key = 'caution'
-            reason = f"All systems cautioning: Personal ({personal_quality}) + PTI ({pti_quality}) + Vedic ({vedic_quality})"
-            systems_aligned = []
-            
-        # SLOW: 2 systems bad
-        elif bad_systems == 2:
-            classification_key = 'slow'
-            adverse_systems = []
-            if personal_class == 'bad': adverse_systems.append(f"Personal ({personal_quality})")
-            if pti_class == 'bad': adverse_systems.append(f"PTI ({pti_quality})")
-            if vedic_class == 'bad': adverse_systems.append(f"Vedic ({vedic_quality})")
-            reason = f"2 systems adverse: {' + '.join(adverse_systems)}"
-            systems_aligned = []
-            
-        # NEUTRAL: 1 bad or mixed signals
+                key = 'slow'
+            reason = "PTI Worst ({}) — excluded from background".format(pti_quality)
         else:
-            classification_key = 'neutral'
-            reason = f"Mixed signals: Personal ({personal_quality}) + PTI ({pti_quality}) + Vedic ({vedic_quality})"
-            systems_aligned = []
-        
-        # Get classification details
-        classification_data = self.classifications[classification_key]
-        
+            good_count = sum([pti_go, vedic_go, personal_good])
+            bad_count = sum([
+                (not pti_go and not pti_worst and self._normalize(pti_quality) not in {'NORMAL', ''}) or False,
+                vedic_bad,
+                personal_bad
+            ])
+
+            if good_count >= 2:
+                key = 'good'
+                parts = []
+                if pti_go: parts.append("PTI ({})".format(pti_quality))
+                if vedic_go: parts.append("Vedic ({})".format(vedic_quality))
+                if personal_good: parts.append("Personal ({})".format(personal_quality))
+                reason = "2 systems aligned: {}".format(' + '.join(parts))
+            elif vedic_bad and personal_bad:
+                key = 'caution'
+                reason = "Vedic ({}) + Personal ({}) adverse".format(vedic_quality, personal_quality)
+            elif bad_count >= 2:
+                key = 'slow'
+                reason = "Multiple systems adverse"
+            else:
+                key = 'neutral'
+                reason = "Mixed: PTI ({}) + Vedic ({}) + Personal ({})".format(
+                    pti_quality, vedic_quality, personal_quality)
+
+        cls_info = self.classifications[key]
         return {
-            'classification': classification_data['label'],
-            'emoji': classification_data['emoji'],
-            'description': classification_data['description'],
+            'classification': cls_info['label'],
+            'classification_key': key,
+            'description': cls_info['description'],
             'reason': reason,
-            'systems_aligned': systems_aligned,
+            'is_background': cls_info['is_background'],
+            'is_double_go': is_double_go,
             'system_breakdown': {
-                'personal': {'quality': personal_quality, 'class': personal_class},
-                'pti_collective': {'quality': pti_quality, 'class': pti_class},
-                'vedic_pti': {'quality': vedic_quality, 'class': vedic_class}
+                'pti': {'quality': pti_quality, 'is_go': pti_go, 'is_worst': pti_worst},
+                'vedic': {'quality': vedic_quality, 'is_go': vedic_go},
+                'personal': {'quality': personal_quality, 'is_good': personal_good},
             },
-            'good_count': good_systems,
-            'bad_count': bad_systems,
-            'classification_key': classification_key
         }
-    
+
+    def calculate_combined_classification(self, personal_quality: str,
+                                          pti_quality: str,
+                                          vedic_quality: str) -> Dict[str, Any]:
+        result = self.classify_day(pti_quality, vedic_quality, personal_quality)
+        result['systems_aligned'] = []
+        if result['system_breakdown']['pti']['is_go']:
+            result['systems_aligned'].append('PTI Collective')
+        if result['system_breakdown']['vedic']['is_go']:
+            result['systems_aligned'].append('Vedic PTI')
+        if result['system_breakdown']['personal']['is_good']:
+            result['systems_aligned'].append('Personal')
+        result['good_count'] = len(result['systems_aligned'])
+        result['bad_count'] = sum([
+            result['system_breakdown']['pti']['is_worst'],
+            self._vedic_is_bad(vedic_quality),
+            self._personal_is_bad(personal_quality),
+        ])
+        return result
+
+    def _is_double_go(self, pti_quality: str, vedic_quality: str) -> bool:
+        return self._pti_is_go(pti_quality) and self._vedic_is_go(vedic_quality)
+
     def analyze_calendar_data(self, calendar_data: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Analyze existing 3-calendar data to generate combined calendar
-        
-        Args:
-            calendar_data: Dictionary containing personal, pti_collective, vedic_pti calendar data
-            
-        Returns:
-            Combined calendar with daily classifications
-        """
-        
-        # Extract calendar data
         personal_data = calendar_data.get('personal', {}).get('data', {})
         pti_data = calendar_data.get('pti_collective', {}).get('data', {})
         vedic_data = calendar_data.get('vedic_pti', {}).get('data', {})
-        
-        # Extract daily periods/results from each calendar
-        # Try multiple formats: daily_results (current), daily_scores, daily_periods (legacy)
-        personal_periods = personal_data.get('daily_periods', [])
+
         personal_scores = personal_data.get('daily_scores', {})
-        personal_results = personal_data.get('daily_results', {})
-        # PTI uses 'results' field before normalization (Combined runs before normalization)
-        # After normalization it's in 'timing_data', so check both
+        personal_periods = personal_data.get('daily_periods', [])
         pti_results = pti_data.get('results', []) or pti_data.get('timing_data', [])
         vedic_results = vedic_data.get('results', [])
-        
-        combined_results = []
-        classification_stats = {
-            'omni': 0, 'double_go': 0, 'good': 0,
-            'caution': 0, 'slow': 0, 'neutral': 0
-        }
-        
-        # Create date-indexed data for easier lookup
-        personal_by_date = {}
-        
-        # DEBUG: See what Personal data we're receiving
-        print(f"🔍 PERSONAL DATA DEBUG:")
-        print(f"   personal_scores type: {type(personal_scores)}")
-        print(f"   personal_scores length: {len(personal_scores) if personal_scores else 0}")
+
+        print("COMBINED CALENDAR DEBUG:")
+        print("   personal_scores type: {}".format(type(personal_scores)))
+        print("   personal_scores length: {}".format(len(personal_scores) if personal_scores else 0))
         if personal_scores:
-            first_key = list(personal_scores.keys())[0] if personal_scores else None
-            if first_key:
-                print(f"   First item: {first_key} → {personal_scores[first_key]}")
-        
-        # First try daily_scores (dict) - it's already date-indexed and reliable
+            first_key = list(personal_scores.keys())[0]
+            print("   First item: {} -> {}".format(first_key, personal_scores[first_key]))
+
+        personal_by_date = {}
         if personal_scores:
             for date_key, score_data in personal_scores.items():
                 if isinstance(score_data, dict) and score_data.get('quality'):
                     personal_by_date[date_key] = score_data.get('quality', 'neutral')
-        
-        # Fall back to daily_periods (old format) if nothing else found
         if not personal_by_date and personal_periods:
             for period in personal_periods:
                 date_key = period.get('date')
                 if date_key and period.get('personal_score'):
                     personal_by_date[date_key] = period['personal_score'].get('quality', 'neutral')
-        
+
         pti_by_date = {}
-        print(f"🔍 PTI results count: {len(pti_results)}")
-        if pti_results and len(pti_results) > 0:
-            print(f"🔍 First PTI result sample: {pti_results[0]}")
-            print(f"🔍 PTI result keys: {list(pti_results[0].keys() if isinstance(pti_results[0], dict) else [])}")
-        
+        print("   PTI results count: {}".format(len(pti_results)))
+        if pti_results:
+            print("   First PTI result sample: {}".format(pti_results[0]))
+            print("   PTI result keys: {}".format(list(pti_results[0].keys()) if isinstance(pti_results[0], dict) else []))
         for result in pti_results:
             date_key = result.get('date')
             if date_key:
-                # PTI stores classification in 'classification' field  
-                pti_classification = result.get('classification', 'NO')
-                pti_by_date[date_key] = pti_classification
-                # Debug key dates
-                if date_key in ['2025-10-16', '2025-10-24', '2025-10-28']:
-                    print(f"🔍 PTI extraction {date_key}: {pti_classification} (from result with keys: {list(result.keys())})")
-        
+                pti_by_date[date_key] = result.get('classification', 'Normal')
+
         vedic_by_date = {}
-        print(f"🔍 Vedic results count: {len(vedic_results)}")
-        if vedic_results and len(vedic_results) > 0:
-            print(f"🔍 First vedic result sample: {vedic_results[0]}")
-        
+        print("   Vedic results count: {}".format(len(vedic_results)))
+        if vedic_results:
+            print("   First vedic result sample: {}".format(vedic_results[0]))
         for result in vedic_results:
             date_key = result.get('date')
             if date_key:
-                classification = result.get('classification', 'NEUTRAL')
-                vedic_by_date[date_key] = classification
-                # Debug key dates
-                if date_key in ['2025-10-16', '2025-10-24', '2025-10-28']:
-                    print(f"🔍 Vedic extraction {date_key}: {classification} (from {result})")
-        
-        # Debug logging for key dates
-        debug_dates = ['2025-10-16', '2025-10-24', '2025-10-25', '2025-10-28']
-        for debug_date in debug_dates:
-            if debug_date in personal_by_date or debug_date in pti_by_date or debug_date in vedic_by_date:
-                print(f"🔍 COMBINED DEBUG {debug_date}:")
-                print(f"   Personal: {personal_by_date.get(debug_date, 'NOT FOUND')}")
-                print(f"   PTI: {pti_by_date.get(debug_date, 'NOT FOUND')}")
-                print(f"   Vedic: {vedic_by_date.get(debug_date, 'NOT FOUND')}")
-        
-        # Get all dates from any calendar that has data
+                vedic_by_date[date_key] = result.get('classification', 'NEUTRAL')
+
         all_dates = set()
         all_dates.update(personal_by_date.keys())
         all_dates.update(pti_by_date.keys())
         all_dates.update(vedic_by_date.keys())
-        
-        # Analyze each date
+
+        combined_results = []
+        classification_stats = {
+            'omni': 0, 'double_go': 0, 'good': 0,
+            'caution': 0, 'slow': 0, 'neutral': 0
+        }
+        background_days = []
+
         for date_str in sorted(all_dates):
             personal_quality = personal_by_date.get(date_str, 'neutral')
-            pti_quality = pti_by_date.get(date_str, 'NO')
+            pti_quality = pti_by_date.get(date_str, 'Normal')
             vedic_quality = vedic_by_date.get(date_str, 'NEUTRAL')
-            
-            # Calculate combined classification
-            combined_analysis = self.calculate_combined_classification(
-                personal_quality, pti_quality, vedic_quality
-            )
-            
-            # Update statistics
-            classification_stats[combined_analysis['classification_key']] += 1
-            
-            # Check if this day qualifies for DOUBLE GO (PTI Best/Go + Vedic GO/BUILD)
-            # This is a separate flag that can be displayed even if classification is different
-            is_double_go = self._is_double_go(pti_quality, vedic_quality)
-            
-            # Create result entry
+
+            day_result = self.classify_day(pti_quality, vedic_quality, personal_quality)
+            classification_stats[day_result['classification_key']] += 1
+
+            if day_result['is_background']:
+                background_days.append(date_str)
+
+            pti_label = pti_quality
+            vedic_label = vedic_quality
+            personal_label = personal_quality
+
             result_entry = {
                 'date': date_str,
-                'classification': combined_analysis['classification'],
-                'emoji': combined_analysis['emoji'],
-                'description': combined_analysis['description'],
-                'reason': combined_analysis['reason'],
-                'systems_aligned': combined_analysis['systems_aligned'],
-                'system_breakdown': combined_analysis['system_breakdown'],
-                'details': combined_analysis,
-                'is_double_go': is_double_go,
-                'double_go_label': '🚀 DOUBLE GO' if is_double_go else None
+                'classification': day_result['classification'],
+                'classification_key': day_result['classification_key'],
+                'description': day_result['description'],
+                'reason': day_result['reason'],
+                'is_background': day_result['is_background'],
+                'is_double_go': day_result['is_double_go'],
+                'systems_aligned': [],
+                'system_breakdown': day_result['system_breakdown'],
+                'pti_label': pti_label,
+                'vedic_label': vedic_label,
+                'personal_label': personal_label,
+                'label': day_result['classification'],
             }
-            
+
+            if day_result['system_breakdown']['pti']['is_go']:
+                result_entry['systems_aligned'].append('PTI')
+            if day_result['system_breakdown']['vedic']['is_go']:
+                result_entry['systems_aligned'].append('Vedic')
+            if day_result['system_breakdown']['personal']['is_good']:
+                result_entry['systems_aligned'].append('Personal')
+
             combined_results.append(result_entry)
-        
-        # Generate summary
+
         total_days = len(combined_results)
         summary = {
             'total_days': total_days,
             'classification_counts': classification_stats,
-            'classification_percentages': {
-                key: (count / total_days * 100) if total_days > 0 else 0
-                for key, count in classification_stats.items()
-            },
-            'double_go_days': classification_stats['double_go'],
             'omni_days': classification_stats['omni'],
+            'double_go_days': classification_stats['double_go'],
+            'good_days': classification_stats['good'],
+            'background_day_count': len(background_days),
             'favorable_days': classification_stats['omni'] + classification_stats['double_go'] + classification_stats['good'],
-            'adverse_days': classification_stats['caution'] + classification_stats['slow']
+            'adverse_days': classification_stats['caution'] + classification_stats['slow'],
         }
-        
+
         return {
             'calendar_type': 'Combined_Smart_Calendar',
             'generated': True,
             'results': combined_results,
+            'background_days': background_days,
             'summary': summary,
             'methodology': {
-                'description': 'Smart 4th calendar analyzing Personal + PTI Collective + Vedic PTI',
-                'classifications': list(self.classifications.keys()),
-                'special_logic': 'DOUBLE GO ignores Personal calendar for PTI+Vedic alignment'
+                'description': 'Smart combined calendar: PTI + Vedic + Personal',
+                'omni': 'PTI (Best/Go) + Vedic (GO/Mild GO/Build) + Personal (power/supportive)',
+                'double_go': 'PTI (Best/Go) + Vedic (GO/Mild GO/Build)',
+                'good': '2 systems positive, never PTI Worst',
+                'exclusion': 'PTI Worst days never count as background days',
             }
         }
 
+
 def main():
-    """Command line interface for testing"""
     analyzer = CombinedCalendarAnalyzer()
-    
-    # Test classification logic
+
     test_cases = [
-        ('power', 'BEST', 'GO'),      # Should be OMNI
-        ('avoid', 'BEST', 'GO'),      # Should be DOUBLE GO
-        ('power', 'BEST', 'NEUTRAL'), # Should be GOOD
-        ('avoid', 'NO', 'STOP'),      # Should be CAUTION
-        ('avoid', 'NO', 'NEUTRAL'),   # Should be SLOW
-        ('neutral', 'MAYBE', 'NEUTRAL'), # Should be NEUTRAL
+        ('PTI Best', 'GO', 'power'),
+        ('PTI Best', 'MILD GO', 'power'),
+        ('PTI Go', 'BUILD', 'neutral'),
+        ('PTI Go', 'MILD GO', 'avoid'),
+        ('PTI Best', 'NEUTRAL', 'power'),
+        ('PTI Worst', 'GO', 'power'),
+        ('Normal', 'STOP', 'avoid'),
+        ('Normal', 'NEUTRAL', 'neutral'),
+        ('PTI Go', 'SLOW', 'power'),
+        ('Normal', 'MILD GO', 'power'),
     ]
-    
-    print("🎯 Combined Calendar Classification Test:")
-    print("="*60)
-    
-    for personal, pti, vedic in test_cases:
-        result = analyzer.calculate_combined_classification(personal, pti, vedic)
-        print(f"{result['emoji']} {result['classification']:>10} | "
-              f"Personal: {personal:>10} | PTI: {pti:>5} | Vedic: {vedic:>10}")
-        print(f"   Reason: {result['reason']}")
-        print()
-    
-    print("="*60)
+
+    print("Combined Calendar Classification Test:")
+    print("=" * 80)
+    print("{:<14} {:<10} {:<12} -> {:<12} {}".format("PTI", "Vedic", "Personal", "Class", "Background?"))
+    print("-" * 80)
+
+    for pti, vedic, personal in test_cases:
+        result = analyzer.classify_day(pti, vedic, personal)
+        bg = "YES" if result['is_background'] else "no"
+        print("{:<14} {:<10} {:<12} -> {:<12} {}".format(
+            pti, vedic, personal, result['classification'], bg))
+
+    print("=" * 80)
+
 
 if __name__ == "__main__":
     main()
