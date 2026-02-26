@@ -7,7 +7,7 @@ from flask import Blueprint, jsonify, request, session
 from database.manager import db_manager
 from database.models import db, UserProfile
 from helpers.dashboard import generate_dashboard_core
-from helpers.utils import get_two_month_range
+from helpers.utils import get_two_month_range, get_effective_user_id
 
 power_days_bp = Blueprint('power_days', __name__)
 
@@ -107,8 +107,7 @@ def get_power_days():
         if not session.get('authenticated'):
             return jsonify({'error': 'Authentication required'}), 401
 
-        user_info = session.get('user_info', {})
-        user_id = user_info.get('email')
+        user_id = get_effective_user_id()
         if not user_id:
             return jsonify({'error': 'User ID not found'}), 400
 
@@ -130,11 +129,15 @@ def generate_power_days():
             return jsonify({'error': 'Authentication required'}), 401
 
         user_info = session.get('user_info', {})
-        user_id = user_info.get('email')
+        user_id = get_effective_user_id()
         if not user_id:
             return jsonify({'error': 'User ID not found'}), 400
 
-        user_profile = UserProfile.query.filter_by(email=user_id).first()
+        role = user_info.get('role', 'user')
+        if role == 'client':
+            return jsonify({'error': 'Calendar generation is managed by your agency admin.'}), 403
+
+        user_profile = UserProfile.query.filter_by(email=user_info.get('email')).first()
         if not user_profile or not user_profile.birth_date:
             return jsonify({'error': 'Profile not complete'}), 400
 
@@ -183,8 +186,7 @@ def get_bird_batch_power_days():
         if not session.get('authenticated'):
             return jsonify({'error': 'Authentication required'}), 401
 
-        user_info = session.get('user_info', {})
-        user_id = user_info.get('email')
+        user_id = get_effective_user_id()
         if not user_id:
             return jsonify({'error': 'User ID not found'}), 400
 
@@ -240,8 +242,7 @@ def get_yogi_point_power_days():
         if not session.get('authenticated'):
             return jsonify({'error': 'Authentication required'}), 401
 
-        user_info = session.get('user_info', {})
-        user_id = user_info.get('email')
+        user_id = get_effective_user_id()
         if not user_id:
             return jsonify({'error': 'User ID not found'}), 400
 
@@ -295,8 +296,7 @@ def get_part_of_fortune_power_days():
         if not session.get('authenticated'):
             return jsonify({'error': 'Authentication required'}), 401
 
-        user_info = session.get('user_info', {})
-        user_id = user_info.get('email')
+        user_id = get_effective_user_id()
         if not user_id:
             return jsonify({'error': 'User ID not found'}), 400
 
@@ -365,8 +365,7 @@ def get_calendar_feeds():
         if not session.get('authenticated'):
             return jsonify({'error': 'Authentication required'}), 401
 
-        user_info = session.get('user_info', {})
-        user_id = user_info.get('email')
+        user_id = get_effective_user_id()
         if not user_id:
             return jsonify({'error': 'User ID not found'}), 400
 
@@ -384,8 +383,7 @@ def get_pti_calendar():
     try:
         if not session.get('authenticated'):
             return jsonify({'error': 'Not authenticated'}), 401
-        user_info = session.get('user_info', {})
-        user_id = user_info.get('email')
+        user_id = get_effective_user_id()
         if not user_id:
             return jsonify({'error': 'User ID not found'}), 400
 

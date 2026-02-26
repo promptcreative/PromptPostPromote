@@ -2,13 +2,17 @@ from flask import Blueprint, render_template, redirect, request, session
 from datetime import datetime, timezone
 from urllib.parse import quote
 
-from database.models import db, UserProfile
+from database.models import db, UserProfile, Client
 from database.manager import db_manager
-from helpers.utils import get_two_month_range, normalize_dashboard_data
+from helpers.utils import get_two_month_range, normalize_dashboard_data, get_effective_user_id
 from helpers.dashboard import generate_dashboard_core, normalize_for_ui, get_user_defaults
 from routes.auth import check_auth_status
 
 pages_bp = Blueprint("pages", __name__)
+
+
+def _get_role():
+    return session.get('user_info', {}).get('role', 'user')
 
 
 @pages_bp.route('/', methods=['GET'])
@@ -16,6 +20,9 @@ def landing_page():
     try:
         auth_status = check_auth_status()
         if auth_status.get('status') == 'authenticated':
+            role = _get_role()
+            if role == 'client':
+                return redirect('/client-dashboard')
             return redirect('/account-dashboard')
     except Exception:
         pass
@@ -25,8 +32,26 @@ def landing_page():
 @pages_bp.route('/account-dashboard', methods=['GET'])
 def account_dashboard():
     user_info = session.get('user_info', {})
+    if user_info.get('role') == 'client':
+        return redirect('/client-dashboard')
     is_admin = user_info.get('is_admin', False)
     return render_template('account_dashboard.html', is_admin=is_admin)
+
+
+@pages_bp.route('/client-dashboard', methods=['GET'])
+def client_dashboard():
+    if not session.get('authenticated'):
+        return redirect('/login')
+    user_info = session.get('user_info', {})
+    if user_info.get('role') != 'client':
+        return redirect('/account-dashboard')
+    client_id = user_info.get('client_id')
+    client = Client.query.get(client_id) if client_id else None
+    client_name = client.name if client else user_info.get('display_name', 'Client')
+    calendar_status = client.calendar_status if client else 'pending'
+    return render_template('client_dashboard.html',
+                           client_name=client_name,
+                           calendar_status=calendar_status)
 
 
 @pages_bp.route('/calendar-feeds', methods=['GET'])
@@ -35,23 +60,25 @@ def calendar_feeds_page():
     pti_calendar_url = None
     vedic_calendar_url = None
     is_authenticated = False
+    role = _get_role()
 
     try:
         user_info = session.get('user_info', {})
-        user_email = user_info.get('email')
         is_authenticated = session.get('authenticated', False)
 
-        if user_email:
-            user_profile = UserProfile.query.filter_by(email=user_email).first()
-            if user_profile and user_profile.birth_date and user_profile.birth_time:
-                birth_date = user_profile.birth_date.isoformat()
-                birth_time = user_profile.birth_time.strftime('%H:%M')
-                birth_lat = user_profile.birth_latitude or 0
-                birth_lon = user_profile.birth_longitude or 0
-                tz_offset = user_profile.birth_timezone or -5
-                user_id_encoded = quote(user_email, safe='')
+        if role == 'client' and user_info.get('client_id'):
+            client_id = user_info['client_id']
+            client = Client.query.get(client_id)
+            if client and client.birth_date and client.birth_time:
+                user_id_str = f"client_{client_id}"
+                user_id_encoded = quote(user_id_str, safe='')
+                birth_date = client.birth_date.isoformat()
+                birth_time = client.birth_time.strftime('%H:%M')
+                birth_lat = client.birth_latitude or 0
+                birth_lon = client.birth_longitude or 0
+                tz_offset = client.birth_timezone or -5
 
-                personal_token = db_manager.get_subscription_token(user_email, 'personal')
+                personal_token = db_manager.get_subscription_token(user_id_str, 'personal')
                 personal_calendar_url = (
                     f"/calendar/personal.ics?user_id={user_id_encoded}"
                     f"&token={personal_token}&birth_date={birth_date}"
@@ -59,17 +86,48 @@ def calendar_feeds_page():
                     f"&birth_lon={birth_lon}&timezone={tz_offset}"
                 )
 
-                pti_token = db_manager.get_subscription_token(user_email, 'pti')
+                pti_token = db_manager.get_subscription_token(user_id_str, 'pti')
                 pti_calendar_url = (
                     f"/calendar/pti.ics?user_id={user_id_encoded}"
                     f"&token={pti_token}"
                 )
 
-                vedic_token = db_manager.get_subscription_token(user_email, 'vedic')
+                vedic_token = db_manager.get_subscription_token(user_id_str, 'vedic')
                 vedic_calendar_url = (
                     f"/calendar/vedic.ics?user_id={user_id_encoded}"
                     f"&token={vedic_token}"
                 )
+        else:
+            user_email = user_info.get('email')
+            if user_email:
+                user_profile = UserProfile.query.filter_by(email=user_email).first()
+                if user_profile and user_profile.birth_date and user_profile.birth_time:
+                    birth_date = user_profile.birth_date.isoformat()
+                    birth_time = user_profile.birth_time.strftime('%H:%M')
+                    birth_lat = user_profile.birth_latitude or 0
+                    birth_lon = user_profile.birth_longitude or 0
+                    tz_offset = user_profile.birth_timezone or -5
+                    user_id_encoded = quote(user_email, safe='')
+
+                    personal_token = db_manager.get_subscription_token(user_email, 'personal')
+                    personal_calendar_url = (
+                        f"/calendar/personal.ics?user_id={user_id_encoded}"
+                        f"&token={personal_token}&birth_date={birth_date}"
+                        f"&birth_time={birth_time}&birth_lat={birth_lat}"
+                        f"&birth_lon={birth_lon}&timezone={tz_offset}"
+                    )
+
+                    pti_token = db_manager.get_subscription_token(user_email, 'pti')
+                    pti_calendar_url = (
+                        f"/calendar/pti.ics?user_id={user_id_encoded}"
+                        f"&token={pti_token}"
+                    )
+
+                    vedic_token = db_manager.get_subscription_token(user_email, 'vedic')
+                    vedic_calendar_url = (
+                        f"/calendar/vedic.ics?user_id={user_id_encoded}"
+                        f"&token={vedic_token}"
+                    )
     except Exception:
         pass
 
@@ -77,7 +135,8 @@ def calendar_feeds_page():
                            personal_calendar_url=personal_calendar_url,
                            pti_calendar_url=pti_calendar_url,
                            vedic_calendar_url=vedic_calendar_url,
-                           is_authenticated=is_authenticated)
+                           is_authenticated=is_authenticated,
+                           role=role)
 
 
 @pages_bp.route('/my-calendars', methods=['GET'])
@@ -177,6 +236,8 @@ def clients_page():
     if not session.get('authenticated'):
         return redirect('/login')
     user_info = session.get('user_info', {})
+    if user_info.get('role') == 'client':
+        return redirect('/client-dashboard')
     if not user_info.get('is_admin'):
         return redirect('/account-dashboard')
     return render_template('clients.html')
@@ -187,6 +248,8 @@ def client_results_page(client_id):
     if not session.get('authenticated'):
         return redirect('/login')
     user_info = session.get('user_info', {})
+    if user_info.get('role') == 'client':
+        return redirect('/client-dashboard')
     if not user_info.get('is_admin'):
         return redirect('/account-dashboard')
     return render_template('client_results.html', client_id=client_id)
@@ -213,7 +276,8 @@ def interactive_calendar():
 
 @pages_bp.route('/power-days', methods=['GET'])
 def power_days_page():
-    return render_template('power_days.html')
+    role = _get_role()
+    return render_template('power_days.html', role=role)
 
 
 @pages_bp.route('/multi-calendar', methods=['GET'])

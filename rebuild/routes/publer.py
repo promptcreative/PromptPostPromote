@@ -190,8 +190,8 @@ def push_microbird_to_publer():
         if not session.get('authenticated'):
             return jsonify({'error': 'Authentication required'}), 401
 
-        user_info = session.get('user_info', {})
-        user_id = user_info.get('email')
+        from helpers.utils import get_effective_user_id
+        user_id = get_effective_user_id()
         if not user_id:
             return jsonify({'error': 'User ID not found'}), 400
 

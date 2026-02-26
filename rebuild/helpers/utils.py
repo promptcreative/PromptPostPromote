@@ -8,6 +8,14 @@ from datetime import datetime, date, time, timedelta
 from flask import session
 
 
+def get_effective_user_id():
+    user_info = session.get('user_info', {})
+    role = user_info.get('role', 'user')
+    if role == 'client' and user_info.get('client_id'):
+        return f"client_{user_info['client_id']}"
+    return user_info.get('email')
+
+
 def make_json_serializable(obj):
     if isinstance(obj, dict):
         return {k: make_json_serializable(v) for k, v in obj.items()}

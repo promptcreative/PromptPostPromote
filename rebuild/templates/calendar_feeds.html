@@ -289,8 +289,9 @@
         </div>
         
         <div class="nav-buttons">
-            <a href="/account-dashboard" class="nav-btn nav-btn-primary">🏠 Back to Dashboard</a>
-            <a href="/my-calendars" class="nav-btn nav-btn-secondary">📊 View My Calendars</a>
+            <a href="{% if role == 'client' %}/client-dashboard{% else %}/account-dashboard{% endif %}" class="nav-btn nav-btn-primary">Back to Dashboard</a>
+            {% if role != 'client' %}<a href="/my-calendars" class="nav-btn nav-btn-secondary">View My Calendars</a>{% endif %}
+            <a href="/power-days" class="nav-btn nav-btn-secondary">Power Days</a>
         </div>
         
         <div class="info-box">

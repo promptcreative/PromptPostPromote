@@ -588,10 +588,11 @@
 </head>
 <body>
     <nav>
-        <a href="/account-dashboard" class="logo">Prompt Post Promote</a>
+        <a href="{% if role == 'client' %}/client-dashboard{% else %}/account-dashboard{% endif %}" class="logo">Prompt Post Promote</a>
         <div class="nav-actions">
-            <a href="/clients" class="nav-link">Clients</a>
-            <a href="/profile-setup" class="nav-link">Profile</a>
+            {% if role != 'client' %}<a href="/clients" class="nav-link">Clients</a>{% endif %}
+            <a href="/calendar-feeds" class="nav-link">Calendar Feeds</a>
+            {% if role != 'client' %}<a href="/profile-setup" class="nav-link">Profile</a>{% endif %}
             <button class="btn-nav" onclick="logout()">Sign out</button>
         </div>
     </nav>
@@ -602,7 +603,7 @@
                 <h1>Your Power Days</h1>
                 <p id="page-subtitle">Loading your personalized posting schedule…</p>
             </div>
-            <button class="btn-proceed" id="regenerate-btn" onclick="regenerateCalendars()" style="flex-shrink:0; margin-top:4px;">Regenerate Calendars</button>
+            {% if role != 'client' %}<button class="btn-proceed" id="regenerate-btn" onclick="regenerateCalendars()" style="flex-shrink:0; margin-top:4px;">Regenerate Calendars</button>{% endif %}
         </div>
 
         <div id="stats-section" class="stat-row">

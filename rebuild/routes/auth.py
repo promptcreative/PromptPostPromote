@@ -57,19 +57,36 @@ def login_email():
             up.is_admin = True
             db.session.commit()
 
+        from database.models import Client
+        client_record = Client.query.filter_by(email=email).first()
+
+        if is_admin:
+            role = 'admin'
+        elif client_record:
+            role = 'client'
+        else:
+            role = 'user'
+
         session['user_info'] = {
             'email': email,
-            'name': email.split('@')[0],
-            'display_name': email.split('@')[0].title(),
+            'name': client_record.name if client_record else email.split('@')[0],
+            'display_name': client_record.name if client_record else email.split('@')[0].title(),
             'picture': None,
             'auth_method': 'email',
             'is_admin': is_admin,
+            'role': role,
+            'client_id': client_record.id if client_record else None,
         }
         session['auth_timestamp'] = datetime.now().isoformat()
 
-        redirect_url = '/account-dashboard'
-        if not up or not up.birth_date or not up.birth_time:
+        if role == 'client':
+            redirect_url = '/client-dashboard'
+        elif is_admin:
+            redirect_url = '/account-dashboard'
+        elif not up or not up.birth_date or not up.birth_time:
             redirect_url = '/profile-setup'
+        else:
+            redirect_url = '/account-dashboard'
 
         if request.is_json:
             return jsonify({
@@ -351,6 +368,9 @@ def profile():
 
 @auth_bp.route('/profile-setup')
 def profile_setup():
+    user_info = session.get('user_info', {})
+    if user_info.get('role') == 'client':
+        return redirect('/client-dashboard')
     return render_template('profile_setup.html')
 
 

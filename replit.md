@@ -127,12 +127,17 @@ templates/                     - Jinja2 templates (pastel UI)
 - Calendar status: pending → generating → ready (or error)
 - Results page at `/clients/{id}/results` shows golden windows, bird periods, full calendar
 
-## Auth & Admin System
+## Auth & Role System
 - Email-based auth (no password) — enter email to sign in/sign up
-- Admin account: cobrillitate@gmail.com (is_admin=True in DB)
-- ADMIN_EMAIL env var controls admin designation
-- Admin-only features: Client management, agency tools
-- Regular users: Dashboard, Power Days, Calendar Feeds, Profile
+- Three roles detected at login: **admin**, **client**, **user** (regular)
+- Admin account: cobrillitate@gmail.com (is_admin=True in DB, ADMIN_EMAIL env var)
+- Client detection: login email matches a Client record's `email` field → role=client, client_id stored in session
+- Session stores: `role` (admin/client/user), `client_id` (for clients), `is_admin` (bool)
+- **Admin**: Full access — client management, agency tools, all dashboards
+- **Client**: Client portal (`/client-dashboard`) — Power Days, Calendar Feeds, Publer (read-only, no regeneration)
+- **User**: Regular dashboard, Power Days, Calendar Feeds, Profile, personal calendars
+- Clients blocked from: profile-setup, client management, account-dashboard, calendar regeneration
+- `get_effective_user_id()` helper returns `client_{id}` for clients, email for others — used across all data-fetching routes
 - New users without birth data redirected to profile setup on first login
 
 ## Environment Variables
@@ -166,3 +171,8 @@ templates/                     - Jinja2 templates (pastel UI)
 - Built Publer integration: push Micro Bird events as scheduled draft posts
 - Built agency multi-client system with CRUD, generation, and results viewing
 - Redesigned all pages to match pastel UI design system
+- Built client portal: role-based auth (admin/client/user), client dashboard at /client-dashboard
+- Clients login with their email → auto-detected from Client records → see their own Power Days, Calendar Feeds, Publer
+- Added get_effective_user_id() helper for consistent client_{id} user_id resolution across routes
+- Route protection: clients blocked from admin pages, profile-setup, regeneration; redirected to client-dashboard
+- Role-aware navigation on Power Days and Calendar Feeds pages
