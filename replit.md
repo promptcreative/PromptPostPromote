@@ -1,7 +1,7 @@
-# Astrobatching Platform
+# PromptPostPromote (Astrobatching Platform)
 
 ## Overview
-Astrobatching platform that calculates personalized posting times from birth data using multiple astrological calendar systems (Vedic, Magi/PTI, Personal), finds overlapping "golden windows" through refined classification (OMNI, Double GO, Good), filters microtransits (Yogi Point, Part of Fortune) to background days only, computes Micro Bird precision posting times, and exports via calendar subscriptions (ICS) and Publer API. Supports agency-style multi-client management.
+PromptPostPromote / Astrobatching platform that calculates personalized posting times from birth data using multiple astrological calendar systems (Vedic, Magi/PTI, Personal), finds overlapping "golden windows" through refined classification (OMNI, Double GO, Good), filters microtransits (Yogi Point, Part of Fortune) to background days only, computes Micro Bird precision posting times, and exports via calendar subscriptions (ICS) and Publer API. Supports agency-style multi-client management.
 
 ## Architecture
 - **Backend:** Flask + SQLAlchemy ORM (Python 3.11)
