@@ -1,0 +1,61 @@
+CONTEXT:
+PROJECT NAME: PromptPostPromote/Astrobatching
+GITHUB URL: https://github.com/promptcreative/PromptPostPromote
+
+PURPOSE: Astrobatch promotion calendar and agency tools designed to manage and optimize content posting schedules across various platforms, facilitating efficient promotional activities.
+CURRENT STATUS: Experimental; Initial setup with core features like user role-based access, branding updates, and artwork scheduling in development. More advanced features like client portals and optimal posting timings are included but require further refinement.
+ARCHITECTURE: Monolithic Python Flask application utilizing a PostgreSQL database for persistence. Integrates various libraries for handling scheduling, authentication, and API requests to external services such as OpenAI. Primarily focuses on a single server solution with templating through Flask's built-in Jinja.
+TECH STACK: Python 3.11, Flask 3.0.3, Flask-SQLAlchemy 3.1.1, PostgreSQL, OpenAI API, Requests 2.32.5, SQLAlchemy 2.0.36, Pandas 3.0.0, Werkzeug 3.0.4, Flask-Login 0.6.3, Flask-Dance 7.1.0
+USER FLOW: User signs up or logs in -> Selects or uploads artwork -> Schedules postings using provided calendar tools -> Receives feedback on optimal posting times and updates content accordingly -> Can access client portal if applicable.
+HOW TO RUN: Clone the repository; Ensure Python 3.11 is installed; Set up virtual environment; Install dependencies through 'pip install -r requirements.txt'; Configure .env file with appropriate environment variables such as DATABASE_URL; Run the application using 'flask run'.
+
+KEY FILES:
+- app.py — Primary entry point of the Flask application.
+- main.py — Handles main application logic and startup.
+- publer_service.py — Integration logic for Publer-related functionalities.
+- routes.py — Defines the application routes and handling logic.
+- models.py — Defines database schema and ORM models.
+- utils.py — Utility functions shared across the application.
+- templates/index.html — Landing page template for the web application.
+- templates/login.html — User login page template.
+
+DEPENDENCIES:
+- OpenAI (api) — Used for AI-driven content analysis or recommendations.
+- PostgreSQL (database) — Central database for managing scheduling, user data, and other persistent entities.
+
+BUSINESS SUMMARY: No information available yet. Please fill in manually.
+BUSINESS STATUS: Unknown
+
+MY REQUEST:
+Create internal documentation (INTERNAL_DOCS.md) so a team member, VA, or AI agent can navigate this project without hand-holding.
+
+1. **Directory Map**
+   - What each folder contains
+   - Which files are entry points
+   - Which files are configuration
+
+2. **Dependencies & Integrations**
+   - External APIs or services it connects to
+   - Environment variables it needs (names only, not values)
+   - Other repos or services it depends on
+
+3. **Secrets & Sensitive Data**
+   - Where credentials are referenced
+   - What should NEVER be shared publicly
+   - What's safe for a team member to see
+
+4. **Common Tasks**
+   - How to run locally
+   - How to deploy/update
+   - Where logs/errors show up
+   - How to add a new feature (which files to touch)
+
+5. **Help Needed**
+   - Tasks that could be delegated right now
+   - Areas that need cleanup
+   - Documentation gaps
+
+CONSTRAINTS:
+- Base this on the actual file structure and tech stack, not generic advice
+- Flag anything uncertain with [VERIFY]
+- Return as clean markdown
