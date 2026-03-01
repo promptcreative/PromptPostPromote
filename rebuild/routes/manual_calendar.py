@@ -9,17 +9,19 @@ MAGI_CLASSIFICATIONS = ['Best', 'Good', 'Slow', 'Worst']
 VEDIC_CLASSIFICATIONS = ['GO', 'MILD GO', 'BUILD', 'STOP', 'MEGA RED']
 
 
-def _require_admin():
+def _require_editor_or_admin():
     user_info = session.get('user_info', {})
-    if not user_info.get('is_admin'):
-        return False
-    return True
+    if user_info.get('is_admin'):
+        return True
+    if user_info.get('role') == 'editor':
+        return True
+    return False
 
 
 @manual_cal_bp.route('/api/manual-calendar', methods=['POST'])
 def save_manual_calendar():
-    if not _require_admin():
-        return jsonify({'error': 'Admin access required'}), 403
+    if not _require_editor_or_admin():
+        return jsonify({'error': 'Admin or editor access required'}), 403
 
     data = request.get_json()
     if not data:
@@ -79,8 +81,8 @@ def save_manual_calendar():
 
 @manual_cal_bp.route('/api/manual-calendar', methods=['GET'])
 def get_manual_calendar():
-    if not _require_admin():
-        return jsonify({'error': 'Admin access required'}), 403
+    if not _require_editor_or_admin():
+        return jsonify({'error': 'Admin or editor access required'}), 403
 
     calendar_type = request.args.get('calendar_type', 'magi').strip().lower()
     category = request.args.get('category', 'COLLECTIVE').strip().upper()
@@ -121,8 +123,8 @@ def get_manual_calendar():
 
 @manual_cal_bp.route('/api/manual-calendar/months', methods=['GET'])
 def get_manual_calendar_months():
-    if not _require_admin():
-        return jsonify({'error': 'Admin access required'}), 403
+    if not _require_editor_or_admin():
+        return jsonify({'error': 'Admin or editor access required'}), 403
 
     calendar_type = request.args.get('calendar_type', 'magi').strip().lower()
     months = db_manager.get_manual_calendar_months(calendar_type)

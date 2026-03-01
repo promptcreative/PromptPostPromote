@@ -35,7 +35,8 @@ def account_dashboard():
     if user_info.get('role') == 'client':
         return redirect('/client-dashboard')
     is_admin = user_info.get('is_admin', False)
-    return render_template('account_dashboard.html', is_admin=is_admin)
+    is_editor = user_info.get('role') == 'editor'
+    return render_template('account_dashboard.html', is_admin=is_admin, is_editor=is_editor)
 
 
 @pages_bp.route('/client-dashboard', methods=['GET'])
@@ -287,7 +288,7 @@ def manual_calendar():
     user_info = session.get('user_info', {})
     if user_info.get('role') == 'client':
         return redirect('/client-dashboard')
-    if not user_info.get('is_admin'):
+    if not user_info.get('is_admin') and user_info.get('role') != 'editor':
         return redirect('/account-dashboard')
     return render_template('manual_calendar.html')
 

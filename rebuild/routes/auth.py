@@ -62,6 +62,8 @@ def login_email():
 
         if is_admin:
             role = 'admin'
+        elif up and up.role == 'editor':
+            role = 'editor'
         elif client_record:
             role = 'client'
         else:
@@ -81,7 +83,7 @@ def login_email():
 
         if role == 'client':
             redirect_url = '/client-dashboard'
-        elif is_admin:
+        elif is_admin or role == 'editor':
             redirect_url = '/account-dashboard'
         elif not up or not up.birth_date or not up.birth_time:
             redirect_url = '/profile-setup'
