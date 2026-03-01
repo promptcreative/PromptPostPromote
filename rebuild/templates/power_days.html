@@ -838,6 +838,8 @@
             document.getElementById('good-count').textContent = (data.good_days || []).length;
 
             const eclipses = data.eclipse_warnings || [];
+            const eclipseDateMap = {};
+            eclipses.forEach(e => { eclipseDateMap[e.date] = e; });
             const eclipseSection = document.getElementById('eclipse-warnings');
             if (eclipses.length > 0) {
                 eclipseSection.style.display = 'block';
@@ -882,18 +884,30 @@
 
             let html = '<div class="days-list">';
             for (const day of allDays) {
+                const eclipseForDay = eclipseDateMap[day.date];
                 const labels = [];
-                if (day.pti_label) labels.push(day.pti_label);
-                if (day.vedic_label) labels.push(day.vedic_label);
-                if (day.personal_label) labels.push(day.personal_label);
+                if (day.pti_label) labels.push({text: day.pti_label, isEclipse: false});
+                if (day.vedic_label) {
+                    if (eclipseForDay && day.vedic_label.toUpperCase().includes('MEGA')) {
+                        labels.push({text: eclipseForDay.label || day.vedic_label, isEclipse: true});
+                    } else {
+                        labels.push({text: day.vedic_label, isEclipse: false});
+                    }
+                }
+                if (day.personal_label) labels.push({text: day.personal_label, isEclipse: false});
+
+                const labelHtml = labels.map(l => {
+                    if (l.isEclipse) {
+                        return '<span class="label-tag" style="background:#2D2B3D;color:white;font-weight:600;">' + l.text + '</span>';
+                    }
+                    return '<span class="label-tag">' + l.text + '</span>';
+                }).join('');
 
                 html += `<div class="day-row">
                     <span class="day-date">${formatDate(day.date)}</span>
                     ${classificationBadge(day.classification)}
                     <span class="day-reason">${day.reason || ''}</span>
-                    <span class="day-labels">
-                        ${labels.map(l => '<span class="label-tag">' + l + '</span>').join('')}
-                    </span>
+                    <span class="day-labels">${labelHtml}</span>
                 </div>`;
             }
             html += '</div>';
