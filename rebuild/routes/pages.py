@@ -280,6 +280,18 @@ def power_days_page():
     return render_template('power_days.html', role=role)
 
 
+@pages_bp.route('/manual-calendar', methods=['GET'])
+def manual_calendar():
+    if not session.get('authenticated'):
+        return redirect('/login')
+    user_info = session.get('user_info', {})
+    if user_info.get('role') == 'client':
+        return redirect('/client-dashboard')
+    if not user_info.get('is_admin'):
+        return redirect('/account-dashboard')
+    return render_template('manual_calendar.html')
+
+
 @pages_bp.route('/multi-calendar', methods=['GET'])
 def multi_calendar():
     return render_template('multi_calendar_view.html')

@@ -132,6 +132,33 @@ class CalendarData(db.Model):
         return f'<CalendarData {self.user_email} {self.calendar_type}>'
 
 
+class ManualCalendarEntry(db.Model):
+    __tablename__ = 'manual_calendar_entries'
+
+    id = db.Column(db.Integer, primary_key=True)
+    date = db.Column(db.Date, nullable=False)
+    classification = db.Column(db.String(50), nullable=False)
+    calendar_type = db.Column(db.String(50), nullable=False)
+    category = db.Column(db.String(100), nullable=False, default='COLLECTIVE')
+    created_by = db.Column(db.String(255), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        db.UniqueConstraint('date', 'calendar_type', 'category', name='uq_manual_cal_date_type_cat'),
+    )
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'date': self.date.isoformat(),
+            'classification': self.classification,
+            'calendar_type': self.calendar_type,
+            'category': self.category,
+            'created_by': self.created_by,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+        }
+
+
 class SubscriptionToken(db.Model):
     __tablename__ = 'subscription_tokens'
 

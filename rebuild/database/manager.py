@@ -5,7 +5,7 @@ Calendar Database Manager - PostgreSQL-based replacement for Replit KV
 import json
 import secrets
 from datetime import datetime, timedelta
-from .models import db, CalendarData, SubscriptionToken, UserProfile
+from .models import db, CalendarData, SubscriptionToken, UserProfile, ManualCalendarEntry
 
 
 class CalendarDatabaseManager:
@@ -99,6 +99,78 @@ class CalendarDatabaseManager:
             return self.save_calendar_data(user_email, saved)
         except Exception as e:
             print(f"Error saving precision timing: {e}")
+            return False
+
+
+    def get_manual_calendar(self, calendar_type, category, start_date, end_date):
+        try:
+            entries = ManualCalendarEntry.query.filter(
+                ManualCalendarEntry.calendar_type == calendar_type,
+                ManualCalendarEntry.category == category,
+                ManualCalendarEntry.date >= start_date,
+                ManualCalendarEntry.date <= end_date,
+            ).order_by(ManualCalendarEntry.date).all()
+            return [e.to_dict() for e in entries]
+        except Exception as e:
+            print(f"Error loading manual calendar: {e}")
+            return []
+
+    def get_manual_calendar_months(self, calendar_type):
+        try:
+            from sqlalchemy import func, extract
+            results = db.session.query(
+                extract('year', ManualCalendarEntry.date).label('year'),
+                extract('month', ManualCalendarEntry.date).label('month'),
+                ManualCalendarEntry.category,
+                func.count(ManualCalendarEntry.id).label('count')
+            ).filter(
+                ManualCalendarEntry.calendar_type == calendar_type
+            ).group_by(
+                extract('year', ManualCalendarEntry.date),
+                extract('month', ManualCalendarEntry.date),
+                ManualCalendarEntry.category
+            ).order_by(
+                extract('year', ManualCalendarEntry.date).desc(),
+                extract('month', ManualCalendarEntry.date).desc()
+            ).all()
+            return [{'year': int(r.year), 'month': int(r.month), 'category': r.category, 'count': r.count} for r in results]
+        except Exception as e:
+            print(f"Error loading manual calendar months: {e}")
+            return []
+
+    def save_manual_calendar(self, calendar_type, category, year, month, classifications, created_by=None):
+        try:
+            import calendar as cal_mod
+            from datetime import date as date_type
+            first_day = date_type(year, month, 1)
+            last_day = date_type(year, month, cal_mod.monthrange(year, month)[1])
+            ManualCalendarEntry.query.filter(
+                ManualCalendarEntry.calendar_type == calendar_type,
+                ManualCalendarEntry.category == category,
+                ManualCalendarEntry.date >= first_day,
+                ManualCalendarEntry.date <= last_day,
+            ).delete()
+
+            for cls_name, day_numbers in classifications.items():
+                for day_num in day_numbers:
+                    try:
+                        entry_date = date_type(year, month, day_num)
+                        entry = ManualCalendarEntry(
+                            date=entry_date,
+                            classification=cls_name,
+                            calendar_type=calendar_type,
+                            category=category,
+                            created_by=created_by,
+                        )
+                        db.session.add(entry)
+                    except ValueError:
+                        continue
+
+            db.session.commit()
+            return True
+        except Exception as e:
+            print(f"Error saving manual calendar: {e}")
+            db.session.rollback()
             return False
 
 

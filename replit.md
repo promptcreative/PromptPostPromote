@@ -47,6 +47,7 @@ routes/api.py                  - Profile, calendar generation APIs
 routes/power_days.py           - Power Days API (classified days, filtered microtransits, bird batch)
 routes/publer.py               - Publer integration (test, accounts, push microbird, push generic)
 routes/ics_feeds.py            - ICS calendar subscription feeds (all + background-filtered)
+routes/manual_calendar.py      - Manual Magi/Vedic calendar data input API
 routes/microtransits.py        - Raw microtransit calculation endpoints
 routes/calendars.py            - Calendar generation and retrieval
 routes/downloads.py            - CSV/JSON download endpoints
@@ -71,6 +72,7 @@ templates/                     - Jinja2 templates (pastel UI)
 - **Client** - agency clients with birth data, location, calendar status
 - **Settings** - brand settings (company name, hashtag, shop URL)
 - **SubscriptionToken** - ICS feed authentication tokens
+- **ManualCalendarEntry** - admin-entered Magi/Vedic calendar data (date, classification, calendar_type, category)
 
 ## Key API Endpoints
 
@@ -87,6 +89,11 @@ templates/                     - Jinja2 templates (pastel UI)
 
 ### PTI Calendar
 - `GET /api/pti-calendar` - full PTI calendar with all classifications (PTI Best, PTI Go, Normal, PTI Slow, PTI Worst) with scores and details
+
+### Manual Calendar Input (Admin)
+- `POST /api/manual-calendar` - save manual Magi or Vedic calendar entries for a month
+- `GET /api/manual-calendar?calendar_type=magi&month=3&year=2026&category=SUCCESS_LOVE` - retrieve saved entries
+- `GET /api/manual-calendar/months?calendar_type=magi` - list months with saved data
 
 ### Publer Integration
 - `GET /api/publer/test` - test Publer API connection
@@ -180,3 +187,7 @@ templates/                     - Jinja2 templates (pastel UI)
 - Eclipse warnings section in Power Days UI: dark banner with type, date, total/partial badge
 - Vedic ICS feed titles show eclipse label (e.g. "TOTAL SOLAR ECLIPSE") instead of generic "MEGA RED"
 - Combined ICS feed includes eclipse warning line in description for eclipse days
+- Built manual calendar input system: admin page at /manual-calendar for entering Magi/PTI and Vedic calendar data
+- ManualCalendarEntry model stores per-day classifications by calendar type and category
+- Dashboard pipeline checks manual data first, falls back to calculated engines when no manual data exists
+- Admin dashboard shows "Calendar Input" card and nav link

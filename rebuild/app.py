@@ -37,6 +37,7 @@ def create_app():
     from routes.clients import clients_bp
     from routes.power_days import power_days_bp
     from routes.publer import publer_bp
+    from routes.manual_calendar import manual_cal_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(pages_bp)
@@ -48,6 +49,7 @@ def create_app():
     app.register_blueprint(clients_bp)
     app.register_blueprint(power_days_bp)
     app.register_blueprint(publer_bp)
+    app.register_blueprint(manual_cal_bp)
 
     @app.after_request
     def add_no_cache_headers(response):

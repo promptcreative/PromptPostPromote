@@ -342,41 +342,101 @@ def generate_dashboard_core(data: dict, user_id: str = None) -> dict:
     else:
         dashboard_results["calendars"]["personal"] = {"error": "Birth data required"}
 
-    # 3) PTI Collective
+    # 3) PTI Collective — check manual data first
     try:
-        from core.magi_collective import PTICollectiveCalendar
-        pti_system = PTICollectiveCalendar()
         start_date_pti, end_date_pti, _ = get_two_month_range()
-        start_dt = datetime.combine(start_date_pti, datetime.min.time())
-        days_count_pti = (end_date_pti - start_date_pti).days + 1
-        pti_result = pti_system.generate_calendar(start_dt, days_count_pti)
-        dashboard_results["calendars"]["pti"] = {
-            "calendar_type": "PTI_Collective",
-            "results": pti_result,
-            "period": {"start_date": start_date_pti.isoformat(), "end_date": end_date_pti.isoformat()},
-            "generated": True,
-        }
+        manual_pti = db_manager.get_manual_calendar('magi', 'SUCCESS_LOVE', start_date_pti, end_date_pti)
+        if not manual_pti:
+            manual_pti = db_manager.get_manual_calendar('magi', 'COLLECTIVE', start_date_pti, end_date_pti)
+
+        if manual_pti:
+            pti_cls_map = {'Best': 'PTI Best', 'Good': 'PTI Go', 'Normal': 'Normal', 'Slow': 'PTI Slow', 'Worst': 'PTI Worst'}
+            pti_result = []
+            manual_by_date = {e['date']: e['classification'] for e in manual_pti}
+            cur = start_date_pti
+            while cur <= end_date_pti:
+                d_str = cur.isoformat()
+                raw_cls = manual_by_date.get(d_str, 'Normal')
+                mapped_cls = pti_cls_map.get(raw_cls, 'Normal')
+                pti_result.append({
+                    'date': d_str,
+                    'classification': mapped_cls,
+                    'score': {'PTI Best': 10, 'PTI Go': 5, 'Normal': 0, 'PTI Slow': -3, 'PTI Worst': -10}.get(mapped_cls, 0),
+                    'reason': f'Manual input: {raw_cls}',
+                    'source': 'manual',
+                })
+                cur += timedelta(days=1)
+            dashboard_results["calendars"]["pti"] = {
+                "calendar_type": "PTI_Collective",
+                "results": pti_result,
+                "period": {"start_date": start_date_pti.isoformat(), "end_date": end_date_pti.isoformat()},
+                "generated": True,
+                "source": "manual",
+            }
+        else:
+            from core.magi_collective import PTICollectiveCalendar
+            pti_system = PTICollectiveCalendar()
+            start_dt = datetime.combine(start_date_pti, datetime.min.time())
+            days_count_pti = (end_date_pti - start_date_pti).days + 1
+            pti_result = pti_system.generate_calendar(start_dt, days_count_pti)
+            dashboard_results["calendars"]["pti"] = {
+                "calendar_type": "PTI_Collective",
+                "results": pti_result,
+                "period": {"start_date": start_date_pti.isoformat(), "end_date": end_date_pti.isoformat()},
+                "generated": True,
+            }
     except Exception as e:
         print(f"PTI Collective error: {e}")
         traceback.print_exc()
         dashboard_results["calendars"]["pti"] = {"error": str(e), "generated": False}
 
-    # 4) Vedic Collective
+    # 4) Vedic Collective — check manual data first
     try:
-        from core.vedic_collective import classify_day_rules
         start_date_vs, end_date_vs, _ = get_two_month_range()
-        cur = start_date_vs
-        vedic_results = []
-        while cur <= end_date_vs:
-            day_result = classify_day_rules(cur)
-            vedic_results.append(day_result)
-            cur += timedelta(days=1)
-        dashboard_results["calendars"]["goslow"] = {
-            "calendar_type": "Vedic_Collective_Calendar",
-            "period": {"start_date": start_date_vs.isoformat(), "end_date": end_date_vs.isoformat()},
-            "results": vedic_results,
-            "generated": True,
-        }
+        manual_vedic = db_manager.get_manual_calendar('vedic', 'COLLECTIVE', start_date_vs, end_date_vs)
+
+        if manual_vedic:
+            vedic_color_map = {'GO': 'green', 'MILD GO': 'mild_green', 'BUILD': 'purple', 'NEUTRAL': 'neutral', 'STOP': 'red', 'MEGA RED': 'mega_red'}
+            vedic_layer_map = {'GO': 'L7', 'MILD GO': 'L8', 'BUILD': 'L4', 'NEUTRAL': 'L9', 'STOP': 'L2', 'MEGA RED': 'L1'}
+            vedic_results = []
+            manual_by_date = {e['date']: e['classification'] for e in manual_vedic}
+            cur = start_date_vs
+            while cur <= end_date_vs:
+                d_str = cur.isoformat()
+                raw_cls = manual_by_date.get(d_str, 'NEUTRAL')
+                vedic_results.append({
+                    'date': d_str,
+                    'classification': raw_cls,
+                    'color': vedic_color_map.get(raw_cls, 'neutral'),
+                    'layer': vedic_layer_map.get(raw_cls, 'L9'),
+                    'reason': f'Manual input: {raw_cls}',
+                    'rule_reason': f'Manual input: {raw_cls}',
+                    'rule_number': int(vedic_layer_map.get(raw_cls, 'L9')[1:]),
+                    'eclipse_nearby': raw_cls == 'MEGA RED',
+                    'source': 'manual',
+                })
+                cur += timedelta(days=1)
+            dashboard_results["calendars"]["goslow"] = {
+                "calendar_type": "Vedic_Collective_Calendar",
+                "period": {"start_date": start_date_vs.isoformat(), "end_date": end_date_vs.isoformat()},
+                "results": vedic_results,
+                "generated": True,
+                "source": "manual",
+            }
+        else:
+            from core.vedic_collective import classify_day_rules
+            cur = start_date_vs
+            vedic_results = []
+            while cur <= end_date_vs:
+                day_result = classify_day_rules(cur)
+                vedic_results.append(day_result)
+                cur += timedelta(days=1)
+            dashboard_results["calendars"]["goslow"] = {
+                "calendar_type": "Vedic_Collective_Calendar",
+                "period": {"start_date": start_date_vs.isoformat(), "end_date": end_date_vs.isoformat()},
+                "results": vedic_results,
+                "generated": True,
+            }
     except Exception as e:
         print(f"Vedic Collective error: {e}")
         traceback.print_exc()

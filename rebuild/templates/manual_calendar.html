@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="/static/icon.png">
+    <title>Calendar Input - PromptPostPromote</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: #FFF8F0;
+            min-height: 100vh;
+            color: #2D2B3D;
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 48px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .logo { font-size: 1.25rem; font-weight: 700; color: #2D2B3D; text-decoration: none; }
+
+        .nav-actions { display: flex; align-items: center; gap: 12px; }
+
+        .nav-link {
+            color: #6B6880;
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            padding: 8px 16px;
+            border-radius: 10px;
+            transition: all 0.2s;
+        }
+
+        .nav-link:hover { background: rgba(45,43,61,0.06); }
+        .nav-link.active { color: #2D2B3D; background: rgba(45,43,61,0.06); font-weight: 600; }
+
+        .btn-nav {
+            background: none; border: 1px solid #E0DDE8; color: #6B6880;
+            padding: 8px 16px; border-radius: 10px; cursor: pointer; font-size: 0.95rem;
+            font-family: inherit;
+        }
+
+        .container { max-width: 900px; margin: 0 auto; padding: 0 32px 60px; }
+
+        .page-header { padding: 24px 0 16px; }
+        .page-header h1 { font-size: 1.8rem; font-weight: 700; }
+        .page-header p { color: #8A8698; font-size: 0.9rem; margin-top: 4px; }
+
+        .controls-row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+        .control-group { display: flex; flex-direction: column; gap: 4px; }
+        .control-group label { font-size: 0.8rem; font-weight: 600; color: #8A8698; text-transform: uppercase; letter-spacing: 0.5px; }
+
+        select, input[type="number"] {
+            font-family: inherit;
+            font-size: 0.95rem;
+            padding: 10px 14px;
+            border: 1px solid #E0DDE8;
+            border-radius: 10px;
+            background: white;
+            color: #2D2B3D;
+            outline: none;
+        }
+
+        select:focus, input:focus { border-color: #2D2B3D; }
+
+        .type-toggle {
+            display: flex;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid #E0DDE8;
+        }
+
+        .type-btn {
+            padding: 10px 20px;
+            border: none;
+            background: white;
+            font-family: inherit;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #6B6880;
+            font-weight: 500;
+        }
+
+        .type-btn.active {
+            background: #2D2B3D;
+            color: white;
+            font-weight: 600;
+        }
+
+        .tier-inputs {
+            background: white;
+            border-radius: 16px;
+            padding: 28px;
+            border: 1px solid #E8E6F0;
+        }
+
+        .tier-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .tier-row:last-child { margin-bottom: 0; }
+
+        .tier-label {
+            width: 120px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .tier-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .tier-input {
+            flex: 1;
+            font-family: inherit;
+            font-size: 0.95rem;
+            padding: 10px 14px;
+            border: 1px solid #E0DDE8;
+            border-radius: 10px;
+            background: #FAFAFA;
+            color: #2D2B3D;
+            outline: none;
+        }
+
+        .tier-input:focus { border-color: #2D2B3D; background: white; }
+
+        .tier-input::placeholder { color: #B5B2C0; }
+
+        .actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+            justify-content: flex-end;
+        }
+
+        .btn-save {
+            background: #2D2B3D;
+            color: white;
+            border: none;
+            padding: 12px 28px;
+            border-radius: 10px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-save:hover { background: #1a1829; }
+        .btn-save:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .btn-clear {
+            background: none;
+            color: #6B6880;
+            border: 1px solid #E0DDE8;
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-clear:hover { border-color: #2D2B3D; color: #2D2B3D; }
+
+        .status-msg {
+            margin-top: 16px;
+            padding: 12px 16px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            display: none;
+        }
+
+        .status-msg.success { display: block; background: #E8F5E9; color: #2E7D32; }
+        .status-msg.error { display: block; background: #FFEBEE; color: #C62828; }
+
+        .preview-grid {
+            margin-top: 28px;
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            border: 1px solid #E8E6F0;
+        }
+
+        .preview-grid h3 { font-size: 1rem; font-weight: 600; margin-bottom: 16px; }
+
+        .cal-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+        }
+
+        .cal-header {
+            text-align: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #8A8698;
+            padding: 4px;
+        }
+
+        .cal-day {
+            text-align: center;
+            padding: 8px 4px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .cal-day.empty { background: none; }
+        .cal-day.best { background: #FFD54F; color: #5D4037; font-weight: 700; }
+        .cal-day.good, .cal-day.go { background: #FFF9C4; color: #5D4037; }
+        .cal-day.mild-go { background: #E8F5E9; color: #2E7D32; }
+        .cal-day.build { background: #F3E5F5; color: #6A1B9A; }
+        .cal-day.normal, .cal-day.neutral { background: #F5F5F5; color: #757575; }
+        .cal-day.slow, .cal-day.stop { background: #EFEBE9; color: #5D4037; }
+        .cal-day.worst, .cal-day.mega-red { background: #455A64; color: white; font-weight: 700; }
+
+        .months-list {
+            margin-top: 28px;
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            border: 1px solid #E8E6F0;
+        }
+
+        .months-list h3 { font-size: 1rem; font-weight: 600; margin-bottom: 12px; }
+
+        .month-tag {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 8px;
+            background: #F0EEF5;
+            color: #2D2B3D;
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .month-tag:hover { background: #2D2B3D; color: white; }
+
+        .help-text {
+            font-size: 0.82rem;
+            color: #8A8698;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/account-dashboard" class="logo">Prompt Post Promote</a>
+        <div class="nav-actions">
+            <a href="/power-days" class="nav-link">Power Days</a>
+            <a href="/clients" class="nav-link">Clients</a>
+            <a href="/manual-calendar" class="nav-link active">Calendar Input</a>
+            <a href="/profile-setup" class="nav-link">Profile</a>
+            <button class="btn-nav" onclick="window.location.href='/auth/logout'">Sign out</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="page-header">
+            <h1>Calendar Input</h1>
+            <p>Enter Magi (PTI) or Vedic collective calendar data by month</p>
+        </div>
+
+        <div class="controls-row">
+            <div class="type-toggle">
+                <button class="type-btn active" data-type="magi" onclick="switchType('magi')">Magi / PTI</button>
+                <button class="type-btn" data-type="vedic" onclick="switchType('vedic')">Vedic</button>
+            </div>
+
+            <div class="control-group">
+                <label>Month</label>
+                <select id="month-select"></select>
+            </div>
+
+            <div class="control-group">
+                <label>Year</label>
+                <select id="year-select"></select>
+            </div>
+
+            <div class="control-group" id="category-group">
+                <label>Category</label>
+                <select id="category-select">
+                    <option value="SUCCESS_LOVE">Success + Love</option>
+                    <option value="COLLECTIVE">Collective</option>
+                </select>
+            </div>
+
+            <button class="btn-save" onclick="loadData()" style="align-self: flex-end;">Load</button>
+        </div>
+
+        <div class="tier-inputs" id="magi-tiers">
+            <div class="tier-row">
+                <div class="tier-label"><span class="tier-dot" style="background:#FFD54F;"></span> Best</div>
+                <input type="text" class="tier-input" id="magi-Best" placeholder="e.g. 18">
+            </div>
+            <div class="tier-row">
+                <div class="tier-label"><span class="tier-dot" style="background:#FFF9C4;border:1px solid #E0DDE8;"></span> Good</div>
+                <input type="text" class="tier-input" id="magi-Good" placeholder="e.g. 10, 12, 15, 19, 21, 24, 28, 30">
+            </div>
+            <div class="tier-row">
+                <div class="tier-label"><span class="tier-dot" style="background:#EFEBE9;border:1px solid #E0DDE8;"></span> Slow</div>
+                <input type="text" class="tier-input" id="magi-Slow" placeholder="e.g. 3, 6, 7">
+            </div>
+            <div class="tier-row">
+                <div class="tier-label"><span class="tier-dot" style="background:#455A64;"></span> Worst</div>
+                <input type="text" class="tier-input" id="magi-Worst" placeholder="e.g. 2, 4, 5, 8, 9">
+            </div>
+            <p class="help-text">Enter day numbers separated by commas. Days not listed will be classified as Normal.</p>
+        </div>
+
+        <div class="tier-inputs" id="vedic-tiers" style="display:none;">
+            <div class="tier-row">
+                <div class="tier-label"><span class="tier-dot" style="background:#4CAF50;"></span> GO</div>
+                <input type="text" class="tier-input" id="vedic-GO" placeholder="e.g. 1, 5, 12, 20">
+            </div>
+            <div class="tier-row">
+                <div class="tier-label"><span class="tier-dot" style="background:#A5D6A7;"></span> MILD GO</div>
+                <input type="text" class="tier-input" id="vedic-MILD GO" placeholder="e.g. 3, 8, 15">
+            </div>
+            <div class="tier-row">
+                <div class="tier-label"><span class="tier-dot" style="background:#CE93D8;"></span> BUILD</div>
+                <input type="text" class="tier-input" id="vedic-BUILD" placeholder="e.g. 6, 14, 22">
+            </div>
+            <div class="tier-row">
+                <div class="tier-label"><span class="tier-dot" style="background:#EF5350;"></span> STOP</div>
+                <input type="text" class="tier-input" id="vedic-STOP" placeholder="e.g. 9, 25">
+            </div>
+            <div class="tier-row">
+                <div class="tier-label"><span class="tier-dot" style="background:#B71C1C;"></span> MEGA RED</div>
+                <input type="text" class="tier-input" id="vedic-MEGA RED" placeholder="e.g. 14">
+            </div>
+            <p class="help-text">Enter day numbers separated by commas. Days not listed will be classified as NEUTRAL.</p>
+        </div>
+
+        <div class="actions">
+            <button class="btn-clear" onclick="clearFields()">Clear</button>
+            <button class="btn-save" id="save-btn" onclick="saveData()">Save Calendar</button>
+        </div>
+
+        <div class="status-msg" id="status-msg"></div>
+
+        <div class="preview-grid" id="preview-section" style="display:none;">
+            <h3 id="preview-title">Preview</h3>
+            <div class="cal-grid" id="cal-preview"></div>
+        </div>
+
+        <div class="months-list" id="months-section">
+            <h3>Saved Months</h3>
+            <div id="months-list"></div>
+        </div>
+    </div>
+
+    <script>
+        let currentType = 'magi';
+        const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+        const DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+        const MAGI_TIERS = ['Best', 'Good', 'Slow', 'Worst'];
+        const VEDIC_TIERS = ['GO', 'MILD GO', 'BUILD', 'STOP', 'MEGA RED'];
+
+        const MAGI_COLORS = { 'Best': 'best', 'Good': 'good', 'Normal': 'normal', 'Slow': 'slow', 'Worst': 'worst' };
+        const VEDIC_COLORS = { 'GO': 'go', 'MILD GO': 'mild-go', 'BUILD': 'build', 'NEUTRAL': 'neutral', 'STOP': 'stop', 'MEGA RED': 'mega-red' };
+
+        function init() {
+            const monthSel = document.getElementById('month-select');
+            const yearSel = document.getElementById('year-select');
+            const now = new Date();
+
+            for (let m = 0; m < 12; m++) {
+                const opt = document.createElement('option');
+                opt.value = m + 1;
+                opt.textContent = MONTH_NAMES[m];
+                if (m === now.getMonth()) opt.selected = true;
+                monthSel.appendChild(opt);
+            }
+
+            for (let y = 2025; y <= 2028; y++) {
+                const opt = document.createElement('option');
+                opt.value = y;
+                opt.textContent = y;
+                if (y === now.getFullYear()) opt.selected = true;
+                yearSel.appendChild(opt);
+            }
+
+            loadMonths();
+        }
+
+        function switchType(type) {
+            currentType = type;
+            document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+            document.querySelector(`.type-btn[data-type="${type}"]`).classList.add('active');
+            document.getElementById('magi-tiers').style.display = type === 'magi' ? '' : 'none';
+            document.getElementById('vedic-tiers').style.display = type === 'vedic' ? '' : 'none';
+            document.getElementById('category-group').style.display = type === 'magi' ? '' : 'none';
+            clearFields();
+            loadMonths();
+        }
+
+        function clearFields() {
+            const tiers = currentType === 'magi' ? MAGI_TIERS : VEDIC_TIERS;
+            tiers.forEach(t => {
+                const el = document.getElementById(currentType + '-' + t);
+                if (el) el.value = '';
+            });
+            document.getElementById('preview-section').style.display = 'none';
+            hideStatus();
+        }
+
+        function getCategory() {
+            if (currentType === 'vedic') return 'COLLECTIVE';
+            return document.getElementById('category-select').value;
+        }
+
+        async function loadData() {
+            const month = document.getElementById('month-select').value;
+            const year = document.getElementById('year-select').value;
+            const category = getCategory();
+
+            try {
+                const res = await fetch(`/api/manual-calendar?calendar_type=${currentType}&month=${month}&year=${year}&category=${category}`);
+                const data = await res.json();
+
+                if (data.error) {
+                    showStatus(data.error, 'error');
+                    return;
+                }
+
+                const tiers = currentType === 'magi' ? MAGI_TIERS : VEDIC_TIERS;
+                tiers.forEach(t => {
+                    const el = document.getElementById(currentType + '-' + t);
+                    if (el) {
+                        const days = (data.tiers && data.tiers[t]) || [];
+                        el.value = days.sort((a, b) => a - b).join(', ');
+                    }
+                });
+
+                if (data.entries && data.entries.length > 0) {
+                    showStatus('Loaded ' + data.entries.length + ' entries for ' + MONTH_NAMES[month - 1] + ' ' + year, 'success');
+                    renderPreview(parseInt(year), parseInt(month), data.tiers || {});
+                } else {
+                    showStatus('No data saved for ' + MONTH_NAMES[month - 1] + ' ' + year + '. Enter dates and save.', 'success');
+                    document.getElementById('preview-section').style.display = 'none';
+                }
+            } catch (e) {
+                showStatus('Failed to load: ' + e.message, 'error');
+            }
+        }
+
+        async function saveData() {
+            const month = parseInt(document.getElementById('month-select').value);
+            const year = parseInt(document.getElementById('year-select').value);
+            const category = getCategory();
+            const tiers = currentType === 'magi' ? MAGI_TIERS : VEDIC_TIERS;
+
+            const tierData = {};
+            tiers.forEach(t => {
+                const el = document.getElementById(currentType + '-' + t);
+                if (el && el.value.trim()) {
+                    tierData[t] = el.value.trim();
+                }
+            });
+
+            const btn = document.getElementById('save-btn');
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+
+            try {
+                const res = await fetch('/api/manual-calendar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        calendar_type: currentType,
+                        category: category,
+                        year: year,
+                        month: month,
+                        tiers: tierData,
+                    }),
+                });
+
+                const data = await res.json();
+                if (data.success) {
+                    showStatus('Saved ' + data.entries_saved + ' entries for ' + MONTH_NAMES[month - 1] + ' ' + year, 'success');
+                    loadMonths();
+                    await loadData();
+                } else {
+                    showStatus(data.error || 'Save failed', 'error');
+                }
+            } catch (e) {
+                showStatus('Error: ' + e.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Save Calendar';
+            }
+        }
+
+        async function loadMonths() {
+            try {
+                const res = await fetch('/api/manual-calendar/months?calendar_type=' + currentType);
+                const data = await res.json();
+                const container = document.getElementById('months-list');
+
+                if (!data.months || data.months.length === 0) {
+                    container.innerHTML = '<p style="color:#8A8698;font-size:0.85rem;">No saved data yet.</p>';
+                    return;
+                }
+
+                container.innerHTML = data.months.map(m => {
+                    const label = MONTH_NAMES[m.month - 1] + ' ' + m.year + (m.category !== 'COLLECTIVE' ? ' (' + m.category + ')' : '');
+                    return `<span class="month-tag" onclick="jumpToMonth(${m.year}, ${m.month}, '${m.category}')">${label} <small>(${m.count})</small></span>`;
+                }).join('');
+            } catch (e) {
+                console.error('Failed to load months:', e);
+            }
+        }
+
+        function jumpToMonth(year, month, category) {
+            document.getElementById('year-select').value = year;
+            document.getElementById('month-select').value = month;
+            if (currentType === 'magi') {
+                document.getElementById('category-select').value = category;
+            }
+            loadData();
+        }
+
+        function renderPreview(year, month, tiers) {
+            const section = document.getElementById('preview-section');
+            const grid = document.getElementById('cal-preview');
+            const title = document.getElementById('preview-title');
+
+            title.textContent = MONTH_NAMES[month - 1] + ' ' + year + ' - ' + (currentType === 'magi' ? 'Magi/PTI' : 'Vedic');
+
+            const dayMap = {};
+            for (const [cls, days] of Object.entries(tiers)) {
+                for (const d of days) {
+                    dayMap[d] = cls;
+                }
+            }
+
+            const firstDay = new Date(year, month - 1, 1).getDay();
+            const daysInMonth = new Date(year, month, 0).getDate();
+            const defaultCls = currentType === 'magi' ? 'normal' : 'neutral';
+            const colorMap = currentType === 'magi' ? MAGI_COLORS : VEDIC_COLORS;
+
+            let html = DAY_NAMES.map(d => `<div class="cal-header">${d}</div>`).join('');
+
+            for (let i = 0; i < firstDay; i++) {
+                html += '<div class="cal-day empty"></div>';
+            }
+
+            for (let d = 1; d <= daysInMonth; d++) {
+                const cls = dayMap[d] || (currentType === 'magi' ? 'Normal' : 'NEUTRAL');
+                const cssClass = colorMap[cls] || defaultCls;
+                html += `<div class="cal-day ${cssClass}">${d}</div>`;
+            }
+
+            grid.innerHTML = html;
+            section.style.display = '';
+        }
+
+        function showStatus(msg, type) {
+            const el = document.getElementById('status-msg');
+            el.textContent = msg;
+            el.className = 'status-msg ' + type;
+        }
+
+        function hideStatus() {
+            document.getElementById('status-msg').className = 'status-msg';
+        }
+
+        init();
+    </script>
+</body>
+</html>
