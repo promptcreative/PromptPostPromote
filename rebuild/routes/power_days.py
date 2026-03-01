@@ -34,6 +34,21 @@ def _extract_power_days(saved_data):
     double_go_days = []
     good_days = []
     background_days = []
+    eclipse_warnings = []
+
+    vedic_cal = calendars.get('vedic_pti', {}) or calendars.get('goslow', {}) or calendars.get('vedic', {})
+    vedic_results = (
+        vedic_cal.get('data', {}).get('results', [])
+        or vedic_cal.get('results', [])
+    ) if vedic_cal else []
+    vedic_eclipse_map = {}
+    for vr in vedic_results:
+        if isinstance(vr, dict) and vr.get('eclipse_nearby'):
+            vedic_eclipse_map[vr.get('date', '')] = {
+                'type': vr.get('eclipse_type'),
+                'magnitude': vr.get('eclipse_magnitude'),
+                'label': vr.get('eclipse_label'),
+            }
 
     for day in combined_results:
         if not isinstance(day, dict):
@@ -59,6 +74,16 @@ def _extract_power_days(saved_data):
             'personal_label': personal_quality,
         }
 
+        day_date = day.get('date', '')
+        eclipse_info = day.get('eclipse_info') or vedic_eclipse_map.get(day_date)
+        if eclipse_info:
+            eclipse_warnings.append({
+                'date': day_date,
+                'type': eclipse_info.get('type'),
+                'magnitude': eclipse_info.get('magnitude'),
+                'label': eclipse_info.get('label'),
+            })
+
         classification = day.get('classification', '')
         is_bg = day.get('is_background', False)
         if not is_bg:
@@ -83,6 +108,7 @@ def _extract_power_days(saved_data):
         'double_go_days': double_go_days,
         'good_days': good_days,
         'background_days': background_days,
+        'eclipse_warnings': eclipse_warnings,
         'total_background': len(background_days),
         'total_days': len(combined_results),
     }

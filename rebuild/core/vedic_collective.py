@@ -128,11 +128,17 @@ def check_eclipse_on_day(jd):
     is_full_moon = abs(sun_moon_sep - 180) < 5
 
     if is_new_moon and (s_r < 12 or s_k < 12):
-        return True, "solar"
+        node_sep = min(s_r, s_k)
+        magnitude = "total" if node_sep < 4 else "partial"
+        label = f"{'Total' if magnitude == 'total' else 'Partial'} Solar Eclipse"
+        return True, "solar", magnitude, label
     if is_full_moon and (m_r < 9 or m_k < 9):
-        return True, "lunar"
+        node_sep = min(m_r, m_k)
+        magnitude = "total" if node_sep < 3 else "partial"
+        label = f"{'Total' if magnitude == 'total' else 'Partial'} Lunar Eclipse"
+        return True, "lunar", magnitude, label
 
-    return False, None
+    return False, None, None, None
 
 
 def get_all_positions(jd):
@@ -216,7 +222,7 @@ def classify_day(dt):
     moon_sign, moon_sign_idx = get_sidereal_sign(moon_long, ayanamsa)
 
     aspects = get_moon_aspects(positions)
-    eclipse_near, eclipse_type = check_eclipse_on_day(jd)
+    eclipse_near, eclipse_type, eclipse_magnitude, eclipse_label = check_eclipse_on_day(jd)
 
     mars_moon_overlay = False
     mars_reason = None
@@ -242,7 +248,7 @@ def classify_day(dt):
         classification = "MEGA RED"
         color = "mega_red"
         layer = "L1"
-        reason = f"{'Solar' if eclipse_type == 'solar' else 'Lunar'} eclipse"
+        reason = eclipse_label
 
     elif tithi in {29, 30}:
         classification = "STOP"
@@ -393,6 +399,8 @@ def classify_day(dt):
         "weekday": weekday,
         "eclipse_nearby": eclipse_near,
         "eclipse_type": eclipse_type,
+        "eclipse_magnitude": eclipse_magnitude,
+        "eclipse_label": eclipse_label,
         "active_aspects": active_aspects_summary,
         "moon_longitude": round(moon_long, 2),
         "moon_sidereal": round(moon_sid, 2),

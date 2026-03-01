@@ -215,6 +215,7 @@ class CombinedCalendarAnalyzer:
                 pti_by_date[date_key] = result.get('classification', 'Normal')
 
         vedic_by_date = {}
+        eclipse_by_date = {}
         print("   Vedic results count: {}".format(len(vedic_results)))
         if vedic_results:
             print("   First vedic result sample: {}".format(vedic_results[0]))
@@ -222,6 +223,12 @@ class CombinedCalendarAnalyzer:
             date_key = result.get('date')
             if date_key:
                 vedic_by_date[date_key] = result.get('classification', 'NEUTRAL')
+                if result.get('eclipse_nearby'):
+                    eclipse_by_date[date_key] = {
+                        'type': result.get('eclipse_type'),
+                        'magnitude': result.get('eclipse_magnitude'),
+                        'label': result.get('eclipse_label'),
+                    }
 
         all_dates = set()
         all_dates.update(personal_by_date.keys())
@@ -265,6 +272,9 @@ class CombinedCalendarAnalyzer:
                 'personal_label': personal_label,
                 'label': day_result['classification'],
             }
+
+            if date_str in eclipse_by_date:
+                result_entry['eclipse_info'] = eclipse_by_date[date_str]
 
             if day_result['system_breakdown']['pti']['is_go']:
                 result_entry['systems_aligned'].append('PTI')

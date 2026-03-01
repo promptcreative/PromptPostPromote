@@ -465,13 +465,20 @@ def vedic_calendar_feed():
             rule_reason = day_data.get('rule_reason', '')
             tithi_name = day_data.get('tithi_name', '')
             nakshatra = day_data.get('nakshatra', '')
+            eclipse_nearby = day_data.get('eclipse_nearby', False)
+            eclipse_label = day_data.get('eclipse_label')
 
             icon = VEDIC_ICONS.get(classification.upper(), '⚪')
-            title = f"{icon} Vedic: {classification}"
+            if eclipse_nearby and eclipse_label:
+                title = f"🌑 {eclipse_label.upper()}"
+            else:
+                title = f"{icon} Vedic: {classification}"
 
             description = f"🕉️ VEDIC COLLECTIVE CALENDAR\\n"
             description += f"📅 {day_date.strftime('%A, %B %d, %Y')}\\n"
             description += f"🏷️ Classification: {classification}"
+            if eclipse_nearby and eclipse_label:
+                description += f"\\n⚠️ ECLIPSE: {eclipse_label} — avoid major content launches"
             if rule_reason:
                 description += f"\\n📜 {rule_reason}"
             if tithi_name:
@@ -527,6 +534,7 @@ def combined_calendar_feed():
             classification = day_result.get('combined_quality', day_result.get('classification', 'NEUTRAL'))
             reason = day_result.get('reason', '')
             is_double_go = day_result.get('is_double_go', False)
+            eclipse_info = day_result.get('eclipse_info')
 
             system_breakdown = day_result.get('system_breakdown', {})
             pti_quality = system_breakdown.get('pti_collective', {}).get('quality', '')
@@ -534,7 +542,9 @@ def combined_calendar_feed():
             personal_quality = system_breakdown.get('personal', {}).get('quality', '')
 
             icon = COMBINED_ICONS.get(classification.upper(), '⚪')
-            if is_double_go:
+            if eclipse_info:
+                title = f"🌑 {eclipse_info.get('label', 'Eclipse').upper()}"
+            elif is_double_go:
                 icon = '🚀'
                 title = f"{icon} DOUBLE GO"
             else:
@@ -543,6 +553,8 @@ def combined_calendar_feed():
             description = f"🔄 COMBINED CALENDAR\\n"
             description += f"📅 {day_date.strftime('%A, %B %d, %Y')}\\n"
             description += f"🏷️ Classification: {classification}"
+            if eclipse_info:
+                description += f"\\n⚠️ ECLIPSE: {eclipse_info.get('label', 'Eclipse')} — avoid major content launches"
             if reason:
                 description += f"\\n📜 {reason}"
             if pti_quality:

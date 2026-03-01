@@ -176,3 +176,7 @@ templates/                     - Jinja2 templates (pastel UI)
 - Added get_effective_user_id() helper for consistent client_{id} user_id resolution across routes
 - Route protection: clients blocked from admin pages, profile-setup, regeneration; redirected to client-dashboard
 - Role-aware navigation on Power Days and Calendar Feeds pages
+- Enhanced eclipse detection: total vs partial (solar/lunar), magnitude labels in Vedic + Combined calendars
+- Eclipse warnings section in Power Days UI: dark banner with type, date, total/partial badge
+- Vedic ICS feed titles show eclipse label (e.g. "TOTAL SOLAR ECLIPSE") instead of generic "MEGA RED"
+- Combined ICS feed includes eclipse warning line in description for eclipse days

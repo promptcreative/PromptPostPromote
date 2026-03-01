@@ -606,6 +606,17 @@
             {% if role != 'client' %}<button class="btn-proceed" id="regenerate-btn" onclick="regenerateCalendars()" style="flex-shrink:0; margin-top:4px;">Regenerate Calendars</button>{% endif %}
         </div>
 
+        <div id="eclipse-warnings" style="display:none; margin-bottom: 24px;">
+            <div style="background: linear-gradient(135deg, #2D2B3D 0%, #1a1a2e 100%); border-radius: 16px; padding: 24px; color: white;">
+                <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
+                    <span style="font-size:1.5rem;">&#9888;</span>
+                    <h3 style="font-size:1.1rem; font-weight:700; margin:0;">Eclipse Warnings</h3>
+                </div>
+                <p style="color: rgba(255,255,255,0.7); font-size:0.85rem; margin-bottom:16px;">Eclipses are high-caution days. Avoid major content launches, announcements, and scheduling during these periods.</p>
+                <div id="eclipse-list" style="display:flex; flex-direction:column; gap:10px;"></div>
+            </div>
+        </div>
+
         <div id="stats-section" class="stat-row">
             <div class="stat-card">
                 <div class="stat-icon purple">⚡</div>
@@ -825,6 +836,32 @@
             document.getElementById('omni-count').textContent = (data.omni_days || []).length;
             document.getElementById('double-go-count').textContent = (data.double_go_days || []).length;
             document.getElementById('good-count').textContent = (data.good_days || []).length;
+
+            const eclipses = data.eclipse_warnings || [];
+            const eclipseSection = document.getElementById('eclipse-warnings');
+            if (eclipses.length > 0) {
+                eclipseSection.style.display = 'block';
+                const eclipseList = document.getElementById('eclipse-list');
+                eclipseList.innerHTML = eclipses.map(e => {
+                    const d = new Date(e.date + 'T12:00:00');
+                    const dateStr = d.toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric', year:'numeric'});
+                    const icon = e.type === 'solar' ? '\u{1F311}' : '\u{1F315}';
+                    const magBadge = e.magnitude === 'total'
+                        ? '<span style="background:#DC2626;color:white;padding:2px 10px;border-radius:8px;font-size:0.75rem;font-weight:700;text-transform:uppercase;">Total</span>'
+                        : '<span style="background:#F59E0B;color:white;padding:2px 10px;border-radius:8px;font-size:0.75rem;font-weight:700;text-transform:uppercase;">Partial</span>';
+                    return '<div style="background:rgba(255,255,255,0.1);border-radius:12px;padding:14px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">'
+                        + '<span style="font-size:1.4rem;">' + icon + '</span>'
+                        + '<div style="flex:1;min-width:180px;">'
+                        + '<div style="font-weight:600;font-size:0.95rem;">' + (e.label || (e.type + ' eclipse')) + '</div>'
+                        + '<div style="color:rgba(255,255,255,0.6);font-size:0.85rem;">' + dateStr + '</div>'
+                        + '</div>'
+                        + magBadge
+                        + '<span style="color:rgba(255,255,255,0.5);font-size:0.8rem;">Avoid posting</span>'
+                        + '</div>';
+                }).join('');
+            } else {
+                eclipseSection.style.display = 'none';
+            }
 
             const total = data.total_background || 0;
             document.getElementById('page-subtitle').textContent =
