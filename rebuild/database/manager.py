@@ -45,6 +45,7 @@ class CalendarDatabaseManager:
             return None
         except Exception as e:
             print(f"Error loading calendar data: {e}")
+            db.session.rollback()
             return None
 
     def clear_calendar_data(self, user_email, year=None, month=None):
@@ -113,6 +114,7 @@ class CalendarDatabaseManager:
             return [e.to_dict() for e in entries]
         except Exception as e:
             print(f"Error loading manual calendar: {e}")
+            db.session.rollback()
             return []
 
     def get_manual_calendar_months(self, calendar_type):
@@ -136,6 +138,7 @@ class CalendarDatabaseManager:
             return [{'year': int(r.year), 'month': int(r.month), 'category': r.category, 'count': r.count} for r in results]
         except Exception as e:
             print(f"Error loading manual calendar months: {e}")
+            db.session.rollback()
             return []
 
     def save_manual_calendar(self, calendar_type, category, year, month, classifications, created_by=None):
