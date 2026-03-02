@@ -140,6 +140,59 @@ def logout():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
+@auth_bp.route('/api/admin/set-role', methods=['POST'])
+def set_user_role():
+    if not session.get('authenticated'):
+        return jsonify({"status": "error", "message": "Not authenticated"}), 401
+    user_info = session.get('user_info', {})
+    if not user_info.get('is_admin'):
+        return jsonify({"status": "error", "message": "Admin access required"}), 403
+
+    data = request.get_json(force=True, silent=True) or {}
+    target_email = (data.get('email') or '').strip().lower()
+    new_role = (data.get('role') or '').strip().lower()
+
+    if not target_email or '@' not in target_email:
+        return jsonify({"status": "error", "message": "Valid email required"}), 400
+    if new_role not in ('user', 'editor'):
+        return jsonify({"status": "error", "message": "Role must be 'user' or 'editor'"}), 400
+
+    try:
+        admin_email = os.environ.get('ADMIN_EMAIL', '').strip().lower()
+        if target_email == admin_email:
+            return jsonify({"status": "error", "message": "Cannot change admin role"}), 400
+
+        up = UserProfile.query.filter_by(email=target_email).first()
+        if up and up.is_admin:
+            return jsonify({"status": "error", "message": "Cannot change admin role"}), 400
+
+        if not up:
+            up = UserProfile(email=target_email, role=new_role)
+            db.session.add(up)
+        else:
+            up.role = new_role
+        db.session.commit()
+        return jsonify({"status": "success", "email": target_email, "role": new_role})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@auth_bp.route('/api/admin/editors', methods=['GET'])
+def list_editors():
+    if not session.get('authenticated'):
+        return jsonify({"status": "error", "message": "Not authenticated"}), 401
+    user_info = session.get('user_info', {})
+    if not user_info.get('is_admin'):
+        return jsonify({"status": "error", "message": "Admin access required"}), 403
+
+    try:
+        editors = UserProfile.query.filter_by(role='editor').all()
+        return jsonify([{"email": e.email, "role": e.role, "created_at": e.created_at.isoformat() if e.created_at else None} for e in editors])
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
 @auth_bp.route('/profile/save', methods=['POST'])
 def save_profile():
     try:

@@ -1,6 +1,9 @@
-from flask import Blueprint, request, jsonify, session
+import csv
+import io
+from flask import Blueprint, request, jsonify, session, Response
 from datetime import datetime
-from database.models import db, Client, CalendarData
+from urllib.parse import quote
+from database.models import db, Client, CalendarData, SubscriptionToken
 from database.manager import db_manager
 from helpers.dashboard import generate_dashboard_core
 from helpers.utils import make_json_serializable, normalize_dashboard_data
@@ -377,6 +380,172 @@ def get_client_calendar(client_id):
             "combined_results": combined_results,
             "generated_at": saved_data.get('period', {}).get('generated_at'),
         })
+
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@clients_bp.route('/api/clients/<int:client_id>/publer-csv', methods=['GET'])
+def download_publer_csv(client_id):
+    if not session.get('authenticated'):
+        return jsonify({"status": "error", "message": "Not authenticated"}), 401
+    if not _require_admin():
+        return jsonify({"status": "error", "message": "Admin access required"}), 403
+
+    try:
+        owner_email = _get_owner_email()
+        client = Client.query.get(client_id)
+
+        if not client:
+            return jsonify({"status": "error", "message": "Client not found"}), 404
+        if client.owner_email != owner_email:
+            return jsonify({"status": "error", "message": "Forbidden"}), 403
+
+        client_user_id = f"client_{client_id}"
+        saved_data = db_manager.get_calendar_data(client_user_id)
+
+        if not saved_data:
+            return jsonify({"status": "error", "message": "No calendar data. Generate first."}), 404
+
+        calendars = saved_data.get('calendars', {})
+        combined = calendars.get('combined', {})
+        combined_results = combined.get('results', [])
+
+        background_days = set()
+        background_map = {}
+        for day in combined_results:
+            classification = day.get('classification', '').upper()
+            day_date = day.get('date', '')
+            if classification in ('OMNI', 'DOUBLE GO', 'DOUBLE_GO', 'GOOD'):
+                background_days.add(day_date)
+                background_map[day_date] = classification.replace('_', ' ')
+
+        bird_batch = calendars.get('bird_batch', {})
+        rows = []
+
+        if isinstance(bird_batch, dict) and not bird_batch.get('error'):
+            for day_data in (bird_batch.get('daily_results') or bird_batch.get('results') or []):
+                day_date = day_data.get('date', '')
+                if day_date in background_days:
+                    periods = day_data.get('top_periods', day_data.get('periods', []))
+                    for p in periods[:5]:
+                        start = p.get('start_time', p.get('start', ''))
+                        end = p.get('end_time', p.get('end', ''))
+                        tier = p.get('tier', p.get('combination', ''))
+                        bird = p.get('bird', '')
+                        activity = p.get('activity', '')
+
+                        duration = ''
+                        try:
+                            from datetime import datetime as dt
+                            s = dt.strptime(start, '%H:%M')
+                            e = dt.strptime(end, '%H:%M')
+                            diff = (e - s).seconds // 60
+                            duration = f"{diff}min"
+                        except Exception:
+                            pass
+
+                        rows.append({
+                            'Date': day_date,
+                            'Time': start,
+                            'Window': f"{start}-{end}",
+                            'Type': 'Bird Batch',
+                            'Classification': background_map.get(day_date, ''),
+                            'Bird Tier': tier,
+                            'Bird': bird,
+                            'Activity': activity,
+                            'Duration': duration,
+                        })
+
+        if not rows:
+            for day_date in sorted(background_days):
+                rows.append({
+                    'Date': day_date,
+                    'Time': '',
+                    'Window': 'All day',
+                    'Type': 'Power Day',
+                    'Classification': background_map.get(day_date, ''),
+                    'Bird Tier': '',
+                    'Bird': '',
+                    'Activity': '',
+                    'Duration': '',
+                })
+
+        output = io.StringIO()
+        fieldnames = ['Date', 'Time', 'Window', 'Type', 'Classification', 'Bird Tier', 'Bird', 'Activity', 'Duration']
+        writer = csv.DictWriter(output, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+
+        safe_name = ''.join(c if c.isalnum() or c in ' -_' else '' for c in (client.name or 'client')).strip().replace(' ', '_')
+        filename = f"{safe_name}_publer_schedule.csv"
+
+        return Response(
+            output.getvalue(),
+            mimetype='text/csv',
+            headers={'Content-Disposition': f'attachment; filename="{filename}"'}
+        )
+
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@clients_bp.route('/api/clients/<int:client_id>/ics-feeds', methods=['GET'])
+def get_client_ics_feeds(client_id):
+    if not session.get('authenticated'):
+        return jsonify({"status": "error", "message": "Not authenticated"}), 401
+    if not _require_admin():
+        return jsonify({"status": "error", "message": "Admin access required"}), 403
+
+    try:
+        owner_email = _get_owner_email()
+        client = Client.query.get(client_id)
+
+        if not client:
+            return jsonify({"status": "error", "message": "Client not found"}), 404
+        if client.owner_email != owner_email:
+            return jsonify({"status": "error", "message": "Forbidden"}), 403
+
+        client_user_id = f"client_{client_id}"
+        user_id_encoded = quote(client_user_id, safe='')
+
+        feeds = {}
+
+        feed_types = [
+            ('personal', 'Personal Transit'),
+            ('pti', 'PTI Collective'),
+            ('vedic', 'Vedic Collective'),
+            ('combined', 'Combined Calendar'),
+            ('bird_batch', 'Bird Batch'),
+            ('bg_bird_batch', 'Bird Batch (Background)'),
+            ('bg_yogi_point', 'Yogi Point (Background)'),
+            ('bg_pof', 'Part of Fortune (Background)'),
+            ('microbird', 'Micro Bird'),
+            ('nogo', 'NO GO (Rahu Kalam)'),
+        ]
+
+        for feed_key, feed_label in feed_types:
+            token = SubscriptionToken.get_or_create(client_user_id, feed_key)
+
+            if feed_key == 'personal' and client.birth_date and client.birth_time:
+                birth_date = client.birth_date.isoformat()
+                birth_time = client.birth_time.strftime('%H:%M')
+                birth_lat = client.birth_latitude or 0
+                birth_lon = client.birth_longitude or 0
+                tz_offset = client.birth_timezone or -5
+                url = (
+                    f"/calendar/personal.ics?user_id={user_id_encoded}"
+                    f"&token={token}&birth_date={birth_date}"
+                    f"&birth_time={birth_time}&birth_lat={birth_lat}"
+                    f"&birth_lon={birth_lon}&timezone={tz_offset}"
+                )
+            else:
+                ics_name = feed_key + '.ics'
+                url = f"/calendar/{ics_name}?user_id={user_id_encoded}&token={token}"
+
+            feeds[feed_key] = {'label': feed_label, 'url': url}
+
+        return jsonify({"status": "success", "feeds": feeds})
 
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500

@@ -114,6 +114,10 @@ templates/                     - Jinja2 templates (pastel UI)
 - `/calendar/bg_pof.ics` - Part of Fortune filtered to background days
 - `/calendar/microbird.ics` - Micro Bird precision posting windows
 
+### Admin Team Management
+- `POST /api/admin/set-role` - set user role (email + role: 'editor' or 'user')
+- `GET /api/admin/editors` - list all editor accounts
+
 ### Client Management
 - `GET /api/clients` - list clients for current admin
 - `POST /api/clients` - create new client
@@ -121,6 +125,8 @@ templates/                     - Jinja2 templates (pastel UI)
 - `DELETE /api/clients/:id` - delete client + calendar data
 - `POST /api/clients/:id/generate` - generate all 5 calendars for client
 - `GET /api/clients/:id/calendar` - retrieve client's calendar results
+- `GET /api/clients/:id/publer-csv` - download Publer CSV schedule for client
+- `GET /api/clients/:id/ics-feeds` - get all ICS feed URLs for client
 
 ### Profile & Settings
 - `GET/POST /api/profile` - user profile management
@@ -136,13 +142,15 @@ templates/                     - Jinja2 templates (pastel UI)
 
 ## Auth & Role System
 - Email-based auth (no password) — enter email to sign in/sign up
-- Three roles detected at login: **admin**, **client**, **user** (regular)
+- Four roles detected at login: **admin**, **editor**, **client**, **user** (regular)
 - Admin account: cobrillitate@gmail.com (is_admin=True in DB, ADMIN_EMAIL env var)
 - Client detection: login email matches a Client record's `email` field → role=client, client_id stored in session
 - Session stores: `role` (admin/client/user), `client_id` (for clients), `is_admin` (bool)
-- **Admin**: Full access — client management, agency tools, all dashboards
+- **Admin**: Full access — client management, agency tools, all dashboards, team management
+- **Editor**: Calendar Input page only (manual Magi/Vedic data entry), own Power Days, Calendar Feeds, Profile
 - **Client**: Client portal (`/client-dashboard`) — Power Days, Calendar Feeds, Publer (read-only, no regeneration)
 - **User**: Regular dashboard, Power Days, Calendar Feeds, Profile, personal calendars
+- Editors blocked from: client management, client results, Publer push, regeneration
 - Clients blocked from: profile-setup, client management, account-dashboard, calendar regeneration
 - `get_effective_user_id()` helper returns `client_{id}` for clients, email for others — used across all data-fetching routes
 - New users without birth data redirected to profile setup on first login
@@ -191,3 +199,10 @@ templates/                     - Jinja2 templates (pastel UI)
 - ManualCalendarEntry model stores per-day classifications by calendar type and category
 - Dashboard pipeline checks manual data first, falls back to calculated engines when no manual data exists
 - Admin dashboard shows "Calendar Input" card and nav link
+- Added editor role: UserProfile.role='editor', login detects editors, calendar input access granted
+- Admin Team management modal: add/remove editors via POST /api/admin/set-role
+- Team card on admin dashboard, editors list with remove buttons
+- Publer CSV export: GET /api/clients/{id}/publer-csv downloads bird batch + power day schedule as CSV
+- Client results page shows "Publer CSV" download button and "Calendar Feeds (ICS)" section with copy buttons
+- ICS feed URLs generated for all 10 feed types per client with subscription tokens
+- Client self-service: clients log in with email, see Power Days + Calendar Feeds when calendar_status='ready'

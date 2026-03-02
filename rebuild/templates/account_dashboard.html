@@ -520,6 +520,17 @@
                 </div>
                 {% endif %}
 
+                {% if is_admin %}
+                <div class="cal-card" style="border-color: #CE93D8;">
+                    <div class="cal-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="#AB47BC" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    </div>
+                    <h3>Team</h3>
+                    <p>Manage editor accounts for calendar data entry.</p>
+                    <button class="btn-card" style="background:#AB47BC;color:white;" onclick="showTeamModal()">Manage team</button>
+                </div>
+                {% endif %}
+
                 <div class="cal-card amber">
                     <div class="cal-icon">
                         <svg viewBox="0 0 24 24" fill="none" stroke="#FFB74D" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -698,6 +709,93 @@
                 console.error('Logout error:', error);
                 window.location.href = '/';
             }
+        }
+
+        async function showTeamModal() {
+            let modal = document.getElementById('teamModal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'teamModal';
+                modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;z-index:1000;';
+                modal.innerHTML = `
+                    <div style="background:white;border-radius:20px;padding:32px;width:90%;max-width:480px;max-height:80vh;overflow-y:auto;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+                            <h2 style="font-size:1.2rem;font-weight:700;">Team Members</h2>
+                            <button onclick="document.getElementById('teamModal').style.display='none'" style="background:none;border:none;font-size:1.4rem;cursor:pointer;color:#8A8698;">&times;</button>
+                        </div>
+                        <div id="editorsList" style="margin-bottom:24px;"></div>
+                        <div style="border-top:2px solid #F0EEE8;padding-top:20px;">
+                            <p style="font-size:0.85rem;font-weight:600;margin-bottom:12px;">Add editor</p>
+                            <div style="display:flex;gap:8px;">
+                                <input id="editorEmail" type="email" placeholder="email@example.com" style="flex:1;padding:10px 14px;border:2px solid #EDE9E3;border-radius:10px;font-family:inherit;font-size:0.88rem;outline:none;">
+                                <button onclick="addEditor()" style="padding:10px 20px;background:#AB47BC;color:white;border:none;border-radius:10px;font-family:inherit;font-weight:600;font-size:0.88rem;cursor:pointer;">Add</button>
+                            </div>
+                            <p id="editorMsg" style="font-size:0.8rem;margin-top:8px;color:#8A8698;"></p>
+                        </div>
+                    </div>`;
+                document.body.appendChild(modal);
+                modal.addEventListener('click', function(e) { if (e.target === modal) modal.style.display = 'none'; });
+            }
+            modal.style.display = 'flex';
+            loadEditors();
+        }
+
+        async function loadEditors() {
+            try {
+                const resp = await fetch('/api/admin/editors');
+                const editors = await resp.json();
+                const list = document.getElementById('editorsList');
+                if (!editors.length) {
+                    list.innerHTML = '<p style="color:#8A8698;font-size:0.88rem;">No editors yet. Add one below.</p>';
+                    return;
+                }
+                list.innerHTML = editors.map(e => `
+                    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#FDFBF9;border-radius:10px;margin-bottom:8px;">
+                        <div>
+                            <span style="font-weight:600;font-size:0.88rem;">${e.email}</span>
+                            <span style="display:inline-block;padding:2px 8px;background:#E8D5FF;color:#7C3AED;border-radius:6px;font-size:0.7rem;font-weight:600;margin-left:8px;">EDITOR</span>
+                        </div>
+                        <button onclick="removeEditor('${e.email}')" style="background:none;border:none;color:#EF5350;font-size:0.82rem;font-weight:600;cursor:pointer;">Remove</button>
+                    </div>`).join('');
+            } catch (err) {
+                console.error('Error loading editors:', err);
+            }
+        }
+
+        async function addEditor() {
+            const input = document.getElementById('editorEmail');
+            const msg = document.getElementById('editorMsg');
+            const email = input.value.trim().toLowerCase();
+            if (!email || !email.includes('@')) { msg.textContent = 'Enter a valid email'; msg.style.color = '#EF5350'; return; }
+            try {
+                const resp = await fetch('/api/admin/set-role', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({email, role: 'editor'})
+                });
+                const data = await resp.json();
+                if (data.status === 'success') {
+                    input.value = '';
+                    msg.textContent = 'Editor added';
+                    msg.style.color = '#4CAF50';
+                    loadEditors();
+                } else {
+                    msg.textContent = data.message || 'Error';
+                    msg.style.color = '#EF5350';
+                }
+            } catch (err) { msg.textContent = 'Error adding editor'; msg.style.color = '#EF5350'; }
+        }
+
+        async function removeEditor(email) {
+            if (!confirm('Remove editor access for ' + email + '?')) return;
+            try {
+                await fetch('/api/admin/set-role', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({email, role: 'user'})
+                });
+                loadEditors();
+            } catch (err) { console.error(err); }
         }
 
         async function generateCalendarsFirst() {

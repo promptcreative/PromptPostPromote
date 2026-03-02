@@ -237,14 +237,87 @@
             color: #8A8698;
         }
 
+        .btn-csv {
+            background: linear-gradient(135deg, #7C3AED, #9C88FF);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-family: inherit;
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .btn-csv:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn-csv svg { width: 16px; height: 16px; }
+
+        .feeds-section { margin-bottom: 36px; }
+
+        .feed-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: white;
+            border-radius: 12px;
+            margin-bottom: 8px;
+            box-shadow: 0 2px 8px rgba(45,43,61,0.04);
+        }
+
+        .feed-label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            min-width: 180px;
+            color: #2D2B3D;
+        }
+
+        .feed-url {
+            flex: 1;
+            font-size: 0.78rem;
+            color: #8A8698;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-family: monospace;
+            background: #FDFBF9;
+            padding: 6px 10px;
+            border-radius: 6px;
+            border: 1px solid #F0EEE8;
+        }
+
+        .btn-copy {
+            background: #F0EEE8;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: #2D2B3D;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+
+        .btn-copy:hover { background: #E0DDD8; }
+        .btn-copy.copied { background: #D4EDDA; color: #2E7D32; }
+
         @media (max-width: 768px) {
             nav { padding: 16px 20px; }
             .container { padding: 0 20px 40px; }
             .golden-grid { grid-template-columns: 1fr; }
             .bird-grid { grid-template-columns: 1fr; }
             .client-header { flex-direction: column; align-items: flex-start; }
-            .header-actions { margin-left: 0; }
+            .header-actions { margin-left: 0; flex-wrap: wrap; }
             .calendar-table { overflow-x: auto; }
+            .feed-item { flex-wrap: wrap; }
+            .feed-label { min-width: auto; }
+            .feed-url { min-width: 0; }
         }
     </style>
 </head>
@@ -327,6 +400,10 @@
                         <p>${client.birth_location_name ? escapeHtml(client.birth_location_name) : ''}${data.generated_at ? ' \u00B7 Generated ' + new Date(data.generated_at).toLocaleDateString() : ''}</p>
                     </div>
                     <div class="header-actions">
+                        <button class="btn-csv" onclick="downloadCSV()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            Publer CSV
+                        </button>
                         <button class="btn-regen" onclick="regenerate()">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
                             Regenerate
@@ -391,6 +468,7 @@
                 }
 
                 document.getElementById('resultsContent').innerHTML = html;
+                loadICSFeeds();
 
             } catch (error) {
                 console.error('Error:', error);
@@ -416,6 +494,56 @@
                 alert('Error generating calendar');
                 if (btn) { btn.innerHTML = 'Regenerate'; btn.disabled = false; }
             }
+        }
+
+        function downloadCSV() {
+            window.location.href = `/api/clients/${CLIENT_ID}/publer-csv`;
+        }
+
+        async function loadICSFeeds() {
+            try {
+                const resp = await fetch(`/api/clients/${CLIENT_ID}/ics-feeds`);
+                if (!resp.ok) return;
+                const data = await resp.json();
+                if (data.status !== 'success' || !data.feeds) return;
+
+                const baseUrl = window.location.origin;
+                let feedsHtml = '<div class="section-title">Calendar Feeds (ICS)</div><div class="feeds-section">';
+
+                Object.entries(data.feeds).forEach(([key, feed]) => {
+                    const fullUrl = baseUrl + feed.url;
+                    feedsHtml += `
+                        <div class="feed-item">
+                            <span class="feed-label">${escapeHtml(feed.label)}</span>
+                            <span class="feed-url" title="${escapeHtml(fullUrl)}">${escapeHtml(fullUrl)}</span>
+                            <button class="btn-copy" data-url="${escapeHtml(fullUrl)}" onclick="copyFeedUrl(this, this.dataset.url)">Copy</button>
+                        </div>`;
+                });
+                feedsHtml += '</div>';
+
+                const content = document.getElementById('resultsContent');
+                content.innerHTML += feedsHtml;
+            } catch (err) {
+                console.error('Error loading feeds:', err);
+            }
+        }
+
+        function copyFeedUrl(btn, url) {
+            navigator.clipboard.writeText(url).then(() => {
+                btn.textContent = 'Copied';
+                btn.classList.add('copied');
+                setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+            }).catch(() => {
+                const ta = document.createElement('textarea');
+                ta.value = url;
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+                btn.textContent = 'Copied';
+                btn.classList.add('copied');
+                setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+            });
         }
 
         document.addEventListener('DOMContentLoaded', loadResults);
