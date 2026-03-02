@@ -124,7 +124,7 @@ templates/                     - Jinja2 templates (pastel UI)
 - `PUT /api/clients/:id` - update client
 - `DELETE /api/clients/:id` - delete client + calendar data
 - `POST /api/clients/:id/generate` - generate all 5 calendars for client
-- `GET /api/clients/:id/calendar` - retrieve client's calendar results
+- `GET /api/clients/:id/calendar` - retrieve client's calendar results (includes golden_windows, good_days, bird_periods, yp_transits, pof_transits, micro_bird_events)
 - `GET /api/clients/:id/publer-csv` - download Publer CSV schedule for client
 - `GET /api/clients/:id/ics-feeds` - get all ICS feed URLs for client
 
@@ -138,7 +138,7 @@ templates/                     - Jinja2 templates (pastel UI)
 - Calendar generation runs all 5 engines per client using `generate_dashboard_core`
 - Client data stored with `client_{id}` as user_id in CalendarData
 - Calendar status: pending → generating → ready (or error)
-- Results page at `/clients/{id}/results` shows golden windows, bird periods, full calendar
+- Results page at `/clients/{id}/results` shows full pipeline: stats row, golden windows, Micro Bird precision posting, bird batch on background, microtransit layers (YP + PoF), ICS feeds, full calendar
 
 ## Auth & Role System
 - Email-based auth (no password) — enter email to sign in/sign up
@@ -206,3 +206,5 @@ templates/                     - Jinja2 templates (pastel UI)
 - Client results page shows "Publer CSV" download button and "Calendar Feeds (ICS)" section with copy buttons
 - ICS feed URLs generated for all 10 feed types per client with subscription tokens
 - Client self-service: clients log in with email, see Power Days + Calendar Feeds when calendar_status='ready'
+- Enhanced client results page with full pipeline: stats row (OMNI/Double GO/Good/Background/Micro Bird counts), Micro Bird precision posting windows, microtransit layers (Yogi Point + Part of Fortune grouped by date), all computed server-side
+- Client calendar API now calculates YP/PoF transits filtered to background days and Micro Bird overlaps (bird batch + microtransit intersection)

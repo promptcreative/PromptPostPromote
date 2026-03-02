@@ -120,6 +120,48 @@
             margin-top: 8px;
         }
 
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+            margin-bottom: 32px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 14px;
+            padding: 20px;
+            text-align: center;
+            border: 2px solid transparent;
+        }
+
+        .stat-card.omni { border-color: #E8D5FF; background: linear-gradient(135deg, #FDFAFF, #F8F0FF); }
+        .stat-card.double-go { border-color: #D4EDDA; background: linear-gradient(135deg, #FDFFF8, #F0FFF4); }
+        .stat-card.good { border-color: #FFECD2; background: linear-gradient(135deg, #FFFDF8, #FFF8F0); }
+        .stat-card.total { border-color: #D6EAF8; background: linear-gradient(135deg, #F8FDFF, #EBF5FB); }
+        .stat-card.microbird { border-color: #FCE4EC; background: linear-gradient(135deg, #FFF8FA, #FFF0F3); }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .stat-number.omni { color: #7C3AED; }
+        .stat-number.double-go { color: #2E7D32; }
+        .stat-number.good { color: #E65100; }
+        .stat-number.total { color: #1976D2; }
+        .stat-number.microbird { color: #C2185B; }
+
+        .stat-label {
+            font-size: 0.72rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #8A8698;
+            margin-top: 6px;
+        }
+
         .golden-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -161,6 +203,149 @@
         .badge-good { background: #FFECD2; color: #E65100; }
 
         .golden-details { font-size: 0.78rem; color: #8A8698; margin-top: 8px; line-height: 1.4; }
+
+        .microbird-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 12px;
+            margin-bottom: 36px;
+        }
+
+        .microbird-card {
+            background: white;
+            border-radius: 14px;
+            padding: 18px;
+            border: 2px solid #FCE4EC;
+            background: linear-gradient(135deg, #FFF8FA, #FFF0F3);
+            position: relative;
+            transition: all 0.2s;
+        }
+
+        .microbird-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(194,24,91,0.1); }
+
+        .microbird-date { font-size: 0.82rem; font-weight: 600; color: #2D2B3D; }
+
+        .microbird-time {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: #C2185B;
+            margin: 6px 0;
+        }
+
+        .microbird-duration {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            background: #FCE4EC;
+            color: #C2185B;
+            margin-left: 6px;
+        }
+
+        .microbird-detail { font-size: 0.78rem; color: #8A8698; line-height: 1.5; }
+
+        .microbird-badges { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+
+        .microbird-badge-transit {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.68rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .badge-yp { background: #E8D5FF; color: #7C3AED; }
+        .badge-pof { background: #FFF3E0; color: #E65100; }
+
+        .bird-section { margin-bottom: 36px; }
+
+        .bird-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 12px;
+        }
+
+        .bird-card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            border-left: 4px solid #4CAF50;
+            box-shadow: 0 2px 8px rgba(45,43,61,0.04);
+        }
+
+        .bird-card .bird-date { font-size: 0.82rem; font-weight: 600; color: #2D2B3D; }
+        .bird-card .bird-time { font-size: 0.95rem; font-weight: 700; color: #4CAF50; margin: 4px 0; }
+        .bird-card .bird-detail { font-size: 0.78rem; color: #8A8698; }
+
+        .transit-section { margin-bottom: 36px; }
+
+        .transit-date-group { margin-bottom: 16px; }
+
+        .transit-date-header {
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: #2D2B3D;
+            padding: 8px 0 6px;
+            border-bottom: 1px solid #F0EEE8;
+            margin-bottom: 8px;
+        }
+
+        .transit-list { display: flex; flex-direction: column; gap: 6px; }
+
+        .transit-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 1px 4px rgba(45,43,61,0.04);
+        }
+
+        .transit-time {
+            font-size: 0.88rem;
+            font-weight: 700;
+            min-width: 110px;
+            white-space: nowrap;
+        }
+
+        .transit-time.yp { color: #7C3AED; }
+        .transit-time.pof { color: #E65100; }
+
+        .transit-name { font-size: 0.82rem; color: #6B6880; }
+
+        .transit-source-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.68rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-left: auto;
+            flex-shrink: 0;
+        }
+
+        .transit-columns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 36px;
+        }
+
+        .transit-col-header {
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            padding: 10px 14px;
+            border-radius: 10px 10px 0 0;
+            margin-bottom: 8px;
+        }
+
+        .transit-col-header.yp { background: #F3E8FF; color: #7C3AED; }
+        .transit-col-header.pof { background: #FFF3E0; color: #E65100; }
 
         .calendar-table {
             width: 100%;
@@ -208,26 +393,6 @@
         .day-neutral { background: #F5F3EF; color: #8A8698; }
         .day-slow { background: #FFF8E1; color: #F9A825; }
         .day-caution { background: #FFEBEE; color: #EF5350; }
-
-        .bird-section { margin-bottom: 36px; }
-
-        .bird-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-            gap: 12px;
-        }
-
-        .bird-card {
-            background: white;
-            border-radius: 12px;
-            padding: 16px;
-            border-left: 4px solid #4CAF50;
-            box-shadow: 0 2px 8px rgba(45,43,61,0.04);
-        }
-
-        .bird-card .bird-date { font-size: 0.82rem; font-weight: 600; color: #2D2B3D; }
-        .bird-card .bird-time { font-size: 0.95rem; font-weight: 700; color: #4CAF50; margin: 4px 0; }
-        .bird-card .bird-detail { font-size: 0.78rem; color: #8A8698; }
 
         .no-data {
             text-align: center;
@@ -307,17 +472,36 @@
         .btn-copy:hover { background: #E0DDD8; }
         .btn-copy.copied { background: #D4EDDA; color: #2E7D32; }
 
+        .section-divider {
+            border: none;
+            border-top: 1px solid #F0EEE8;
+            margin: 8px 0 24px;
+        }
+
+        .empty-section {
+            text-align: center;
+            padding: 24px;
+            background: white;
+            border-radius: 12px;
+            color: #B0ADBC;
+            font-size: 0.85rem;
+            margin-bottom: 36px;
+        }
+
         @media (max-width: 768px) {
             nav { padding: 16px 20px; }
             .container { padding: 0 20px 40px; }
             .golden-grid { grid-template-columns: 1fr; }
             .bird-grid { grid-template-columns: 1fr; }
+            .microbird-grid { grid-template-columns: 1fr; }
+            .transit-columns { grid-template-columns: 1fr; }
             .client-header { flex-direction: column; align-items: flex-start; }
             .header-actions { margin-left: 0; flex-wrap: wrap; }
             .calendar-table { overflow-x: auto; }
             .feed-item { flex-wrap: wrap; }
             .feed-label { min-width: auto; }
             .feed-url { min-width: 0; }
+            .stats-row { grid-template-columns: repeat(2, 1fr); }
         }
     </style>
 </head>
@@ -372,6 +556,16 @@
             return 'neutral';
         }
 
+        function groupByDate(items, dateKey) {
+            const groups = {};
+            items.forEach(item => {
+                const d = item[dateKey || 'date'];
+                if (!groups[d]) groups[d] = [];
+                groups[d].push(item);
+            });
+            return Object.entries(groups).sort((a, b) => a[0].localeCompare(b[0]));
+        }
+
         async function loadResults() {
             try {
                 const resp = await fetch(`/api/clients/${CLIENT_ID}/calendar`);
@@ -412,6 +606,21 @@
 
                 let html = '';
 
+                const omniCount = (data.golden_windows || []).filter(w => classKey(w.classification) === 'omni').length;
+                const dgoCount = (data.golden_windows || []).filter(w => classKey(w.classification) === 'double-go').length;
+                const goodCount = (data.good_days || []).length;
+                const totalBg = (data.background_days || []).length;
+                const mbCount = (data.micro_bird_events || []).length;
+
+                html += '<div class="section-title">Pipeline Summary</div>';
+                html += '<div class="stats-row">';
+                html += `<div class="stat-card omni"><div class="stat-number omni">${omniCount}</div><div class="stat-label">OMNI</div></div>`;
+                html += `<div class="stat-card double-go"><div class="stat-number double-go">${dgoCount}</div><div class="stat-label">Double GO</div></div>`;
+                html += `<div class="stat-card good"><div class="stat-number good">${goodCount}</div><div class="stat-label">Good</div></div>`;
+                html += `<div class="stat-card total"><div class="stat-number total">${totalBg}</div><div class="stat-label">Background Days</div></div>`;
+                html += `<div class="stat-card microbird"><div class="stat-number microbird">${mbCount}</div><div class="stat-label">Micro Bird</div></div>`;
+                html += '</div>';
+
                 if (data.golden_windows && data.golden_windows.length > 0) {
                     html += `<div class="section-title">Golden Windows (${data.golden_windows.length})</div>`;
                     html += '<div class="golden-grid">';
@@ -432,21 +641,109 @@
                     html += '</div>';
                 }
 
+                if (data.micro_bird_events && data.micro_bird_events.length > 0) {
+                    html += '<hr class="section-divider">';
+                    html += `<div class="section-title">Micro Bird \u2014 Precision Posting (${data.micro_bird_events.length} windows)</div>`;
+                    html += '<div class="microbird-grid">';
+                    data.micro_bird_events.forEach(mb => {
+                        const srcBadge = mb.transit_type === 'YP' ? 'badge-yp' : 'badge-pof';
+                        const srcLabel = mb.transit_type === 'YP' ? 'Yogi Point' : 'Part of Fortune';
+                        html += `
+                            <div class="microbird-card">
+                                <div class="microbird-date">${formatDate(mb.date)}</div>
+                                <div class="microbird-time">
+                                    ${escapeHtml(mb.start)} \u2013 ${escapeHtml(mb.end)}
+                                    <span class="microbird-duration">${mb.duration}min</span>
+                                </div>
+                                <div class="microbird-detail">
+                                    ${mb.transit_name ? escapeHtml(mb.transit_name) : ''}
+                                    ${mb.bird ? '<br>' + escapeHtml(mb.bird_tier) + ' \u00B7 ' + escapeHtml(mb.bird) + ' \u00B7 ' + escapeHtml(mb.activity) : ''}
+                                </div>
+                                <div class="microbird-badges">
+                                    <span class="microbird-badge-transit ${srcBadge}">${srcLabel}</span>
+                                    ${mb.bird_tier ? '<span class="microbird-badge-transit" style="background:#E8F5E9;color:#2E7D32">' + escapeHtml(mb.bird_tier) + '</span>' : ''}
+                                </div>
+                            </div>`;
+                    });
+                    html += '</div>';
+                } else {
+                    html += '<hr class="section-divider">';
+                    html += '<div class="section-title">Micro Bird \u2014 Precision Posting</div>';
+                    html += '<div class="empty-section">No Micro Bird windows found. Micro Bird events appear when microtransit windows (Yogi Point or Part of Fortune) overlap with Bird Batch periods on background days.</div>';
+                }
+
                 if (data.bird_periods && data.bird_periods.length > 0) {
-                    html += `<div class="section-title">Bird Batch Timing (${data.bird_periods.length} windows)</div>`;
+                    html += '<hr class="section-divider">';
+                    html += `<div class="section-title">Bird Batch on Background (${data.bird_periods.length} windows)</div>`;
                     html += '<div class="bird-grid">';
                     data.bird_periods.forEach(p => {
                         html += `
                             <div class="bird-card">
                                 <div class="bird-date">${formatDate(p.date)}</div>
-                                <div class="bird-time">${p.start || ''} - ${p.end || ''}</div>
+                                <div class="bird-time">${p.start || ''} \u2013 ${p.end || ''}</div>
                                 <div class="bird-detail">${p.tier ? escapeHtml(p.tier) : ''}${p.bird ? ' \u00B7 ' + escapeHtml(p.bird) : ''}${p.activity ? ' \u00B7 ' + escapeHtml(p.activity) : ''}</div>
                             </div>`;
                     });
                     html += '</div>';
                 }
 
+                const ypTransits = data.yp_transits || [];
+                const pofTransits = data.pof_transits || [];
+
+                if (ypTransits.length > 0 || pofTransits.length > 0) {
+                    html += '<hr class="section-divider">';
+                    html += `<div class="section-title">Microtransit Layers (${ypTransits.length + pofTransits.length} transits on background days)</div>`;
+                    html += '<div class="transit-columns">';
+
+                    html += '<div>';
+                    html += `<div class="transit-col-header yp">Yogi Point (${ypTransits.length})</div>`;
+                    if (ypTransits.length > 0) {
+                        const ypGroups = groupByDate(ypTransits);
+                        ypGroups.forEach(([dt, items]) => {
+                            html += `<div class="transit-date-group">`;
+                            html += `<div class="transit-date-header">${formatDate(dt)}</div>`;
+                            html += `<div class="transit-list">`;
+                            items.forEach(t => {
+                                html += `
+                                    <div class="transit-item">
+                                        <span class="transit-time yp">${escapeHtml(t.start)} \u2013 ${escapeHtml(t.end)}</span>
+                                        <span class="transit-name">${escapeHtml(t.type)}</span>
+                                    </div>`;
+                            });
+                            html += '</div></div>';
+                        });
+                    } else {
+                        html += '<div class="empty-section" style="margin-top:0">No Yogi Point transits on background days</div>';
+                    }
+                    html += '</div>';
+
+                    html += '<div>';
+                    html += `<div class="transit-col-header pof">Part of Fortune (${pofTransits.length})</div>`;
+                    if (pofTransits.length > 0) {
+                        const pofGroups = groupByDate(pofTransits);
+                        pofGroups.forEach(([dt, items]) => {
+                            html += `<div class="transit-date-group">`;
+                            html += `<div class="transit-date-header">${formatDate(dt)}</div>`;
+                            html += `<div class="transit-list">`;
+                            items.forEach(t => {
+                                html += `
+                                    <div class="transit-item">
+                                        <span class="transit-time pof">${escapeHtml(t.start)} \u2013 ${escapeHtml(t.end)}</span>
+                                        <span class="transit-name">${escapeHtml(t.type)}</span>
+                                    </div>`;
+                            });
+                            html += '</div></div>';
+                        });
+                    } else {
+                        html += '<div class="empty-section" style="margin-top:0">No Part of Fortune transits on background days</div>';
+                    }
+                    html += '</div>';
+
+                    html += '</div>';
+                }
+
                 if (data.combined_results && data.combined_results.length > 0) {
+                    html += '<hr class="section-divider">';
                     html += '<div class="section-title">Full Calendar</div>';
                     html += '<div class="calendar-table"><table>';
                     html += '<tr><th>Date</th><th>Day</th><th>Classification</th><th>Details</th></tr>';
@@ -508,7 +805,7 @@
                 if (data.status !== 'success' || !data.feeds) return;
 
                 const baseUrl = window.location.origin;
-                let feedsHtml = '<div class="section-title">Calendar Feeds (ICS)</div><div class="feeds-section">';
+                let feedsHtml = '<hr class="section-divider"><div class="section-title">Calendar Feeds (ICS)</div><div class="feeds-section">';
 
                 Object.entries(data.feeds).forEach(([key, feed]) => {
                     const fullUrl = baseUrl + feed.url;
@@ -522,7 +819,12 @@
                 feedsHtml += '</div>';
 
                 const content = document.getElementById('resultsContent');
-                content.innerHTML += feedsHtml;
+                const calTable = content.querySelector('.calendar-table');
+                if (calTable) {
+                    calTable.insertAdjacentHTML('beforebegin', feedsHtml);
+                } else {
+                    content.innerHTML += feedsHtml;
+                }
             } catch (err) {
                 console.error('Error loading feeds:', err);
             }
