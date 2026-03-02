@@ -388,128 +388,6 @@ def get_client_calendar(client_id):
                             'activity': p.get('activity', ''),
                         })
 
-        yp_transits = []
-        pof_transits = []
-        micro_bird_events = []
-        bg_set = set(background_days)
-
-        try:
-            period = saved_data.get('period', {})
-            try:
-                days_span = int(period.get('days', 60))
-            except (ValueError, TypeError):
-                days_span = 60
-
-            start_dt = datetime.combine(date.today(), datetime.min.time())
-            end_dt = datetime.combine(date.today() + timedelta(days=days_span), datetime.min.time())
-
-            def _extract_date_part(ds):
-                if not ds:
-                    return None
-                ds = str(ds)
-                if 'T' in ds:
-                    return ds.split('T')[0]
-                if ' ' in ds:
-                    return ds.split(' ')[0]
-                return ds
-
-            def _serialize_transit(t, source):
-                t_start = t.get('start')
-                t_end = t.get('end')
-                return {
-                    'date': _extract_date_part(str(t_start)) if t_start else '',
-                    'start': t_start.strftime('%H:%M') if hasattr(t_start, 'strftime') else str(t_start),
-                    'end': t_end.strftime('%H:%M') if hasattr(t_end, 'strftime') else str(t_end),
-                    'start_iso': t_start.isoformat() if hasattr(t_start, 'isoformat') else str(t_start),
-                    'end_iso': t_end.isoformat() if hasattr(t_end, 'isoformat') else str(t_end),
-                    'type': t.get('type', t.get('description', '')),
-                    'transit_code': t.get('transit_code', ''),
-                    'source': source,
-                }
-
-            try:
-                from microtransits.yp import process_transits as yp_process
-                import microtransits.yp as yp_module
-                if client.current_latitude and client.current_longitude:
-                    yp_module.TRANSIT_LOCATION = (float(client.current_latitude), float(client.current_longitude))
-                elif client.birth_latitude and client.birth_longitude:
-                    yp_module.TRANSIT_LOCATION = (float(client.birth_latitude), float(client.birth_longitude))
-                raw_yp = yp_process(start_dt, end_dt)
-                for t in raw_yp:
-                    t_date = _extract_date_part(str(t.get('start', '')))
-                    if t_date and t_date in bg_set:
-                        yp_transits.append(_serialize_transit(t, 'YP'))
-            except Exception as yp_err:
-                print(f"YP calculation error for client {client_id}: {yp_err}")
-                traceback.print_exc()
-
-            try:
-                import microtransits.wb1 as wb1_module
-                if client.birth_date and client.birth_time:
-                    birth_dt = datetime.combine(client.birth_date, client.birth_time)
-                    wb1_module.BIRTH_DATE = birth_dt
-                    if client.current_latitude and client.current_longitude:
-                        wb1_module.TRANSIT_LOCATION = (float(client.current_latitude), float(client.current_longitude))
-                    elif client.birth_latitude and client.birth_longitude:
-                        wb1_module.TRANSIT_LOCATION = (float(client.birth_latitude), float(client.birth_longitude))
-                    raw_pof = wb1_module.process_transits(start_dt, end_dt)
-                    for t in raw_pof:
-                        t_date = _extract_date_part(str(t.get('start', '')))
-                        if t_date and t_date in bg_set:
-                            pof_transits.append(_serialize_transit(t, 'PoF'))
-            except Exception as pof_err:
-                print(f"PoF calculation error for client {client_id}: {pof_err}")
-                traceback.print_exc()
-
-            def _parse_time(ts):
-                ts = str(ts).strip()
-                if 'T' in ts:
-                    ts = ts.split('T')[1]
-                ts = ts.split('+')[0].split('Z')[0]
-                for fmt in ('%H:%M', '%H:%M:%S', '%H:%M:%S.%f'):
-                    try:
-                        return datetime.strptime(ts, fmt)
-                    except ValueError:
-                        continue
-                return None
-
-            all_microtransits = yp_transits + pof_transits
-            for mt in all_microtransits:
-                mt_date = mt['date']
-                for bp in bird_periods:
-                    if bp['date'] != mt_date:
-                        continue
-                    try:
-                        mt_start = _parse_time(mt['start'])
-                        mt_end = _parse_time(mt['end'])
-                        bp_start = _parse_time(bp['start'])
-                        bp_end = _parse_time(bp['end'])
-                        if not all([mt_start, mt_end, bp_start, bp_end]):
-                            continue
-                        overlap_start = max(mt_start, bp_start)
-                        overlap_end = min(mt_end, bp_end)
-                        if overlap_start < overlap_end:
-                            duration = int((overlap_end - overlap_start).total_seconds() / 60)
-                            micro_bird_events.append({
-                                'date': mt_date,
-                                'start': overlap_start.strftime('%H:%M'),
-                                'end': overlap_end.strftime('%H:%M'),
-                                'duration': duration,
-                                'transit_type': mt['source'],
-                                'transit_name': mt['type'],
-                                'bird_tier': bp['tier'],
-                                'bird': bp.get('bird', ''),
-                                'activity': bp.get('activity', ''),
-                            })
-                    except Exception:
-                        pass
-
-            micro_bird_events.sort(key=lambda x: (x['date'], x['start']))
-
-        except Exception as mt_err:
-            print(f"Microtransit pipeline error for client {client_id}: {mt_err}")
-            traceback.print_exc()
-
         return jsonify({
             "status": "success",
             "client": client.to_dict(),
@@ -517,14 +395,187 @@ def get_client_calendar(client_id):
             "good_days": good_days,
             "background_days": background_days,
             "bird_periods": bird_periods,
-            "yp_transits": yp_transits,
-            "pof_transits": pof_transits,
-            "micro_bird_events": micro_bird_events,
             "combined_results": combined_results,
             "generated_at": saved_data.get('period', {}).get('generated_at'),
         })
 
     except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@clients_bp.route('/api/clients/<int:client_id>/microtransits', methods=['GET'])
+def get_client_microtransits(client_id):
+    if not session.get('authenticated'):
+        return jsonify({"status": "error", "message": "Not authenticated"}), 401
+    if not _require_admin():
+        return jsonify({"status": "error", "message": "Admin access required"}), 403
+
+    try:
+        owner_email = _get_owner_email()
+        client = Client.query.get(client_id)
+
+        if not client:
+            return jsonify({"status": "error", "message": "Client not found"}), 404
+        if client.owner_email != owner_email:
+            return jsonify({"status": "error", "message": "Forbidden"}), 403
+
+        client_user_id = f"client_{client_id}"
+        saved_data = db_manager.get_calendar_data(client_user_id)
+
+        if not saved_data:
+            return jsonify({"status": "error", "message": "No calendar data. Generate first."}), 404
+
+        calendars = saved_data.get('calendars', {})
+        combined = calendars.get('combined', {})
+        combined_results = combined.get('results', [])
+
+        background_days = []
+        for day in combined_results:
+            classification = day.get('classification', '').upper()
+            if classification in ('OMNI', 'DOUBLE GO', 'DOUBLE_GO', 'GOOD'):
+                background_days.append(day.get('date', ''))
+
+        bird_batch = calendars.get('bird_batch', {})
+        bird_periods = []
+        if isinstance(bird_batch, dict) and not bird_batch.get('error'):
+            for day_data in (bird_batch.get('daily_results') or bird_batch.get('results') or []):
+                day_date = day_data.get('date', '')
+                if day_date in background_days:
+                    periods = day_data.get('top_periods', day_data.get('periods', []))
+                    for p in periods[:3]:
+                        bird_periods.append({
+                            'date': day_date,
+                            'start': p.get('start_time', p.get('start', '')),
+                            'end': p.get('end_time', p.get('end', '')),
+                            'tier': p.get('tier', p.get('combination', '')),
+                            'bird': p.get('bird', ''),
+                            'activity': p.get('activity', ''),
+                        })
+
+        yp_transits = []
+        pof_transits = []
+        micro_bird_events = []
+        bg_set = set(background_days)
+
+        period = saved_data.get('period', {})
+        try:
+            days_span = int(period.get('days', 60))
+        except (ValueError, TypeError):
+            days_span = 60
+
+        start_dt = datetime.combine(date.today(), datetime.min.time())
+        end_dt = datetime.combine(date.today() + timedelta(days=days_span), datetime.min.time())
+
+        def _extract_date_part(ds):
+            if not ds:
+                return None
+            ds = str(ds)
+            if 'T' in ds:
+                return ds.split('T')[0]
+            if ' ' in ds:
+                return ds.split(' ')[0]
+            return ds
+
+        def _serialize_transit(t, source):
+            t_start = t.get('start')
+            t_end = t.get('end')
+            return {
+                'date': _extract_date_part(str(t_start)) if t_start else '',
+                'start': t_start.strftime('%H:%M') if hasattr(t_start, 'strftime') else str(t_start),
+                'end': t_end.strftime('%H:%M') if hasattr(t_end, 'strftime') else str(t_end),
+                'type': t.get('type', t.get('description', '')),
+                'transit_code': t.get('transit_code', ''),
+                'source': source,
+            }
+
+        try:
+            from microtransits.yp import process_transits as yp_process
+            import microtransits.yp as yp_module
+            if client.current_latitude and client.current_longitude:
+                yp_module.TRANSIT_LOCATION = (float(client.current_latitude), float(client.current_longitude))
+            elif client.birth_latitude and client.birth_longitude:
+                yp_module.TRANSIT_LOCATION = (float(client.birth_latitude), float(client.birth_longitude))
+            raw_yp = yp_process(start_dt, end_dt)
+            for t in raw_yp:
+                t_date = _extract_date_part(str(t.get('start', '')))
+                if t_date and t_date in bg_set:
+                    yp_transits.append(_serialize_transit(t, 'YP'))
+        except Exception as yp_err:
+            print(f"YP calculation error for client {client_id}: {yp_err}")
+            traceback.print_exc()
+
+        try:
+            import microtransits.wb1 as wb1_module
+            if client.birth_date and client.birth_time:
+                birth_dt = datetime.combine(client.birth_date, client.birth_time)
+                wb1_module.BIRTH_DATE = birth_dt
+                if client.current_latitude and client.current_longitude:
+                    wb1_module.TRANSIT_LOCATION = (float(client.current_latitude), float(client.current_longitude))
+                elif client.birth_latitude and client.birth_longitude:
+                    wb1_module.TRANSIT_LOCATION = (float(client.birth_latitude), float(client.birth_longitude))
+                raw_pof = wb1_module.process_transits(start_dt, end_dt)
+                for t in raw_pof:
+                    t_date = _extract_date_part(str(t.get('start', '')))
+                    if t_date and t_date in bg_set:
+                        pof_transits.append(_serialize_transit(t, 'PoF'))
+        except Exception as pof_err:
+            print(f"PoF calculation error for client {client_id}: {pof_err}")
+            traceback.print_exc()
+
+        def _parse_time(ts):
+            ts = str(ts).strip()
+            if 'T' in ts:
+                ts = ts.split('T')[1]
+            ts = ts.split('+')[0].split('Z')[0]
+            for fmt in ('%H:%M', '%H:%M:%S', '%H:%M:%S.%f'):
+                try:
+                    return datetime.strptime(ts, fmt)
+                except ValueError:
+                    continue
+            return None
+
+        all_microtransits = yp_transits + pof_transits
+        for mt in all_microtransits:
+            mt_date = mt['date']
+            for bp in bird_periods:
+                if bp['date'] != mt_date:
+                    continue
+                try:
+                    mt_start = _parse_time(mt['start'])
+                    mt_end = _parse_time(mt['end'])
+                    bp_start = _parse_time(bp['start'])
+                    bp_end = _parse_time(bp['end'])
+                    if not all([mt_start, mt_end, bp_start, bp_end]):
+                        continue
+                    overlap_start = max(mt_start, bp_start)
+                    overlap_end = min(mt_end, bp_end)
+                    if overlap_start < overlap_end:
+                        duration = int((overlap_end - overlap_start).total_seconds() / 60)
+                        micro_bird_events.append({
+                            'date': mt_date,
+                            'start': overlap_start.strftime('%H:%M'),
+                            'end': overlap_end.strftime('%H:%M'),
+                            'duration': duration,
+                            'transit_type': mt['source'],
+                            'transit_name': mt['type'],
+                            'bird_tier': bp['tier'],
+                            'bird': bp.get('bird', ''),
+                            'activity': bp.get('activity', ''),
+                        })
+                except Exception:
+                    pass
+
+        micro_bird_events.sort(key=lambda x: (x['date'], x['start']))
+
+        return jsonify({
+            "status": "success",
+            "yp_transits": yp_transits,
+            "pof_transits": pof_transits,
+            "micro_bird_events": micro_bird_events,
+        })
+
+    except Exception as e:
+        traceback.print_exc()
         return jsonify({"status": "error", "message": str(e)}), 500
 
 

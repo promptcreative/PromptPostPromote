@@ -646,36 +646,8 @@
                     html += '</div>';
                 }
 
-                if (data.micro_bird_events && data.micro_bird_events.length > 0) {
-                    html += '<hr class="section-divider">';
-                    html += `<div class="section-title">Micro Bird \u2014 Precision Posting (${data.micro_bird_events.length} windows)</div>`;
-                    html += '<div class="microbird-grid">';
-                    data.micro_bird_events.forEach(mb => {
-                        const srcBadge = mb.transit_type === 'YP' ? 'badge-yp' : 'badge-pof';
-                        const srcLabel = mb.transit_type === 'YP' ? 'Yogi Point' : 'Part of Fortune';
-                        html += `
-                            <div class="microbird-card">
-                                <div class="microbird-date">${formatDate(mb.date)}</div>
-                                <div class="microbird-time">
-                                    ${escapeHtml(mb.start)} \u2013 ${escapeHtml(mb.end)}
-                                    <span class="microbird-duration">${mb.duration}min</span>
-                                </div>
-                                <div class="microbird-detail">
-                                    ${mb.transit_name ? escapeHtml(mb.transit_name) : ''}
-                                    ${mb.bird ? '<br>' + escapeHtml(mb.bird_tier) + ' \u00B7 ' + escapeHtml(mb.bird) + ' \u00B7 ' + escapeHtml(mb.activity) : ''}
-                                </div>
-                                <div class="microbird-badges">
-                                    <span class="microbird-badge-transit ${srcBadge}">${srcLabel}</span>
-                                    ${mb.bird_tier ? '<span class="microbird-badge-transit" style="background:#E8F5E9;color:#2E7D32">' + escapeHtml(mb.bird_tier) + '</span>' : ''}
-                                </div>
-                            </div>`;
-                    });
-                    html += '</div>';
-                } else {
-                    html += '<hr class="section-divider">';
-                    html += '<div class="section-title">Micro Bird \u2014 Precision Posting</div>';
-                    html += '<div class="empty-section">No Micro Bird windows found. Micro Bird events appear when microtransit windows (Yogi Point or Part of Fortune) overlap with Bird Batch periods on background days.</div>';
-                }
+                html += '<hr class="section-divider">';
+                html += '<div id="microbird-section"><div class="section-title">Micro Bird \u2014 Precision Posting</div><div class="empty-section" style="color:#C2185B">Calculating microtransits... this may take a minute</div></div>';
 
                 if (data.bird_periods && data.bird_periods.length > 0) {
                     html += '<hr class="section-divider">';
@@ -692,60 +664,7 @@
                     html += '</div>';
                 }
 
-                const ypTransits = data.yp_transits || [];
-                const pofTransits = data.pof_transits || [];
-
-                if (ypTransits.length > 0 || pofTransits.length > 0) {
-                    html += '<hr class="section-divider">';
-                    html += `<div class="section-title">Microtransit Layers (${ypTransits.length + pofTransits.length} transits on background days)</div>`;
-                    html += '<div class="transit-columns">';
-
-                    html += '<div>';
-                    html += `<div class="transit-col-header yp">Yogi Point (${ypTransits.length})</div>`;
-                    if (ypTransits.length > 0) {
-                        const ypGroups = groupByDate(ypTransits);
-                        ypGroups.forEach(([dt, items]) => {
-                            html += `<div class="transit-date-group">`;
-                            html += `<div class="transit-date-header">${formatDate(dt)}</div>`;
-                            html += `<div class="transit-list">`;
-                            items.forEach(t => {
-                                html += `
-                                    <div class="transit-item">
-                                        <span class="transit-time yp">${escapeHtml(t.start)} \u2013 ${escapeHtml(t.end)}</span>
-                                        <span class="transit-name">${escapeHtml(t.type)}</span>
-                                    </div>`;
-                            });
-                            html += '</div></div>';
-                        });
-                    } else {
-                        html += '<div class="empty-section" style="margin-top:0">No Yogi Point transits on background days</div>';
-                    }
-                    html += '</div>';
-
-                    html += '<div>';
-                    html += `<div class="transit-col-header pof">Part of Fortune (${pofTransits.length})</div>`;
-                    if (pofTransits.length > 0) {
-                        const pofGroups = groupByDate(pofTransits);
-                        pofGroups.forEach(([dt, items]) => {
-                            html += `<div class="transit-date-group">`;
-                            html += `<div class="transit-date-header">${formatDate(dt)}</div>`;
-                            html += `<div class="transit-list">`;
-                            items.forEach(t => {
-                                html += `
-                                    <div class="transit-item">
-                                        <span class="transit-time pof">${escapeHtml(t.start)} \u2013 ${escapeHtml(t.end)}</span>
-                                        <span class="transit-name">${escapeHtml(t.type)}</span>
-                                    </div>`;
-                            });
-                            html += '</div></div>';
-                        });
-                    } else {
-                        html += '<div class="empty-section" style="margin-top:0">No Part of Fortune transits on background days</div>';
-                    }
-                    html += '</div>';
-
-                    html += '</div>';
-                }
+                html += '<div id="microtransit-section"><div class="section-title">Microtransit Layers</div><div class="empty-section">Loading Yogi Point and Part of Fortune transits...</div></div>';
 
                 if (data.combined_results && data.combined_results.length > 0) {
                     html += '<hr class="section-divider">';
@@ -771,10 +690,123 @@
 
                 document.getElementById('resultsContent').innerHTML = html;
                 loadICSFeeds();
+                loadMicrotransits();
 
             } catch (error) {
                 console.error('Error:', error);
                 document.getElementById('resultsContent').innerHTML = '<div class="no-data"><p>Error loading results</p></div>';
+            }
+        }
+
+        async function loadMicrotransits() {
+            try {
+                const resp = await fetch(`/api/clients/${CLIENT_ID}/microtransits`);
+                if (!resp.ok) {
+                    document.getElementById('microbird-section').innerHTML = '<div class="section-title">Micro Bird \u2014 Precision Posting</div><div class="empty-section">Could not load microtransit data</div>';
+                    document.getElementById('microtransit-section').innerHTML = '';
+                    return;
+                }
+                const mt = await resp.json();
+
+                let mbHtml = '';
+                const mbEvents = mt.micro_bird_events || [];
+                if (mbEvents.length > 0) {
+                    mbHtml += `<div class="section-title">Micro Bird \u2014 Precision Posting (${mbEvents.length} windows)</div>`;
+                    mbHtml += '<div class="microbird-grid">';
+                    mbEvents.forEach(mb => {
+                        const srcBadge = mb.transit_type === 'YP' ? 'badge-yp' : 'badge-pof';
+                        const srcLabel = mb.transit_type === 'YP' ? 'Yogi Point' : 'Part of Fortune';
+                        mbHtml += `
+                            <div class="microbird-card">
+                                <div class="microbird-date">${formatDate(mb.date)}</div>
+                                <div class="microbird-time">
+                                    ${escapeHtml(mb.start)} \u2013 ${escapeHtml(mb.end)}
+                                    <span class="microbird-duration">${mb.duration}min</span>
+                                </div>
+                                <div class="microbird-detail">
+                                    ${mb.transit_name ? escapeHtml(mb.transit_name) : ''}
+                                    ${mb.bird ? '<br>' + escapeHtml(mb.bird_tier) + ' \u00B7 ' + escapeHtml(mb.bird) + ' \u00B7 ' + escapeHtml(mb.activity) : ''}
+                                </div>
+                                <div class="microbird-badges">
+                                    <span class="microbird-badge-transit ${srcBadge}">${srcLabel}</span>
+                                    ${mb.bird_tier ? '<span class="microbird-badge-transit" style="background:#E8F5E9;color:#2E7D32">' + escapeHtml(mb.bird_tier) + '</span>' : ''}
+                                </div>
+                            </div>`;
+                    });
+                    mbHtml += '</div>';
+                } else {
+                    mbHtml += '<div class="section-title">Micro Bird \u2014 Precision Posting</div>';
+                    mbHtml += '<div class="empty-section">No Micro Bird windows found. Micro Bird events appear when microtransit windows overlap with Bird Batch periods on background days.</div>';
+                }
+                document.getElementById('microbird-section').innerHTML = mbHtml;
+
+                const mbCountEl = document.querySelector('.stat-card.microbird .stat-number');
+                if (mbCountEl) mbCountEl.textContent = mbEvents.length;
+
+                const ypTransits = mt.yp_transits || [];
+                const pofTransits = mt.pof_transits || [];
+                let mtHtml = '';
+
+                if (ypTransits.length > 0 || pofTransits.length > 0) {
+                    mtHtml += `<hr class="section-divider">`;
+                    mtHtml += `<div class="section-title">Microtransit Layers (${ypTransits.length + pofTransits.length} transits on background days)</div>`;
+                    mtHtml += '<div class="transit-columns">';
+
+                    mtHtml += '<div>';
+                    mtHtml += `<div class="transit-col-header yp">Yogi Point (${ypTransits.length})</div>`;
+                    if (ypTransits.length > 0) {
+                        const ypGroups = groupByDate(ypTransits);
+                        ypGroups.forEach(([dt, items]) => {
+                            mtHtml += `<div class="transit-date-group">`;
+                            mtHtml += `<div class="transit-date-header">${formatDate(dt)}</div>`;
+                            mtHtml += `<div class="transit-list">`;
+                            items.forEach(t => {
+                                mtHtml += `
+                                    <div class="transit-item">
+                                        <span class="transit-time yp">${escapeHtml(t.start)} \u2013 ${escapeHtml(t.end)}</span>
+                                        <span class="transit-name">${escapeHtml(t.type)}</span>
+                                    </div>`;
+                            });
+                            mtHtml += '</div></div>';
+                        });
+                    } else {
+                        mtHtml += '<div class="empty-section" style="margin-top:0">No Yogi Point transits on background days</div>';
+                    }
+                    mtHtml += '</div>';
+
+                    mtHtml += '<div>';
+                    mtHtml += `<div class="transit-col-header pof">Part of Fortune (${pofTransits.length})</div>`;
+                    if (pofTransits.length > 0) {
+                        const pofGroups = groupByDate(pofTransits);
+                        pofGroups.forEach(([dt, items]) => {
+                            mtHtml += `<div class="transit-date-group">`;
+                            mtHtml += `<div class="transit-date-header">${formatDate(dt)}</div>`;
+                            mtHtml += `<div class="transit-list">`;
+                            items.forEach(t => {
+                                mtHtml += `
+                                    <div class="transit-item">
+                                        <span class="transit-time pof">${escapeHtml(t.start)} \u2013 ${escapeHtml(t.end)}</span>
+                                        <span class="transit-name">${escapeHtml(t.type)}</span>
+                                    </div>`;
+                            });
+                            mtHtml += '</div></div>';
+                        });
+                    } else {
+                        mtHtml += '<div class="empty-section" style="margin-top:0">No Part of Fortune transits on background days</div>';
+                    }
+                    mtHtml += '</div>';
+                    mtHtml += '</div>';
+                } else {
+                    mtHtml += '<hr class="section-divider">';
+                    mtHtml += '<div class="section-title">Microtransit Layers</div>';
+                    mtHtml += '<div class="empty-section">No microtransits found on background days</div>';
+                }
+                document.getElementById('microtransit-section').innerHTML = mtHtml;
+
+            } catch (err) {
+                console.error('Microtransit load error:', err);
+                document.getElementById('microbird-section').innerHTML = '<div class="section-title">Micro Bird \u2014 Precision Posting</div><div class="empty-section">Error loading microtransit data</div>';
+                document.getElementById('microtransit-section').innerHTML = '';
             }
         }
 
