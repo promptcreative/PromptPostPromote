@@ -558,6 +558,16 @@
                                     Generate Calendars
                                 </button>
                             </div>`;
+                    } else if (c.birth_date && !c.birth_time) {
+                        primaryActions = `
+                            <div style="background:#FFF8E1;border-radius:10px;padding:10px 14px;font-size:0.82rem;color:#F9A825;font-weight:500;margin-bottom:4px;">
+                                Birth time needed — click Edit to add it
+                            </div>`;
+                    } else if (!c.birth_date) {
+                        primaryActions = `
+                            <div style="background:#FFF8E1;border-radius:10px;padding:10px 14px;font-size:0.82rem;color:#F9A825;font-weight:500;margin-bottom:4px;">
+                                Birth data needed — click Edit to add it
+                            </div>`;
                     }
 
                     return `
