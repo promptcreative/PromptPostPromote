@@ -744,13 +744,19 @@
                 renderPowerDays(data);
                 powerDaysLoaded = true;
 
-                document.getElementById('proceed-section').style.display = 'block';
+                if (localStorage.getItem('power_days_auto_proceed') === 'true') {
+                    loadMicrotransitData();
+                } else {
+                    document.getElementById('proceed-section').style.display = 'block';
+                }
             } catch (e) {
                 renderPowerDaysError({error: 'Failed to load background days'});
             }
         }
 
         async function loadMicrotransitData() {
+            localStorage.setItem('power_days_auto_proceed', 'true');
+
             const btn = document.getElementById('proceed-btn');
             btn.disabled = true;
             btn.textContent = 'Calculating… this may take a moment';
