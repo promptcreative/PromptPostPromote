@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "IGALLYt4JDv7v4WmqEHDN"
+uri = "file://HOW_TO_USE.md"
+type = "text"
+title = "Astrobatching — How To Use Guide"
