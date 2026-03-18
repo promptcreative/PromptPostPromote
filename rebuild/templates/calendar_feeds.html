@@ -145,6 +145,12 @@
             line-height: 1.5;
         }
         
+        .feed-loading {
+            color: #999;
+            font-size: 0.85rem;
+            font-style: italic;
+        }
+
         .feed-stats {
             display: inline-block;
             background: #e9ecef;
@@ -374,9 +380,8 @@
                     All bird periods with tier classifications (Double Boost, Boost, Build). See when each bird is ruling and what activities are favored throughout each day.
                 </div>
                 <div class="feed-stats">360 events per two months</div>
-                <div class="feed-actions">
-                    <button class="feed-btn feed-btn-copy" onclick="copyUrl('/calendar/bird_batch.ics', this)">Copy URL</button>
-                    <a href="/calendar/bird_batch.ics" download class="feed-btn feed-btn-download">Download ICS</a>
+                <div class="feed-actions" id="actions-bird_batch">
+                    <span class="feed-loading">Loading link…</span>
                 </div>
             </div>
             
@@ -386,9 +391,8 @@
                     Bird-filtered microtransits showing only the most favorable moments. Transits are filtered to Ruling/Eating and Eating/Ruling combinations for optimal timing.
                 </div>
                 <div class="feed-stats">~127 events per two months</div>
-                <div class="feed-actions">
-                    <button class="feed-btn feed-btn-copy" onclick="copyUrl('/calendar/microbird.ics', this)">Copy URL</button>
-                    <a href="/calendar/microbird.ics" download class="feed-btn feed-btn-download">Download ICS</a>
+                <div class="feed-actions" id="actions-microbird">
+                    <span class="feed-loading">Loading link…</span>
                 </div>
             </div>
             
@@ -398,9 +402,8 @@
                     Combined VB1, VB2, WB3, and Yogi Point transits. Fortune alignments are deduplicated so you get clean, actionable timing windows without overlap.
                 </div>
                 <div class="feed-stats">~202 events per two months</div>
-                <div class="feed-actions">
-                    <button class="feed-btn feed-btn-copy" onclick="copyUrl('/calendar/enhanced_pof.ics', this)">Copy URL</button>
-                    <a href="/calendar/enhanced_pof.ics" download class="feed-btn feed-btn-download">Download ICS</a>
+                <div class="feed-actions" id="actions-enhanced_pof">
+                    <span class="feed-loading">Loading link…</span>
                 </div>
             </div>
             
@@ -410,9 +413,8 @@
                     Pure Yogi Point transits based on your birth chart. These are personalized moments when the transiting Moon aligns with your natal Yogi Point for spiritual and material gains.
                 </div>
                 <div class="feed-stats">~196 events per two months</div>
-                <div class="feed-actions">
-                    <button class="feed-btn feed-btn-copy" onclick="copyUrl('/calendar/yp_only.ics', this)">Copy URL</button>
-                    <a href="/calendar/yp_only.ics" download class="feed-btn feed-btn-download">Download ICS</a>
+                <div class="feed-actions" id="actions-yogi_point">
+                    <span class="feed-loading">Loading link…</span>
                 </div>
             </div>
             
@@ -422,9 +424,8 @@
                     Daily Rahu Kalam periods - inauspicious times to avoid starting new activities. Based on traditional Vedic calculations dividing daylight into 8 segments. Approximately 80 minutes each day.
                 </div>
                 <div class="feed-stats">~60 events per two months</div>
-                <div class="feed-actions">
-                    <button class="feed-btn feed-btn-copy" onclick="copyUrl('/calendar/nogo.ics', this)">Copy URL</button>
-                    <a href="/calendar/nogo.ics" download class="feed-btn feed-btn-download">Download ICS</a>
+                <div class="feed-actions" id="actions-nogo">
+                    <span class="feed-loading">Loading link…</span>
                 </div>
             </div>
             
@@ -434,9 +435,8 @@
                     Every microtransit from all 6 scripts (VB1, VB2, WB1, WB2, WB3, YP). Each event shows exact minute-level timing with script name and aspect type. No filtering or deduplication - every detected transit stands on its own.
                 </div>
                 <div class="feed-stats">~800+ events per two months</div>
-                <div class="feed-actions">
-                    <button class="feed-btn feed-btn-copy" onclick="copyUrl('/calendar/all_microtransits.ics', this)">Copy URL</button>
-                    <a href="/calendar/all_microtransits.ics" download class="feed-btn feed-btn-download">Download ICS</a>
+                <div class="feed-actions" id="actions-all_microtransits">
+                    <span class="feed-loading">Loading link…</span>
                 </div>
             </div>
         </div>
@@ -474,24 +474,61 @@
     
     <script>
         function copyUrl(path, button) {
-            const fullUrl = window.location.origin + path;
+            const fullUrl = path.startsWith('http') ? path : window.location.origin + path;
             navigator.clipboard.writeText(fullUrl).then(() => {
                 const originalText = button.textContent;
-                const originalBg = button.style.background;
                 button.textContent = 'Copied!';
-                
                 const feedback = document.getElementById('copyFeedback');
                 feedback.style.display = 'block';
-                
                 setTimeout(() => {
                     button.textContent = originalText;
                     feedback.style.display = 'none';
                 }, 2000);
             }).catch(err => {
-                console.error('Failed to copy URL:', err);
                 prompt('Copy this URL:', fullUrl);
             });
         }
+
+        function renderFeedActions(containerId, fullUrl, btnCopyClass, btnDownloadClass) {
+            const el = document.getElementById(containerId);
+            if (!el) return;
+            el.innerHTML = `
+                <button class="feed-btn ${btnCopyClass}" onclick="copyUrl('${fullUrl}', this)">Copy URL</button>
+                <a href="${fullUrl}" download class="feed-btn ${btnDownloadClass}">Download ICS</a>
+            `;
+        }
+
+        const feedStyles = {
+            bird_batch:       ['feed-btn-copy',    'feed-btn-download'],
+            microbird:        ['feed-btn-copy',    'feed-btn-download'],
+            enhanced_pof:     ['feed-btn-copy',    'feed-btn-download'],
+            yogi_point:       ['feed-btn-copy',    'feed-btn-download'],
+            nogo:             ['feed-btn-copy',    'feed-btn-download'],
+            all_microtransits:['feed-btn-copy',    'feed-btn-download'],
+        };
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                const res = await fetch('/api/calendar-feeds');
+                if (!res.ok) return;
+                const data = await res.json();
+                const feeds = data.feeds || data;
+                const origin = window.location.origin;
+
+                for (const [key, styles] of Object.entries(feedStyles)) {
+                    const feedUrl = feeds[key];
+                    if (!feedUrl) continue;
+                    const fullUrl = feedUrl.startsWith('http') ? feedUrl : origin + feedUrl;
+                    renderFeedActions(`actions-${key}`, fullUrl, styles[0], styles[1]);
+                }
+            } catch(e) {
+                console.error('Could not load calendar feed URLs:', e);
+                for (const key of Object.keys(feedStyles)) {
+                    const el = document.getElementById(`actions-${key}`);
+                    if (el) el.innerHTML = '<span style="color:#999;font-size:0.85rem;">Sign in to access</span>';
+                }
+            }
+        });
     </script>
 </body>
 </html>
