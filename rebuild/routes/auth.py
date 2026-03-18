@@ -36,6 +36,11 @@ def login_page():
 @auth_bp.route('/login', methods=['POST'])
 def login_email():
     try:
+        try:
+            db.session.rollback()
+        except Exception:
+            pass
+
         if request.is_json:
             data = request.get_json()
             email = data.get('email', '').strip().lower()
