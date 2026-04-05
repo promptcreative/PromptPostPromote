@@ -205,7 +205,11 @@ class PanchPakshiCalculator:
             total_duration = end_time - start_time
             period_duration = total_duration / 5
             
-            bird_index = BIRD_INDEX_MAP.get(ruling_bird, 0)
+            # The CSV database is keyed on nak_bird_index (birth/nakshatra bird).
+            # Use birth_bird for the lookup so results are personalised per person.
+            # Fall back to ruling_bird only if birth_bird was not provided.
+            query_bird = birth_bird if birth_bird else ruling_bird
+            bird_index = BIRD_INDEX_MAP.get(query_bird, 0)
             weekday_index = WEEKDAY_INDEX_MAP.get(weekday, 0) if weekday else start_time.weekday()
             if weekday is None:
                 weekday_names = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']

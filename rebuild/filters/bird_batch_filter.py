@@ -100,7 +100,15 @@ class BirdBatchFilter:
             c_lon = current_longitude or b_lon
             
             if birth_date and birth_time:
-                birth_dt = datetime.strptime(f"{birth_date} {birth_time}", "%Y-%m-%d %H:%M:%S")
+                bt_str = str(birth_time).strip()
+                for fmt in ("%H:%M:%S", "%H:%M"):
+                    try:
+                        birth_dt = datetime.strptime(f"{birth_date} {bt_str}", f"%Y-%m-%d {fmt}")
+                        break
+                    except ValueError:
+                        continue
+                else:
+                    raise ValueError(f"Cannot parse birth_time '{birth_time}' — expected HH:MM or HH:MM:SS")
             else:
                 birth_dt = datetime(1973, 3, 9, 16, 56)
             
