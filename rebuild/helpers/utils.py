@@ -160,9 +160,9 @@ def normalize_dashboard_data(dashboard_data: dict) -> dict:
     if "pti_collective" in calendars:
         pti = calendars["pti_collective"] or {}
         if "data" in pti and isinstance(pti.get("data"), dict):
-            timing_data = pti["data"].get("timing_data") or []
+            timing_data = pti["data"].get("timing_data") or pti["data"].get("results") or []
         else:
-            timing_data = pti.get("timing_data") or []
+            timing_data = pti.get("timing_data") or pti.get("results") or []
 
         calendars["pti_collective"] = {
             "calendar_type": "PTI_Collective_Calendar",
