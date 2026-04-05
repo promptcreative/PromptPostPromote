@@ -276,7 +276,7 @@ def personal_calendar_feed():
         for dr in daily_results:
             date_str = dr.get('date')
             day_score = dr.get('day_score', {})
-            if date_str and day_score:
+            if date_str and day_score and isinstance(day_score, dict):
                 score_by_date[date_str] = {
                     'quality': day_score.get('quality', 'neutral'),
                     'score': day_score.get('score', 0),
@@ -287,62 +287,51 @@ def personal_calendar_feed():
                 }
 
         events = []
-        if nakshatra_transits:
-            for idx, transit in enumerate(nakshatra_transits):
-                nakshatra_name = transit.get('nakshatra_name', 'Unknown')
-                ruler = transit.get('ruler', 'Unknown')
 
-                entry_local_str = transit.get('entry_local') or transit.get('entry_time')
-                exit_local_str = transit.get('exit_local') or transit.get('exit_time')
+        # --- Try nakshatra transits with real timestamps ---
+        for idx, transit in enumerate(nakshatra_transits):
+            nakshatra_name = transit.get('nakshatra_name', 'Unknown')
+            ruler = transit.get('ruler', 'Unknown')
+            entry_local_str = transit.get('entry_local') or transit.get('entry_time')
+            exit_local_str = transit.get('exit_local') or transit.get('exit_time')
+            try:
+                entry_local = datetime.fromisoformat(str(entry_local_str)) if entry_local_str else None
+                exit_local = datetime.fromisoformat(str(exit_local_str)) if exit_local_str else None
+            except (ValueError, TypeError):
+                continue
+            if not entry_local or not exit_local:
+                continue
+            transit_date_str = entry_local.strftime('%Y-%m-%d')
+            score_data = score_by_date.get(transit_date_str) or score_by_date.get(exit_local.strftime('%Y-%m-%d'))
+            if score_data:
+                quality = score_data.get('quality', 'Neutral')
+                score = score_data.get('score', 0)
+                quality_emoji = PERSONAL_QUALITY_EMOJIS.get(quality.lower(), '⚪')
+                title = f"{nakshatra_name} ({ruler}) - {score:.1f} - {quality.title()} {quality_emoji}"
+                description = f"🌙 NAKSHATRA: {nakshatra_name}\\n👑 Ruler: {ruler}\\n📈 Personal Score: {score:.1f}\\n💫 Quality: {quality.title()}"
+                awareness_msg = score_data.get('awareness_message', '')
+                if awareness_msg:
+                    description += f"\\n🎯 {awareness_msg}"
+            else:
+                title = f"{nakshatra_name} ({ruler}) - ⚪ Neutral"
+                description = f"🌙 NAKSHATRA: {nakshatra_name}\\n👑 Ruler: {ruler}"
+            entry_utc_str = transit.get('entry_time')
+            exit_utc_str = transit.get('exit_time')
+            try:
+                entry_utc = datetime.fromisoformat(str(entry_utc_str)) if entry_utc_str else entry_local
+                exit_utc = datetime.fromisoformat(str(exit_utc_str)) if exit_utc_str else exit_local
+            except (ValueError, TypeError):
+                entry_utc, exit_utc = entry_local, exit_local
+            events.append({
+                'id': f"personal_transit_{idx}",
+                'title': title,
+                'description': description,
+                'start': entry_utc.replace(tzinfo=None) if hasattr(entry_utc, 'replace') else entry_utc,
+                'end': exit_utc.replace(tzinfo=None) if hasattr(exit_utc, 'replace') else exit_utc,
+            })
 
-                try:
-                    entry_local = datetime.fromisoformat(str(entry_local_str)) if entry_local_str else None
-                    exit_local = datetime.fromisoformat(str(exit_local_str)) if exit_local_str else None
-                except (ValueError, TypeError):
-                    continue
-
-                if not entry_local or not exit_local:
-                    continue
-
-                transit_date_str = entry_local.strftime('%Y-%m-%d')
-                score_data = score_by_date.get(transit_date_str)
-                if not score_data:
-                    exit_date_str = exit_local.strftime('%Y-%m-%d')
-                    score_data = score_by_date.get(exit_date_str)
-
-                if score_data:
-                    quality = score_data.get('quality', 'Neutral')
-                    score = score_data.get('score', 0)
-                    quality_emoji = PERSONAL_QUALITY_EMOJIS.get(quality.lower(), '⚪')
-                    title = f"{nakshatra_name} ({ruler}) - {score:.1f} - {quality.title()} {quality_emoji}"
-                    description = f"🌙 NAKSHATRA: {nakshatra_name}\\n"
-                    description += f"👑 Ruler: {ruler}\\n"
-                    description += f"📈 Personal Score: {score:.1f}\\n"
-                    description += f"💫 Quality: {quality.title()}"
-                    awareness_msg = score_data.get('awareness_message', '')
-                    if awareness_msg:
-                        description += f"\\n🎯 {awareness_msg}"
-                else:
-                    title = f"{nakshatra_name} ({ruler}) - ⚪ Neutral"
-                    description = f"🌙 NAKSHATRA: {nakshatra_name}\\n👑 Ruler: {ruler}"
-
-                entry_utc_str = transit.get('entry_time')
-                exit_utc_str = transit.get('exit_time')
-                try:
-                    entry_utc = datetime.fromisoformat(str(entry_utc_str)) if entry_utc_str else entry_local
-                    exit_utc = datetime.fromisoformat(str(exit_utc_str)) if exit_utc_str else exit_local
-                except (ValueError, TypeError):
-                    entry_utc = entry_local
-                    exit_utc = exit_local
-
-                events.append({
-                    'id': f"personal_transit_{idx}",
-                    'title': title,
-                    'description': description,
-                    'start': entry_utc.replace(tzinfo=None) if hasattr(entry_utc, 'replace') else entry_utc,
-                    'end': exit_utc.replace(tzinfo=None) if hasattr(exit_utc, 'replace') else exit_utc,
-                })
-        else:
+        # --- Fallback 1: daily score all-day events ---
+        if not events and score_by_date:
             for date_str, score_data in sorted(score_by_date.items()):
                 quality = score_data.get('quality', 'neutral')
                 score = score_data.get('score', 0)
@@ -355,6 +344,35 @@ def personal_calendar_feed():
                 description = f"📈 Personal Score: {score:.1f}\\n💫 Quality: {quality.title()}"
                 events.append({
                     'id': f"personal_{date_str}",
+                    'title': title,
+                    'description': description,
+                    'start': day_date,
+                    'end': day_date + timedelta(days=1),
+                })
+
+        # --- Fallback 2: combined calendar personal_label ---
+        if not events and saved_data:
+            combined_results = (
+                saved_data.get('calendars', {}).get('combined', {}).get('results')
+                or saved_data.get('calendars', {}).get('combined', {}).get('data', {}).get('results', [])
+            )
+            for cr in (combined_results or []):
+                date_str = cr.get('date')
+                personal_label = cr.get('personal_label') or (
+                    cr.get('system_breakdown', {}).get('personal', {}).get('quality')
+                )
+                if not date_str:
+                    continue
+                try:
+                    day_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+                except ValueError:
+                    continue
+                quality = (personal_label or 'neutral').lower()
+                quality_emoji = PERSONAL_QUALITY_EMOJIS.get(quality, '⚪')
+                title = f"{quality_emoji} Personal: {quality.title()}"
+                description = f"💫 Personal Quality: {quality.title()}\\n📅 {day_date.strftime('%A, %B %d, %Y')}"
+                events.append({
+                    'id': f"personal_combined_{date_str}",
                     'title': title,
                     'description': description,
                     'start': day_date,
