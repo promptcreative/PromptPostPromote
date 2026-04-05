@@ -201,6 +201,14 @@
         .feed-card.nogo .feed-btn-download { background: #d35400; color: white; }
         .feed-card.allmicro .feed-btn-copy { background: #9b59b6; color: white; }
         .feed-card.allmicro .feed-btn-download { background: #8e44ad; color: white; }
+
+        .feed-btn-gcal {
+            background: #1a73e8;
+            color: white;
+        }
+        .feed-btn-gcal:hover {
+            background: #1557b0;
+        }
         
         .instructions {
             background: #fff3e0;
@@ -492,9 +500,12 @@
         function renderFeedActions(containerId, fullUrl, btnCopyClass, btnDownloadClass) {
             const el = document.getElementById(containerId);
             if (!el) return;
+            const webcalUrl = fullUrl.replace(/^https?:\/\//, 'webcal://');
+            const gcalUrl = 'https://calendar.google.com/calendar/r/settings/addbyurl?url=' + encodeURIComponent(webcalUrl);
             el.innerHTML = `
                 <button class="feed-btn ${btnCopyClass}" onclick="copyUrl('${fullUrl}', this)">Copy URL</button>
                 <a href="${fullUrl}" download class="feed-btn ${btnDownloadClass}">Download ICS</a>
+                <a href="${gcalUrl}" target="_blank" rel="noopener noreferrer" class="feed-btn feed-btn-gcal">Add to Google Cal</a>
             `;
         }
 

@@ -638,6 +638,70 @@ def yogi_point_calendar_feed():
         return f"Error generating Yogi Point calendar: {str(e)}", 500
 
 
+def _sun_times(lat, lon, day):
+    """
+    Compute approximate sunrise and sunset for a given date and location
+    using the standard astronomical formula. Returns (sunrise, sunset) as
+    naive datetimes representing approximate local solar time for that day.
+    """
+    import math
+
+    N = day.timetuple().tm_yday
+    lon_hour = lon / 15.0
+
+    def calc_sun_local_hours(rising):
+        t = N + ((6 if rising else 18) - lon_hour) / 24.0
+        M = (0.9856 * t) - 3.289
+        L = M + (1.916 * math.sin(math.radians(M))) + (0.020 * math.sin(math.radians(2 * M))) + 282.634
+        L = L % 360
+        RA = math.degrees(math.atan(0.91764 * math.tan(math.radians(L))))
+        RA = RA % 360
+        Lquadrant = (math.floor(L / 90)) * 90
+        RAquadrant = (math.floor(RA / 90)) * 90
+        RA += (Lquadrant - RAquadrant)
+        RA /= 15.0
+        sinDec = 0.39782 * math.sin(math.radians(L))
+        cosDec = math.cos(math.asin(sinDec))
+        zenith = 90.833
+        cosH = (math.cos(math.radians(zenith)) - (sinDec * math.sin(math.radians(lat)))) / (cosDec * math.cos(math.radians(lat)))
+        if cosH > 1 or cosH < -1:
+            return None
+        H = (360 - math.degrees(math.acos(cosH))) if rising else math.degrees(math.acos(cosH))
+        H /= 15.0
+        T = H + RA - (0.06571 * t) - 6.622
+        UT = (T - lon_hour) % 24
+        local_hours = (UT + lon_hour) % 24
+        return local_hours
+
+    sr = calc_sun_local_hours(True)
+    ss = calc_sun_local_hours(False)
+    if sr is None or ss is None:
+        sr = 6.0
+        ss = 18.0
+
+    def hours_to_dt(day, hours):
+        return datetime(day.year, day.month, day.day, 0, 0, 0) + timedelta(hours=hours)
+
+    sunrise_dt = hours_to_dt(day, sr)
+    sunset_dt = hours_to_dt(day, ss)
+
+    if sunset_dt <= sunrise_dt:
+        sunset_dt += timedelta(days=1)
+
+    return sunrise_dt, sunset_dt
+
+
+RAHU_KALAM_SEGMENT = {
+    0: 2,
+    1: 7,
+    2: 5,
+    3: 6,
+    4: 4,
+    5: 3,
+    6: 8,
+}
+
+
 @ics_bp.route('/calendar/nogo.ics')
 def nogo_calendar_feed():
     user_id, err = _verify_subscription('nogo')
@@ -645,50 +709,49 @@ def nogo_calendar_feed():
         return err
 
     try:
-        saved_data, nogo_cal = _get_saved_calendar_section(user_id, 'nogo')
-        if not nogo_cal:
-            return 'No NO GO calendar data found. Please generate calendars first.', 404
+        from database.models import UserProfile
 
-        periods = nogo_cal.get('periods', []) or nogo_cal.get('results', [])
+        profile = UserProfile.query.filter_by(email=user_id).first()
+        if profile:
+            lat = profile.current_latitude if profile.current_latitude is not None else 19.076
+            lon = profile.current_longitude if profile.current_longitude is not None else 72.8777
+            calendar_days = profile.calendar_range_days or 60
+        else:
+            saved_data = db_manager.get_calendar_data(user_id)
+            if saved_data:
+                lat = saved_data.get('current_latitude', 19.076)
+                lon = saved_data.get('current_longitude', 72.8777)
+                calendar_days = saved_data.get('calendar_range_days', 60)
+            else:
+                lat, lon, calendar_days = 19.076, 72.8777, 60
 
+        today = date.today()
         events = []
-        for idx, period in enumerate(periods):
-            weekday = period.get('weekday', '')
-            title = f"🚫 NO GO - {weekday}"
+        for day_offset in range(calendar_days):
+            day = today + timedelta(days=day_offset)
+            weekday = day.weekday()
+            segment_num = RAHU_KALAM_SEGMENT[weekday]
 
+            sunrise_dt, sunset_dt = _sun_times(lat, lon, day)
+            daylight_seconds = (sunset_dt - sunrise_dt).total_seconds()
+            segment_duration = daylight_seconds / 8.0
+
+            seg_start = sunrise_dt + timedelta(seconds=(segment_num - 1) * segment_duration)
+            seg_end = seg_start + timedelta(seconds=segment_duration)
+
+            day_name = day.strftime('%A')
             description = f"⛔ RAHU KALAM - NO GO PERIOD\\n"
-            description += f"📅 {weekday}"
-            start_str = period.get('start_time_str', '')
-            end_str = period.get('end_time_str', '')
-            if start_str and end_str:
-                description += f"\\n⏰ {start_str} - {end_str}"
-            duration = period.get('duration_minutes')
-            if duration:
-                description += f"\\n⏱️ Duration: {duration} minutes"
-
-            start_time_raw = period.get('start_time') or period.get('start')
-            end_time_raw = period.get('end_time') or period.get('end')
-
-            try:
-                if start_time_raw and end_time_raw:
-                    start_dt = datetime.fromisoformat(str(start_time_raw)) if isinstance(start_time_raw, str) else start_time_raw
-                    end_dt = datetime.fromisoformat(str(end_time_raw)) if isinstance(end_time_raw, str) else end_time_raw
-                else:
-                    continue
-            except (ValueError, TypeError):
-                continue
-
-            if hasattr(start_dt, 'replace'):
-                start_dt = start_dt.replace(tzinfo=None)
-            if hasattr(end_dt, 'replace'):
-                end_dt = end_dt.replace(tzinfo=None)
+            description += f"📅 {day_name}, {day.strftime('%B %d, %Y')}\\n"
+            description += f"⏰ {seg_start.strftime('%I:%M %p')} - {seg_end.strftime('%I:%M %p')}\\n"
+            description += f"⏱️ Duration: {int(segment_duration / 60)} minutes\\n"
+            description += f"📍 Location: {lat:.4f}, {lon:.4f}"
 
             events.append({
-                'id': f"nogo_{idx}_{period.get('date', '')}",
-                'title': title,
+                'id': f"nogo_{day.isoformat()}",
+                'title': f"🚫 NO GO – Rahu Kalam",
                 'description': description,
-                'start': start_dt,
-                'end': end_dt,
+                'start': seg_start,
+                'end': seg_end,
             })
 
         return create_ics_response('nogo', events, cal_name_override='NO GO')
