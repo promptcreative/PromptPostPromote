@@ -7,6 +7,39 @@ from datetime import datetime
 auth_bp = Blueprint("auth", __name__)
 
 
+def _geocode_location(name):
+    """Returns (lat, lon) for a location name using Nominatim, or (None, None)."""
+    if not name or not name.strip():
+        return None, None
+    try:
+        import requests as _req
+        resp = _req.get(
+            "https://nominatim.openstreetmap.org/search",
+            params={"q": name, "format": "json", "limit": 1},
+            headers={"User-Agent": "Astrobatching/1.0"},
+            timeout=6,
+        )
+        if resp.status_code == 200:
+            results = resp.json()
+            if results:
+                return float(results[0]["lat"]), float(results[0]["lon"])
+    except Exception:
+        pass
+    return None, None
+
+
+def _tz_offset_from_name(tz_name):
+    """Returns UTC offset hours (float) for a timezone name, default -5."""
+    try:
+        from zoneinfo import ZoneInfo
+        from datetime import timezone as dt_timezone
+        tz = ZoneInfo(tz_name)
+        now = datetime.now(tz)
+        return now.utcoffset().total_seconds() / 3600
+    except Exception:
+        return -5.0
+
+
 def check_auth_status():
     authenticated = session.get('authenticated', False)
     user_info = session.get('user_info', {})
@@ -338,6 +371,12 @@ def api_user_profile():
             up = UserProfile(email=user_email)
             db.session.add(up)
 
+        if birth_name and (not birth_lat or birth_lat == 0.0) and (not birth_lon or birth_lon == 0.0):
+            birth_lat, birth_lon = _geocode_location(birth_name)
+
+        if current_name and (not current_lat or current_lat == 0.0) and (not current_lon or current_lon == 0.0):
+            current_lat, current_lon = _geocode_location(current_name)
+
         up.birth_date = birth_date
         up.birth_time = birth_time
         up.birth_location_name = birth_name
@@ -346,6 +385,11 @@ def api_user_profile():
         up.current_location_name = current_name
         up.current_latitude = current_lat
         up.current_longitude = current_lon
+
+        if hasattr(up, "birth_timezone_name"):
+            up.birth_timezone_name = timezone
+        if hasattr(up, "birth_timezone"):
+            up.birth_timezone = _tz_offset_from_name(timezone)
 
         calendar_range_days = body.get("calendar_range_days")
         if calendar_range_days:
@@ -406,7 +450,7 @@ def get_profile():
                     'longitude': user_profile.current_longitude
                 } if user_profile.current_location_name else None,
                 'calendar_range_days': user_profile.calendar_range_days,
-                'timezone': user_profile.birth_timezone
+                'timezone': (getattr(user_profile, 'birth_timezone_name', None) or 'America/New_York')
             }
             return jsonify({'status': 'success', 'profile': profile_data})
         else:
@@ -487,12 +531,31 @@ def _save_profile_to_db(user_email, data):
 
     up.birth_date = birth_date
     up.birth_time = birth_time
-    up.birth_location_name = bl.get("name") or data.get("birth_location_name")
-    up.birth_latitude = _to_float_or_none(bl.get("latitude") or data.get("birth_latitude"))
-    up.birth_longitude = _to_float_or_none(bl.get("longitude") or data.get("birth_longitude"))
-    up.current_location_name = cl.get("name") or data.get("current_location_name")
-    up.current_latitude = _to_float_or_none(cl.get("latitude") or data.get("current_latitude"))
-    up.current_longitude = _to_float_or_none(cl.get("longitude") or data.get("current_longitude"))
+
+    b_name = bl.get("name") or data.get("birth_location_name")
+    b_lat = _to_float_or_none(bl.get("latitude") or data.get("birth_latitude"))
+    b_lon = _to_float_or_none(bl.get("longitude") or data.get("birth_longitude"))
+    if b_name and (not b_lat or b_lat == 0.0) and (not b_lon or b_lon == 0.0):
+        b_lat, b_lon = _geocode_location(b_name)
+
+    c_name = cl.get("name") or data.get("current_location_name")
+    c_lat = _to_float_or_none(cl.get("latitude") or data.get("current_latitude"))
+    c_lon = _to_float_or_none(cl.get("longitude") or data.get("current_longitude"))
+    if c_name and (not c_lat or c_lat == 0.0) and (not c_lon or c_lon == 0.0):
+        c_lat, c_lon = _geocode_location(c_name)
+
+    up.birth_location_name = b_name
+    up.birth_latitude = b_lat
+    up.birth_longitude = b_lon
+    up.current_location_name = c_name
+    up.current_latitude = c_lat
+    up.current_longitude = c_lon
+
+    tz_name = data.get("timezone") or "America/New_York"
+    if hasattr(up, "birth_timezone_name"):
+        up.birth_timezone_name = tz_name
+    if hasattr(up, "birth_timezone"):
+        up.birth_timezone = _tz_offset_from_name(tz_name)
 
     calendar_range_days = data.get("calendar_range_days")
     if calendar_range_days:
@@ -506,7 +569,7 @@ def _save_profile_to_db(user_email, data):
     session['user_profile'] = {
         "birth_date": birth_date_str,
         "birth_time": birth_time_str,
-        "timezone": data.get("timezone", "America/New_York"),
+        "timezone": tz_name,
         "birth_location": {
             "name": up.birth_location_name,
             "latitude": up.birth_latitude,
