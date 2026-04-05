@@ -317,12 +317,14 @@ def generate_dashboard_core(data: dict, user_id: str = None) -> dict:
                     lat=birth_latitude, lon=birth_longitude, tz_name=tz_name
                 )
                 for t in nakshatra_transits_raw:
+                    st = t.get('start_time') or t.get('entry_time')
+                    et = t.get('end_time') or t.get('exit_time')
                     nakshatra_transits_serializable.append({
                         'nakshatra_num': t.get('nakshatra_num'),
                         'nakshatra_name': t.get('nakshatra_name'),
                         'ruler': t.get('ruler'),
-                        'entry_time': t.get('entry_time').isoformat() if t.get('entry_time') else None,
-                        'exit_time': t.get('exit_time').isoformat() if t.get('exit_time') else None,
+                        'entry_time': st.isoformat() if st else None,
+                        'exit_time': et.isoformat() if et else None,
                     })
             except Exception:
                 pass
