@@ -1,0 +1,40 @@
+There are two confirmed bug categories that need fixing. Before touching any code, do the following first:
+
+STEP 1 — MAP ALL ROUTES FIRST (no code changes yet)
+List every route in the application in a table with three columns:
+
+Route path
+Method (GET/POST)
+What it does
+
+Group them by category: Auth, Dashboard, Clients, Calendar Generation, Calendar Feeds (ICS endpoints), Microtransit Calculation, Admin/Backend.
+Do not change anything. Just output the route map and wait.
+
+STEP 2 — ISSUE 1: Calendar feeds show no events in external preview
+After route map is confirmed, investigate only this:
+The ICS feed endpoints (PTI, Vedic, Nakshatra, Bird Batch, MicroBird, Part of Fortune, Yogi Point, Rahu Kalam, All Microtransits) return files that external tools like icscalendar.com/preview cannot render — they show zero events despite the files being the correct file size.
+Suspected causes in priority order:
+
+Auth tokens in the feed URLs require an active session cookie — external subscribers can't authenticate
+ICS files have malformed VEVENT blocks or bad timezone declarations
+Date range mismatch between what's generated and what the preview tool requests
+
+Diagnose only. Show me what you find and the proposed fix before writing any code.
+
+STEP 3 — ISSUE 2: Microtransit calculations hang in UI, then succeed on backend
+After Issue 1 is resolved, investigate this separately:
+Microtransits (Part of Fortune, Yogi Point, Bird Batch, MicroBird) are supposed to:
+
+Run once
+Save to the database
+Only re-run when explicitly triggered
+
+The bug: the UI shows them as hung/calculating indefinitely, but the backend admin page shows they completed successfully. The data is there — the UI isn't reading it correctly, or is re-triggering calculation instead of loading from the saved state.
+Diagnose only first. Show me what you find before touching code.
+
+Rules for this session:
+
+One issue at a time
+Route map before anything else
+Diagnose before fixing
+Show me the finding and proposed fix, wait for approval, then write code
