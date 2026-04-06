@@ -58,7 +58,7 @@ def _parse_time_to_datetime(day_date, time_str):
     raise ValueError(f"Cannot parse time: {time_str}")
 
 
-def _compute_micro_bird_events(saved_data):
+def _compute_micro_bird_events(saved_data, user_id=None):
     bg_dates = _get_background_dates(saved_data)
     if not bg_dates:
         return []
@@ -112,6 +112,32 @@ def _compute_micro_bird_events(saved_data):
     for t in pof_transits:
         t['_source'] = 'Part of Fortune'
         all_transits.append(t)
+
+    if user_id:
+        try:
+            import microtransits.wb3 as wb3_module
+            from database.models import UserProfile
+            from datetime import date as _date, timedelta as _td
+            up = UserProfile.query.filter_by(email=user_id).first()
+            if up and up.birth_date and up.birth_time:
+                birth_dt = datetime.combine(up.birth_date, up.birth_time)
+                wb3_module.BIRTH_DATE = birth_dt
+                lat = float(up.current_latitude or up.birth_latitude or 40.7128)
+                lon = float(up.current_longitude or up.birth_longitude or -74.0060)
+                wb3_module.TRANSIT_LOCATION = (lat, lon)
+                period = saved_data.get('period', {})
+                try:
+                    wb3_days = int(period.get('days', 60))
+                except (ValueError, TypeError):
+                    wb3_days = 60
+                wb3_start = datetime.combine(_date.today(), datetime.min.time())
+                wb3_end = datetime.combine(_date.today() + _td(days=wb3_days), datetime.min.time())
+                raw_wb3 = wb3_module.process_transits(wb3_start, wb3_end)
+                for t in raw_wb3:
+                    t['_source'] = 'WB3'
+                    all_transits.append(t)
+        except Exception as _wb3_err:
+            print(f"WB3 publer error: {_wb3_err}")
 
     micro_bird_events = []
     for transit in all_transits:
@@ -199,7 +225,7 @@ def push_microbird_to_publer():
         if not saved_data:
             return jsonify({'error': 'No saved calendar data. Generate calendars first.'}), 404
 
-        micro_bird_events = _compute_micro_bird_events(saved_data)
+        micro_bird_events = _compute_micro_bird_events(saved_data, user_id=user_id)
         if not micro_bird_events:
             return jsonify({'error': 'No Micro Bird events found. Ensure bird batch and microtransit data exists.'}), 404
 

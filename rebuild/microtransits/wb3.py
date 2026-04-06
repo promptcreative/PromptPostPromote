@@ -8,8 +8,8 @@ import csv
 
 # Configuration Constants
 SCRIPT_PREFIX = "WB3"
-CALENDAR_COLOR = "#4CAF50"  # Green
-CATEGORY = "Western Transits"
+CALENDAR_COLOR = "#E67C73"  # Coral Red
+CATEGORY = "Western Burst Three"
 EXPORTS_FOLDER = "exports"
 DEFAULT_ORB = 1.0
 
@@ -38,15 +38,6 @@ def calculate_pof(asc, sun, moon):
         pof = (asc - moon + sun) % 360
     
     return pof
-
-def process_transits(start_date=None, end_date=None):
-    """Process WB3 transits between two dates."""
-    if start_date is None or end_date is None:
-        raise ValueError("Both start_date and end_date must be provided")
-
-    print("\nCalculating Western Burst Three (WB3) transits...")
-    # Implementation will follow
-    return []
 
 ################################################################
 #                    API WRAPPER FUNCTIONS                      #
@@ -105,28 +96,6 @@ def calculate_wb3_transits(birth_date, birth_time, birth_latitude, birth_longitu
     except Exception as e:
         print(f"Error in calculate_wb3_transits: {str(e)}")
         return []
-
-if __name__ == "__main__":
-    try:
-        start_date = datetime(2025, 1, 10, 0, 0)
-        end_date = datetime(2025, 1, 20, 23, 59)
-        transits = process_transits(start_date, end_date)
-    except Exception as e:
-        print(f"Error: {str(e)}")
-    finally:
-        swe.close()
-import swisseph as swe
-from datetime import datetime, timedelta
-from zoneinfo import ZoneInfo
-import os
-import csv
-
-# Configuration Constants  
-SCRIPT_PREFIX = "WB3"
-CALENDAR_COLOR = "#E67C73"  # Coral Red
-CATEGORY = "Western Burst Three"
-EXPORTS_FOLDER = "exports"
-DEFAULT_ORB = 1.0
 
 def get_positions(jd):
     """Calculate required planetary positions."""

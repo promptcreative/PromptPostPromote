@@ -1170,6 +1170,41 @@ def microbird_calendar_feed():
             except (ValueError, TypeError):
                 continue
 
+        try:
+            import microtransits.wb3 as wb3_module
+            from database.models import UserProfile
+            up = UserProfile.query.filter_by(email=user_id).first()
+            if up and up.birth_date and up.birth_time:
+                birth_dt = datetime.combine(up.birth_date, up.birth_time)
+                wb3_module.BIRTH_DATE = birth_dt
+                lat = float(up.current_latitude or up.birth_latitude or 40.7128)
+                lon = float(up.current_longitude or up.birth_longitude or -74.0060)
+                wb3_module.TRANSIT_LOCATION = (lat, lon)
+                period = saved_data.get('period', {})
+                try:
+                    wb3_days = int(period.get('days', 60))
+                except (ValueError, TypeError):
+                    wb3_days = 60
+                wb3_start = datetime.combine(date.today(), datetime.min.time())
+                wb3_end = datetime.combine(date.today() + timedelta(days=wb3_days), datetime.min.time())
+                raw_wb3 = wb3_module.process_transits(wb3_start, wb3_end)
+                for t in raw_wb3:
+                    s = t.get('start')
+                    e = t.get('end')
+                    if s and e:
+                        if hasattr(s, 'replace'):
+                            s = s.replace(tzinfo=None)
+                        if hasattr(e, 'replace'):
+                            e = e.replace(tzinfo=None)
+                        microtransits.append({
+                            'start': s,
+                            'end': e,
+                            'type': 'WB3',
+                            'planet': t.get('type', t.get('transit_code', '')),
+                        })
+        except Exception as _wb3_err:
+            print(f"WB3 ICS error: {_wb3_err}")
+
         events = []
         event_idx = 0
         for mt in microtransits:

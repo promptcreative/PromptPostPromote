@@ -545,6 +545,25 @@ def get_client_microtransits(client_id):
             print(f"PoF calculation error for client {client_id}: {pof_err}")
             traceback.print_exc()
 
+        wb3_transits = []
+        try:
+            import microtransits.wb3 as wb3_module
+            if client.birth_date and client.birth_time:
+                birth_dt = datetime.combine(client.birth_date, client.birth_time)
+                wb3_module.BIRTH_DATE = birth_dt
+                if client.current_latitude and client.current_longitude:
+                    wb3_module.TRANSIT_LOCATION = (float(client.current_latitude), float(client.current_longitude))
+                elif client.birth_latitude and client.birth_longitude:
+                    wb3_module.TRANSIT_LOCATION = (float(client.birth_latitude), float(client.birth_longitude))
+                raw_wb3 = wb3_module.process_transits(start_dt, end_dt)
+                for t in raw_wb3:
+                    t_date = _extract_date_part(str(t.get('start', '')))
+                    if t_date and t_date in bg_set:
+                        wb3_transits.append(_serialize_transit(t, 'WB3'))
+        except Exception as wb3_err:
+            print(f"WB3 calculation error for client {client_id}: {wb3_err}")
+            traceback.print_exc()
+
         def _parse_time(ts):
             ts = str(ts).strip()
             if 'T' in ts:
@@ -557,7 +576,7 @@ def get_client_microtransits(client_id):
                     continue
             return None
 
-        all_microtransits = yp_transits + pof_transits
+        all_microtransits = yp_transits + pof_transits + wb3_transits
         for mt in all_microtransits:
             mt_date = mt['date']
             for bp in bird_periods:
@@ -595,6 +614,7 @@ def get_client_microtransits(client_id):
                 'date': today_str,
                 'yp_transits': yp_transits,
                 'pof_transits': pof_transits,
+                'wb3_transits': wb3_transits,
                 'micro_bird_events': micro_bird_events,
             }, default=_serialize_for_cache))
             saved_data['cached_microtransits'] = safe_cache
