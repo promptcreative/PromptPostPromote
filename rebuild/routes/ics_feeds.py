@@ -1172,13 +1172,18 @@ def microbird_calendar_feed():
 
         try:
             import microtransits.wb3 as wb3_module
-            from database.models import UserProfile
-            up = UserProfile.query.filter_by(email=user_id).first()
-            if up and up.birth_date and up.birth_time:
-                birth_dt = datetime.combine(up.birth_date, up.birth_time)
+            if user_id.startswith('client_'):
+                from database.models import Client
+                _client_id = int(user_id.split('_', 1)[1])
+                _rec = Client.query.get(_client_id)
+            else:
+                from database.models import UserProfile
+                _rec = UserProfile.query.filter_by(email=user_id).first()
+            if _rec and _rec.birth_date and _rec.birth_time:
+                birth_dt = datetime.combine(_rec.birth_date, _rec.birth_time)
                 wb3_module.BIRTH_DATE = birth_dt
-                lat = float(up.current_latitude or up.birth_latitude or 40.7128)
-                lon = float(up.current_longitude or up.birth_longitude or -74.0060)
+                lat = float(_rec.current_latitude or _rec.birth_latitude or 40.7128)
+                lon = float(_rec.current_longitude or _rec.birth_longitude or -74.0060)
                 wb3_module.TRANSIT_LOCATION = (lat, lon)
                 period = saved_data.get('period', {})
                 try:
