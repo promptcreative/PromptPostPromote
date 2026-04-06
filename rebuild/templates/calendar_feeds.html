@@ -326,15 +326,8 @@
                     Professional Timing Index - your monthly overview of collective energy days. Shows daily classifications (PTI Best, PTI Go, Normal, PTI Slow, PTI Worst) with scores so you can see the big picture at a glance.
                 </div>
                 <div class="feed-stats">Daily classifications for the full month</div>
-                <div class="feed-actions">
-                    {% if pti_calendar_url %}
-                    <button class="feed-btn feed-btn-copy" onclick="copyUrl('{{ pti_calendar_url }}', this)">Copy URL</button>
-                    <a href="{{ pti_calendar_url }}" download class="feed-btn feed-btn-download">Download ICS</a>
-                    {% elif is_authenticated %}
-                    <a href="/profile-setup" class="feed-btn" style="background: #e65100; color: white;">Complete Profile</a>
-                    {% else %}
-                    <a href="/login" class="feed-btn" style="background: #e65100; color: white;">Sign In to Access</a>
-                    {% endif %}
+                <div class="feed-actions" id="actions-pti">
+                    <span class="feed-loading">Loading link…</span>
                 </div>
             </div>
             
@@ -344,15 +337,8 @@
                     Your Vedic collective calendar showing daily energy classifications based on tithi, nakshatra, and traditional Vedic timing. Days are rated as GO, Focus, Build, Slow, Inward, or Stop.
                 </div>
                 <div class="feed-stats">Daily Vedic classifications for the full month</div>
-                <div class="feed-actions">
-                    {% if vedic_calendar_url %}
-                    <button class="feed-btn feed-btn-copy" onclick="copyUrl('{{ vedic_calendar_url }}', this)">Copy URL</button>
-                    <a href="{{ vedic_calendar_url }}" download class="feed-btn feed-btn-download">Download ICS</a>
-                    {% elif is_authenticated %}
-                    <a href="/profile-setup" class="feed-btn" style="background: #1565c0; color: white;">Complete Profile</a>
-                    {% else %}
-                    <a href="/login" class="feed-btn" style="background: #1565c0; color: white;">Sign In to Access</a>
-                    {% endif %}
+                <div class="feed-actions" id="actions-vedic">
+                    <span class="feed-loading">Loading link…</span>
                 </div>
             </div>
         </div>
@@ -370,15 +356,8 @@
                     Your personalized Moon transit calendar based on your birth chart. Shows timed nakshatra events with house transits, personal scores, and quality ratings (Power, Supportive, Caution, Avoid).
                 </div>
                 <div class="feed-stats">Daily nakshatra periods with precise timing</div>
-                <div class="feed-actions">
-                    {% if personal_calendar_url %}
-                    <button class="feed-btn feed-btn-copy" onclick="copyUrl('{{ personal_calendar_url }}', this)">Copy URL</button>
-                    <a href="{{ personal_calendar_url }}" download class="feed-btn feed-btn-download">Download ICS</a>
-                    {% elif is_authenticated %}
-                    <a href="/profile-setup" class="feed-btn" style="background: #9c27b0; color: white;">Complete Profile</a>
-                    {% else %}
-                    <a href="/login" class="feed-btn" style="background: #9c27b0; color: white;">Sign In to Access</a>
-                    {% endif %}
+                <div class="feed-actions" id="actions-personal">
+                    <span class="feed-loading">Loading link…</span>
                 </div>
             </div>
             
@@ -510,6 +489,9 @@
         }
 
         const feedStyles = {
+            pti:              ['feed-btn-copy',    'feed-btn-download'],
+            vedic:            ['feed-btn-copy',    'feed-btn-download'],
+            personal:         ['feed-btn-copy',    'feed-btn-download'],
             bird_batch:       ['feed-btn-copy',    'feed-btn-download'],
             microbird:        ['feed-btn-copy',    'feed-btn-download'],
             enhanced_pof:     ['feed-btn-copy',    'feed-btn-download'],
