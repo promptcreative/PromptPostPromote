@@ -281,15 +281,27 @@ def get_yogi_point_power_days():
         if not bg_dates:
             return jsonify({'transits': [], 'background_days': [], 'total_filtered': 0})
 
-        start_date = datetime.combine(date.today(), datetime.min.time())
-        end_date = datetime.combine(date.today() + timedelta(days=days), datetime.min.time())
+        today_str = date.today().isoformat()
+        cache = saved_data.get('cached_yp', {})
+        force = request.args.get('force') == '1'
 
-        try:
-            from microtransits.yp import process_transits
-        except ImportError as ie:
-            return jsonify({'error': f'Yogi Point module unavailable: {ie}'}), 500
+        if not force and cache.get('date') == today_str and cache.get('all_transits') is not None:
+            all_transits = cache['all_transits']
+        else:
+            try:
+                from microtransits.yp import process_transits
+            except ImportError as ie:
+                return jsonify({'error': f'Yogi Point module unavailable: {ie}'}), 500
 
-        all_transits = process_transits(start_date, end_date)
+            start_date = datetime.combine(date.today(), datetime.min.time())
+            end_date = datetime.combine(date.today() + timedelta(days=days), datetime.min.time())
+            all_transits = process_transits(start_date, end_date)
+
+            try:
+                saved_data['cached_yp'] = {'date': today_str, 'all_transits': all_transits}
+                db_manager.save_calendar_data(user_id, saved_data)
+            except Exception:
+                pass
 
         filtered = []
         for t in all_transits:
@@ -305,8 +317,9 @@ def get_yogi_point_power_days():
             'total_filtered': len(filtered),
             'total_unfiltered': len(all_transits),
             'background_days': sorted(bg_dates),
+            'cached': cache.get('date') == today_str and not force,
             'period': {
-                'start_date': date.today().isoformat(),
+                'start_date': today_str,
                 'end_date': (date.today() + timedelta(days=days)).isoformat(),
             },
         })
@@ -335,30 +348,42 @@ def get_part_of_fortune_power_days():
         if not bg_dates:
             return jsonify({'transits': [], 'background_days': [], 'total_filtered': 0})
 
-        start_date = datetime.combine(date.today(), datetime.min.time())
-        end_date = datetime.combine(date.today() + timedelta(days=days), datetime.min.time())
+        today_str = date.today().isoformat()
+        cache = saved_data.get('cached_pof', {})
+        force = request.args.get('force') == '1'
 
-        try:
-            import microtransits.wb1 as wb1_module
-        except ImportError as ie:
-            return jsonify({'error': f'Part of Fortune module unavailable: {ie}'}), 500
+        if not force and cache.get('date') == today_str and cache.get('all_transits') is not None:
+            all_transits = cache['all_transits']
+        else:
+            try:
+                import microtransits.wb1 as wb1_module
+            except ImportError as ie:
+                return jsonify({'error': f'Part of Fortune module unavailable: {ie}'}), 500
 
-        user_profile = UserProfile.query.filter_by(email=user_id).first()
-        if not user_profile or not user_profile.birth_date:
-            return jsonify({'error': 'Profile with birth data required for Part of Fortune'}), 400
+            user_profile = UserProfile.query.filter_by(email=user_id).first()
+            if not user_profile or not user_profile.birth_date:
+                return jsonify({'error': 'Profile with birth data required for Part of Fortune'}), 400
 
-        birth_dt = datetime.combine(user_profile.birth_date, datetime.min.time())
-        if user_profile.birth_time:
-            birth_dt = datetime.combine(user_profile.birth_date, user_profile.birth_time)
+            birth_dt = datetime.combine(user_profile.birth_date, datetime.min.time())
+            if user_profile.birth_time:
+                birth_dt = datetime.combine(user_profile.birth_date, user_profile.birth_time)
 
-        wb1_module.BIRTH_DATE = birth_dt
-        if user_profile.current_latitude and user_profile.current_longitude:
-            wb1_module.TRANSIT_LOCATION = (
-                float(user_profile.current_latitude),
-                float(user_profile.current_longitude)
-            )
+            wb1_module.BIRTH_DATE = birth_dt
+            if user_profile.current_latitude and user_profile.current_longitude:
+                wb1_module.TRANSIT_LOCATION = (
+                    float(user_profile.current_latitude),
+                    float(user_profile.current_longitude)
+                )
 
-        all_transits = wb1_module.process_transits(start_date, end_date)
+            start_date = datetime.combine(date.today(), datetime.min.time())
+            end_date = datetime.combine(date.today() + timedelta(days=days), datetime.min.time())
+            all_transits = wb1_module.process_transits(start_date, end_date)
+
+            try:
+                saved_data['cached_pof'] = {'date': today_str, 'all_transits': all_transits}
+                db_manager.save_calendar_data(user_id, saved_data)
+            except Exception:
+                pass
 
         filtered = []
         for t in all_transits:
@@ -374,8 +399,9 @@ def get_part_of_fortune_power_days():
             'total_filtered': len(filtered),
             'total_unfiltered': len(all_transits),
             'background_days': sorted(bg_dates),
+            'cached': cache.get('date') == today_str and not force,
             'period': {
-                'start_date': date.today().isoformat(),
+                'start_date': today_str,
                 'end_date': (date.today() + timedelta(days=days)).isoformat(),
             },
         })
