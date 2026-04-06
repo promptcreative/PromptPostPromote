@@ -1,5 +1,6 @@
 """Power Days routes — classified power days, filtered microtransits."""
 
+import json
 import traceback
 from datetime import datetime, date, timedelta
 
@@ -20,6 +21,13 @@ def _extract_date_part(date_string):
     if ' ' in date_string:
         return date_string.split(' ')[0]
     return date_string
+
+
+def _serialize_for_cache(obj):
+    """Convert datetime/date objects to ISO strings for JSON serialization."""
+    if isinstance(obj, (datetime, date)):
+        return obj.isoformat()
+    raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
 
 
 def _extract_power_days(saved_data):
@@ -298,10 +306,11 @@ def get_yogi_point_power_days():
             all_transits = process_transits(start_date, end_date)
 
             try:
-                saved_data['cached_yp'] = {'date': today_str, 'all_transits': all_transits}
+                safe_transits = json.loads(json.dumps(all_transits, default=_serialize_for_cache))
+                saved_data['cached_yp'] = {'date': today_str, 'all_transits': safe_transits}
                 db_manager.save_calendar_data(user_id, saved_data)
-            except Exception:
-                pass
+            except Exception as cache_err:
+                print(f'YP cache save failed: {cache_err}')
 
         filtered = []
         for t in all_transits:
@@ -380,10 +389,11 @@ def get_part_of_fortune_power_days():
             all_transits = wb1_module.process_transits(start_date, end_date)
 
             try:
-                saved_data['cached_pof'] = {'date': today_str, 'all_transits': all_transits}
+                safe_transits = json.loads(json.dumps(all_transits, default=_serialize_for_cache))
+                saved_data['cached_pof'] = {'date': today_str, 'all_transits': safe_transits}
                 db_manager.save_calendar_data(user_id, saved_data)
-            except Exception:
-                pass
+            except Exception as cache_err:
+                print(f'PoF cache save failed: {cache_err}')
 
         filtered = []
         for t in all_transits:
