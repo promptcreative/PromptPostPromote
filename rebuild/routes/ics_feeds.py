@@ -38,6 +38,29 @@ def _escape_ics_text(text):
     return text
 
 
+def _fold_line(line):
+    """Fold a single ICS content line at 75 bytes per RFC 5545 §3.1.
+    Continuation lines begin with a single SPACE character."""
+    encoded = line.encode('utf-8')
+    if len(encoded) <= 75:
+        return line
+    chunks = []
+    pos = 0
+    limit = 75
+    while pos < len(encoded):
+        chunk = encoded[pos:pos + limit]
+        while len(chunk) > 0:
+            try:
+                chunk.decode('utf-8')
+                break
+            except UnicodeDecodeError:
+                chunk = chunk[:-1]
+        chunks.append(chunk.decode('utf-8'))
+        pos += len(chunk)
+        limit = 74
+    return '\r\n '.join(chunks)
+
+
 def create_ics_response(calendar_name, events, cal_name_override=None):
     display_name = cal_name_override or CALENDAR_DISPLAY_NAMES.get(
         calendar_name, f'ABmicrotimes - {calendar_name}'
@@ -72,9 +95,9 @@ def create_ics_response(calendar_name, events, cal_name_override=None):
                 next_day = dt_start + timedelta(days=1)
                 lines.append(f'DTEND;VALUE=DATE:{next_day.strftime("%Y%m%d")}')
         elif isinstance(dt_start, datetime):
-            lines.append(f'DTSTART:{dt_start.strftime("%Y%m%dT%H%M%S")}')
+            lines.append(f'DTSTART:{dt_start.strftime("%Y%m%dT%H%M%S")}Z')
             if dt_end and isinstance(dt_end, datetime):
-                lines.append(f'DTEND:{dt_end.strftime("%Y%m%dT%H%M%S")}')
+                lines.append(f'DTEND:{dt_end.strftime("%Y%m%dT%H%M%S")}Z')
         else:
             lines.append(f'DTSTART;VALUE=DATE:{datetime.utcnow().strftime("%Y%m%d")}')
 
@@ -90,7 +113,7 @@ def create_ics_response(calendar_name, events, cal_name_override=None):
 
     lines.append('END:VCALENDAR')
 
-    ics_content = '\r\n'.join(lines)
+    ics_content = '\r\n'.join(_fold_line(l) for l in lines) + '\r\n'
     response = make_response(ics_content)
     response.headers['Content-Type'] = 'text/calendar; charset=utf-8'
     response.headers['Content-Disposition'] = f'attachment; filename={calendar_name}.ics'
