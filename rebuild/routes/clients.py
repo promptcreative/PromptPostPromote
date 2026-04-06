@@ -1,4 +1,5 @@
 import csv
+import json
 import io
 import traceback
 from flask import Blueprint, request, jsonify, session, Response
@@ -10,6 +11,12 @@ from helpers.dashboard import generate_dashboard_core
 from helpers.utils import make_json_serializable, normalize_dashboard_data
 
 clients_bp = Blueprint('clients', __name__)
+
+
+def _serialize_for_cache(obj):
+    if isinstance(obj, (datetime, date)):
+        return obj.isoformat()
+    raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
 
 
 def _get_owner_email():
@@ -388,6 +395,8 @@ def get_client_calendar(client_id):
                             'activity': p.get('activity', ''),
                         })
 
+        micro_bird_events = saved_data.get('cached_microtransits', {}).get('micro_bird_events', [])
+
         return jsonify({
             "status": "success",
             "client": client.to_dict(),
@@ -396,6 +405,7 @@ def get_client_calendar(client_id):
             "background_days": background_days,
             "bird_periods": bird_periods,
             "combined_results": combined_results,
+            "micro_bird_events": micro_bird_events,
             "generated_at": saved_data.get('period', {}).get('generated_at'),
         })
 
@@ -424,6 +434,19 @@ def get_client_microtransits(client_id):
 
         if not saved_data:
             return jsonify({"status": "error", "message": "No calendar data. Generate first."}), 404
+
+        today_str = date.today().isoformat()
+        cache = saved_data.get('cached_microtransits', {})
+        force = request.args.get('force') == '1'
+
+        if not force and cache.get('date') == today_str and cache.get('yp_transits') is not None:
+            return jsonify({
+                "status": "success",
+                "yp_transits": cache['yp_transits'],
+                "pof_transits": cache['pof_transits'],
+                "micro_bird_events": cache['micro_bird_events'],
+                "cached": True,
+            })
 
         calendars = saved_data.get('calendars', {})
         combined = calendars.get('combined', {})
@@ -566,6 +589,18 @@ def get_client_microtransits(client_id):
                     pass
 
         micro_bird_events.sort(key=lambda x: (x['date'], x['start']))
+
+        try:
+            safe_cache = json.loads(json.dumps({
+                'date': today_str,
+                'yp_transits': yp_transits,
+                'pof_transits': pof_transits,
+                'micro_bird_events': micro_bird_events,
+            }, default=_serialize_for_cache))
+            saved_data['cached_microtransits'] = safe_cache
+            db_manager.save_calendar_data(client_user_id, saved_data)
+        except Exception as cache_err:
+            print(f'Client {client_id} microtransit cache save failed: {cache_err}')
 
         return jsonify({
             "status": "success",
