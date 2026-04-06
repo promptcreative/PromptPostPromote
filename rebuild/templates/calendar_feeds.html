@@ -480,11 +480,10 @@
             const el = document.getElementById(containerId);
             if (!el) return;
             const webcalUrl = fullUrl.replace(/^https?:\/\//, 'webcal://');
-            const gcalUrl = 'https://calendar.google.com/calendar/r/settings/addbyurl?url=' + encodeURIComponent(webcalUrl);
             el.innerHTML = `
                 <button class="feed-btn ${btnCopyClass}" onclick="copyUrl('${fullUrl}', this)">Copy URL</button>
                 <a href="${fullUrl}" download class="feed-btn ${btnDownloadClass}">Download ICS</a>
-                <a href="${gcalUrl}" target="_blank" rel="noopener noreferrer" class="feed-btn feed-btn-gcal">Add to Google Cal</a>
+                <a href="${webcalUrl}" class="feed-btn feed-btn-gcal">Add to Google Cal</a>
             `;
         }
 

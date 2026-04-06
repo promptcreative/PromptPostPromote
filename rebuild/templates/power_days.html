@@ -1233,7 +1233,7 @@
                 for (const feed of bgFeeds) {
                     const feedUrl = feedMap[feed.key] || '';
                     if (!feedUrl) continue;
-                    const gcalUrl = 'https://calendar.google.com/calendar/r/settings/addbyurl?url=' + encodeURIComponent(feedUrl.replace('https://', 'webcal://').replace('http://', 'webcal://'));
+                    const gcalUrl = feedUrl.replace(/^https?:\/\//, 'webcal://');
 
                     html += `<div class="feed-row">
                         <div class="feed-info">
